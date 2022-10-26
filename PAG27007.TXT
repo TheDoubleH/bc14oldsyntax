@@ -1,0 +1,49 @@
+OBJECT Page 27007 CFDI Transport Operators
+{
+  OBJECT-PROPERTIES
+  {
+    Date=12/01/21;
+    Time=12:00:00 PM;
+    Version List=NAVNA14.31;
+  }
+  PROPERTIES
+  {
+    CaptionML=ENU=CFDI Transport Operators;
+    SourceTable=Table27007;
+    DelayedInsert=Yes;
+    PopulateAllFields=Yes;
+    PageType=List;
+    ActionList=ACTIONS
+    {
+      { 1310004 ;    ;ActionContainer;
+                      ActionContainerType=ActionItems }
+    }
+  }
+  CONTROLS
+  {
+    { 1310000;0;Container ;
+                ContainerType=ContentArea }
+
+    { 1310001;1;Group     ;
+                Name=Group;
+                GroupType=Repeater }
+
+    { 1310002;2;Field     ;
+                ToolTipML=ENU=Specifies the operator of the vehicle that transports the goods or merchandise.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Operator Code" }
+
+    { 1310003;2;Field     ;
+                ToolTipML=ENU=Specifies the name of the operator of the vehicle that transports the goods or merchandise.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Operator Name" }
+
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

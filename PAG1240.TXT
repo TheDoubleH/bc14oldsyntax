@@ -1,0 +1,44 @@
+OBJECT Page 1240 SWIFT Codes
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/24/19;
+    Time=12:00:00 PM;
+    Version List=NAVW114.00;
+  }
+  PROPERTIES
+  {
+    CaptionML=ENU=SWIFT Codes;
+    ApplicationArea=#Basic,#Suite;
+    SourceTable=Table1210;
+    PageType=List;
+    UsageCategory=Lists;
+  }
+  CONTROLS
+  {
+    { 1   ;0   ;Container ;
+                ContainerType=ContentArea }
+
+    { 2   ;1   ;Group     ;
+                Name=Group;
+                GroupType=Repeater }
+
+    { 3   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the SWIFT code.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr=Code }
+
+    { 4   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the name of the bank for the corresponding SWIFT code.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr=Name }
+
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

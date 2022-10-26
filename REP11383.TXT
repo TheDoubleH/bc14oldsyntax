@@ -1,0 +1,3764 @@
+OBJECT Report 11383 ExportElecPayments - Word
+{
+  OBJECT-PROPERTIES
+  {
+    Date=06/26/20;
+    Time=12:00:00 PM;
+    Version List=NAVNA14.15;
+  }
+  PROPERTIES
+  {
+    CaptionML=ENU=Export Electronic Payments;
+    OnPreReport=VAR
+                  GenJournalBatch@1030000 : Record 232;
+                  Filter@1020000 : Text;
+                BEGIN
+                  CompanyInformation.GET;
+                  Filter := "Gen. Journal Line".GETFILTER("Journal Template Name");
+                  IF Filter = '' THEN BEGIN
+                    "Gen. Journal Line".FILTERGROUP(0); // head back to the default filter group and check there.
+                    Filter := "Gen. Journal Line".GETFILTER("Journal Template Name")
+                  END;
+                  GenJournalTemplate.GET(Filter);
+
+                  IF NOT CurrReport.USEREQUESTPAGE THEN
+                    IF "Gen. Journal Line".FINDFIRST THEN
+                      IF GenJournalBatch.GET("Gen. Journal Line"."Journal Template Name","Gen. Journal Line"."Journal Batch Name") THEN
+                        IF GenJournalBatch."Bal. Account Type" = GenJournalBatch."Bal. Account Type"::"Bank Account" THEN
+                          BankAccount."No." := GenJournalBatch."Bal. Account No.";
+
+                  WITH BankAccount DO BEGIN
+                    GET("No.");
+                    TESTFIELD(Blocked,FALSE);
+                    TESTFIELD("Export Format");
+                    TESTFIELD("Last Remittance Advice No.");
+                  END;
+
+                  GenJournalTemplate.GET("Gen. Journal Line".GETFILTER("Journal Template Name"));
+                  IF NOT GenJournalTemplate."Force Doc. Balance" THEN
+                    IF NOT CONFIRM(CannotVoidQst,TRUE) THEN
+                      ERROR(UserCancelledErr);
+
+                  FormatAddress.Company(CompanyAddress,CompanyInformation)
+                END;
+
+    DefaultLayout=Word;
+  }
+  DATASET
+  {
+    { 7024;    ;DataItem;                    ;
+               DataItemTable=Table81;
+               DataItemTableView=SORTING(Journal Template Name,Journal Batch Name,Line No.)
+                                 WHERE(Bank Payment Type=FILTER(Electronic Payment|Electronic Payment-IAT),
+                                       Document Type=FILTER(Payment|Refund));
+               OnAfterGetRecord=BEGIN
+                                  IF "Account Type" = "Account Type"::"Bank Account" THEN BEGIN
+                                    BankAccountIs := BankAccountIs::Acnt;
+                                    IF "Account No." <> BankAccount."No." THEN
+                                      CurrReport.SKIP;
+                                  END ELSE
+                                    IF "Bal. Account Type" = "Bal. Account Type"::"Bank Account" THEN BEGIN
+                                      BankAccountIs := BankAccountIs::BalAcnt;
+                                      IF "Bal. Account No." <> BankAccount."No." THEN
+                                        CurrReport.SKIP;
+                                    END ELSE
+                                      CurrReport.SKIP;
+                                  IF BankAccountIs = BankAccountIs::Acnt THEN BEGIN
+                                    ExportAmount := "Amount (LCY)";
+                                    PayeeNo := "Bal. Account No.";
+                                    IF "Bal. Account Type" = "Bal. Account Type"::Vendor THEN BEGIN
+                                      PayeeType := PayeeType::Vendor;
+                                      Vendor.GET("Bal. Account No.");
+                                    END ELSE
+                                      IF "Bal. Account Type" = "Bal. Account Type"::Customer THEN BEGIN
+                                        PayeeType := PayeeType::Customer;
+                                        Customer.GET("Bal. Account No.");
+                                      END ELSE
+                                        ERROR(AccountTypeErr,
+                                          FIELDCAPTION("Bal. Account Type"),Customer.TABLECAPTION,Vendor.TABLECAPTION);
+                                  END ELSE BEGIN
+                                    ExportAmount := -"Amount (LCY)";
+                                    PayeeNo := "Account No.";
+                                    IF "Account Type" = "Account Type"::Vendor THEN BEGIN
+                                      PayeeType := PayeeType::Vendor;
+                                      Vendor.GET("Account No.");
+                                    END ELSE
+                                      IF "Account Type" = "Account Type"::Customer THEN BEGIN
+                                        PayeeType := PayeeType::Customer;
+                                        Customer.GET("Account No.");
+                                      END ELSE
+                                        ERROR(AccountTypeErr,
+                                          FIELDCAPTION("Account Type"),Customer.TABLECAPTION,Vendor.TABLECAPTION);
+                                  END;
+
+                                  DiscountTaken := 0;
+                                  AmountPaid := 0;
+                                  TotalAmountPaid := 0;
+                                  IF PayeeType = PayeeType::Vendor THEN
+                                    ProcessVendor("Gen. Journal Line")
+                                  ELSE
+                                    ProcessCustomer("Gen. Journal Line");
+
+                                  TotalAmountPaid := AmountPaid;
+
+                                  IF PayeeAddress[5] <> '' THEN
+                                    PayeeAddress[5] := STRSUBSTNO(', %1',PayeeAddress[5]);
+                                END;
+
+               ReqFilterFields=Journal Template Name,Journal Batch Name }
+
+    { 1170000006;1;Column;Gen__Journal_Line_Journal_Template_Name;
+               SourceExpr="Journal Template Name" }
+
+    { 1170000007;1;Column;Gen__Journal_Line_Journal_Batch_Name;
+               SourceExpr="Journal Batch Name" }
+
+    { 1170000008;1;Column;Gen__Journal_Line_Line_No_;
+               SourceExpr="Line No." }
+
+    { 1170000012;1;Column;Gen__Journal_Line_Applies_to_ID;
+               SourceExpr="Applies-to ID" }
+
+    { 1020010;1;DataItem;LetterText          ;
+               DataItemTable=Table2000000026;
+               DataItemTableView=SORTING(Number)
+                                 WHERE(Number=CONST(1)) }
+
+    { 1020000;2;Column  ;GreetingText        ;
+               SourceExpr=GreetingLbl }
+
+    { 1020001;2;Column  ;ClosingText         ;
+               SourceExpr=ClosingLbl }
+
+    { 1020007;2;Column  ;BodyText            ;
+               SourceExpr=BodyLbl }
+
+    { 1020036;2;Column  ;CompanyAddress_1    ;
+               SourceExpr=CompanyAddress[1] }
+
+    { 1020035;2;Column  ;CompanyAddress_2    ;
+               SourceExpr=CompanyAddress[2] }
+
+    { 1020018;2;Column  ;CompanyAddress_3    ;
+               SourceExpr=CompanyAddress[3] }
+
+    { 1020017;2;Column  ;CompanyAddress_4    ;
+               SourceExpr=CompanyAddress[4] }
+
+    { 1020016;2;Column  ;CompanyAddress_5    ;
+               SourceExpr=CompanyAddress[5] }
+
+    { 1020015;2;Column  ;CompanyAddress_6    ;
+               SourceExpr=CompanyAddress[6] }
+
+    { 1020014;2;Column  ;CompanyAddress_7    ;
+               SourceExpr=CompanyAddress[7] }
+
+    { 1020013;2;Column  ;CompanyAddress_8    ;
+               SourceExpr=CompanyAddress[8] }
+
+    { 1020012;2;Column  ;CompanyLegalOffice  ;
+               SourceExpr=CompanyInfo.GetLegalOffice }
+
+    { 5701;1   ;DataItem;CopyLoop            ;
+               DataItemTable=Table2000000026;
+               DataItemTableView=SORTING(Number);
+               OnPreDataItem=BEGIN
+                               SETRANGE(Number,1,NoCopies + 1);
+                               SaveAmountPaid := AmountPaid;
+                             END;
+
+               OnAfterGetRecord=BEGIN
+                                  CurrReport.PAGENO := 1;
+                                  AmountPaid := SaveAmountPaid;
+
+                                  IF Number = 1 THEN // Original
+                                    CLEAR(CopyTxt)
+                                  ELSE
+                                    CopyTxt := CopyLoopLbl;
+
+                                  IF "Gen. Journal Line"."Applies-to Doc. No." = '' THEN
+                                    CLEAR(TotalAmountPaid);
+                                END;
+                                 }
+
+    { 6455;2   ;DataItem;PageLoop            ;
+               DataItemTable=Table2000000026;
+               DataItemTableView=SORTING(Number)
+                                 WHERE(Number=CONST(1));
+               OnPreDataItem=BEGIN
+                               myType := PayeeType;// an Integer variable refer to  option type
+                             END;
+                              }
+
+    { 10  ;3   ;Column  ;CopyTxt             ;
+               SourceExpr=CopyTxt }
+
+    { 14  ;3   ;Column  ;PayeeAddress_1_     ;
+               SourceExpr=PayeeAddress[1] }
+
+    { 17  ;3   ;Column  ;PayeeAddress_2_     ;
+               SourceExpr=PayeeAddress[2] }
+
+    { 20  ;3   ;Column  ;PayeeAddress_3_     ;
+               SourceExpr=PayeeAddress[3] }
+
+    { 23  ;3   ;Column  ;PayeeAddress_4_     ;
+               SourceExpr=PayeeAddress[4] }
+
+    { 25  ;3   ;Column  ;PayeeAddress_5_     ;
+               SourceExpr=PayeeAddress[5] }
+
+    { 27  ;3   ;Column  ;PayeeAddress_6_     ;
+               SourceExpr=PayeeAddress[6] }
+
+    { 29  ;3   ;Column  ;PayeeAddress_7_     ;
+               SourceExpr=PayeeAddress[7] }
+
+    { 32  ;3   ;Column  ;PayeeAddress_8_     ;
+               SourceExpr=PayeeAddress[8] }
+
+    { 1020008;3;Column  ;PayeeType           ;
+               SourceExpr=FORMAT(PayeeType) }
+
+    { 1020009;3;Column  ;PayeeNo             ;
+               SourceExpr=PayeeNo }
+
+    { 40  ;3   ;Column  ;Gen__Journal_Line___Document_No__;
+               SourceExpr="Gen. Journal Line"."Document No." }
+
+    { 41  ;3   ;Column  ;SettleDate          ;
+               SourceExpr=FORMAT("Gen. Journal Line"."Document Date",0,4) }
+
+    { 42  ;3   ;Column  ;CurrReport_PAGENO   ;
+               SourceExpr=CurrReport.PAGENO }
+
+    { 11  ;3   ;Column  ;ExportAmount        ;
+               SourceExpr=-ExportAmount }
+
+    { 15  ;3   ;Column  ;PayeeBankTransitNo  ;
+               SourceExpr=PayeeBankTransitNo }
+
+    { 21  ;3   ;Column  ;PayeeBankAccountNo  ;
+               SourceExpr=PayeeBankAccountNo }
+
+    { 1020002;3;Column  ;myNumber            ;
+               SourceExpr=CopyLoop.Number }
+
+    { 1020003;3;Column  ;myBal               ;
+               SourceExpr="Gen. Journal Line"."Bal. Account No." }
+
+    { 1020004;3;Column  ;mypostingdate       ;
+               SourceExpr="Gen. Journal Line"."Posting Date" }
+
+    { 1020005;3;Column  ;Gen__Journal_Line___Applies_to_Doc__No__;
+               SourceExpr="Gen. Journal Line"."Applies-to Doc. No." }
+
+    { 1020006;3;Column  ;myType              ;
+               SourceExpr=myType }
+
+    { 51  ;3   ;Column  ;AmountPaid          ;
+               SourceExpr=AmountPaid }
+
+    { 52  ;3   ;Column  ;DiscountTaken       ;
+               SourceExpr=DiscountTaken }
+
+    { 53  ;3   ;Column  ;VendLedgEntry__Remaining_Amt___LCY__;
+               SourceExpr=-VendLedgEntry."Remaining Amt. (LCY)" }
+
+    { 54  ;3   ;Column  ;VendLedgEntry__Document_Date_;
+               SourceExpr=FORMAT(VendLedgEntry."Document Date",0,4) }
+
+    { 55  ;3   ;Column  ;VendLedgEntry__External_Document_No__;
+               SourceExpr=VendLedgEntry."External Document No." }
+
+    { 56  ;3   ;Column  ;VendLedgEntry__Document_Type_;
+               OptionString=,Payment,Invoice,Credit Memo,Finance Charge Memo,Reminder,Refund;
+               SourceExpr=VendLedgEntry."Document Type" }
+
+    { 57  ;3   ;Column  ;AmountPaid_Control57;
+               SourceExpr=AmountPaid }
+
+    { 58  ;3   ;Column  ;DiscountTaken_Control58;
+               SourceExpr=DiscountTaken }
+
+    { 59  ;3   ;Column  ;CustLedgEntry__Remaining_Amt___LCY__;
+               SourceExpr=-CustLedgEntry."Remaining Amt. (LCY)" }
+
+    { 60  ;3   ;Column  ;CustLedgEntry__Document_Date_;
+               SourceExpr=CustLedgEntry."Document Date" }
+
+    { 61  ;3   ;Column  ;CustLedgEntry__Document_No__;
+               SourceExpr=CustLedgEntry."Document No." }
+
+    { 62  ;3   ;Column  ;CustLedgEntry__Document_Type_;
+               OptionString=,Payment,Invoice,Credit Memo,Finance Charge Memo,Reminder,Refund;
+               SourceExpr=CustLedgEntry."Document Type" }
+
+    { 1170000009;3;Column;PageLoop_Number    ;
+               SourceExpr=Number }
+
+    { 8   ;3   ;Column  ;REMITTANCE_ADVICECaption;
+               SourceExpr=REMITTANCE_ADVICECaptionLbl }
+
+    { 13  ;3   ;Column  ;To_Caption          ;
+               SourceExpr=To_CaptionLbl }
+
+    { 19  ;3   ;Column  ;Remittance_Advice_Number_Caption;
+               SourceExpr=Remittance_Advice_Number_CaptionLbl }
+
+    { 22  ;3   ;Column  ;Settlement_Date_Caption;
+               SourceExpr=Settlement_Date_CaptionLbl }
+
+    { 31  ;3   ;Column  ;Page_Caption        ;
+               SourceExpr=Page_CaptionLbl }
+
+    { 12  ;3   ;Column  ;ExportAmountCaption ;
+               SourceExpr=ExportAmountCaptionLbl }
+
+    { 16  ;3   ;Column  ;PayeeBankTransitNoCaption;
+               SourceExpr=PayeeBankTransitNoCaptionLbl }
+
+    { 18  ;3   ;Column  ;Deposited_In_Caption;
+               SourceExpr=Deposited_In_CaptionLbl }
+
+    { 24  ;3   ;Column  ;PayeeBankAccountNoCaption;
+               SourceExpr=PayeeBankAccountNoCaptionLbl }
+
+    { 28  ;3   ;Column  ;Vendor_Ledger_Entry__Document_Type_Caption;
+               SourceExpr="Vendor Ledger Entry".FIELDCAPTION("Document Type") }
+
+    { 33  ;3   ;Column  ;Cust__Ledger_Entry__Document_No__Caption;
+               SourceExpr="Cust. Ledger Entry".FIELDCAPTION("Document No.") }
+
+    { 35  ;3   ;Column  ;Vendor_Ledger_Entry__Document_Date_Caption;
+               SourceExpr="Vendor Ledger Entry".FIELDCAPTION("Document Date") }
+
+    { 37  ;3   ;Column  ;Remaining_Amt___LCY___Control36Caption;
+               SourceExpr=Remaining_Amt___LCY___Control36CaptionLbl }
+
+    { 39  ;3   ;Column  ;DiscountTaken_Control38Caption;
+               SourceExpr=DiscountTaken_Control38CaptionLbl }
+
+    { 44  ;3   ;Column  ;AmountPaid_Control43Caption;
+               SourceExpr=AmountPaid_Control43CaptionLbl }
+
+    { 1020019;3;DataItem;PrintCompanyAddress ;
+               DataItemTable=Table2000000026;
+               DataItemTableView=SORTING(Number)
+                                 WHERE(Number=CONST(1));
+               OnPreDataItem=BEGIN
+                               IF NOT PrintCompany THEN
+                                 CurrReport.BREAK;
+                             END;
+
+               OnAfterGetRecord=BEGIN
+                                  CompanyInfo.GET;
+                                  CompanyInfo.CALCFIELDS(Picture);
+                                  FormatAddress.Company(CompanyAddress,CompanyInfo);
+                                  IF CompanyAddress[5] <> '' THEN
+                                    CompanyAddress[5] := STRSUBSTNO(', %1',CompanyAddress[5]);
+                                END;
+                                 }
+
+    { 1020020;4;Column  ;CompanyPicture      ;
+               SourceExpr=CompanyInfo.Picture }
+
+    { 1   ;4   ;Column  ;CompanyAddress_1_   ;
+               SourceExpr=CompanyAddress[1] }
+
+    { 2   ;4   ;Column  ;CompanyAddress_2_   ;
+               SourceExpr=CompanyAddress[2] }
+
+    { 3   ;4   ;Column  ;CompanyAddress_3_   ;
+               SourceExpr=CompanyAddress[3] }
+
+    { 4   ;4   ;Column  ;CompanyAddress_4_   ;
+               SourceExpr=CompanyAddress[4] }
+
+    { 5   ;4   ;Column  ;CompanyAddress_5_   ;
+               SourceExpr=CompanyAddress[5] }
+
+    { 6   ;4   ;Column  ;CompanyAddress_6_   ;
+               SourceExpr=CompanyAddress[6] }
+
+    { 7   ;4   ;Column  ;CompanyAddress_7_   ;
+               SourceExpr=CompanyAddress[7] }
+
+    { 9   ;4   ;Column  ;CompanyAddress_8_   ;
+               SourceExpr=CompanyAddress[8] }
+
+    { 8503;3   ;DataItem;                    ;
+               DataItemTable=Table21;
+               DataItemTableView=SORTING(Customer No.,Open,Positive,Due Date,Currency Code)
+                                 ORDER(Descending)
+                                 WHERE(Open=CONST(Yes));
+               OnPreDataItem=BEGIN
+                               IF "Gen. Journal Line"."Applies-to ID" = '' THEN
+                                 CurrReport.BREAK;
+
+                               IF BankAccountIs = BankAccountIs::Acnt THEN BEGIN
+                                 IF "Gen. Journal Line"."Bal. Account Type" <> "Gen. Journal Line"."Bal. Account Type"::Customer THEN
+                                   CurrReport.BREAK;
+                                 SETRANGE("Customer No.","Gen. Journal Line"."Bal. Account No.");
+                               END ELSE BEGIN
+                                 IF "Gen. Journal Line"."Account Type" <> "Gen. Journal Line"."Account Type"::Customer THEN
+                                   CurrReport.BREAK;
+                                 SETRANGE("Customer No.","Gen. Journal Line"."Account No.");
+                               END;
+                             END;
+
+               OnAfterGetRecord=BEGIN
+                                  CALCFIELDS("Remaining Amt. (LCY)");
+                                  IF ("Pmt. Discount Date" >= "Gen. Journal Line"."Document Date") AND
+                                     ("Remaining Pmt. Disc. Possible" <> 0) AND
+                                     ((-ExportAmount - TotalAmountPaid) - "Remaining Pmt. Disc. Possible" >= -"Amount to Apply")
+                                  THEN BEGIN
+                                    DiscountTaken := -"Remaining Pmt. Disc. Possible";
+                                    AmountPaid := -("Amount to Apply" - "Remaining Pmt. Disc. Possible");
+                                  END ELSE BEGIN
+                                    DiscountTaken := 0;
+                                    IF (-ExportAmount - TotalAmountPaid) > -"Amount to Apply" THEN
+                                      AmountPaid := -"Amount to Apply"
+                                    ELSE
+                                      AmountPaid := -ExportAmount - TotalAmountPaid;
+                                  END;
+
+                                  TotalAmountPaid := TotalAmountPaid + AmountPaid;
+
+                                  IsSummary := TRUE;
+                                END;
+
+               DataItemLinkReference=Gen. Journal Line;
+               DataItemLink=Applies-to ID=FIELD(Applies-to ID) }
+
+    { 45  ;4   ;Column  ;Cust__Ledger_Entry__Document_Type_;
+               SourceExpr="Document Type" }
+
+    { 46  ;4   ;Column  ;Cust__Ledger_Entry__Document_No__;
+               SourceExpr="Document No." }
+
+    { 47  ;4   ;Column  ;Cust__Ledger_Entry__Document_Date_;
+               SourceExpr=FORMAT("Document Date",0,4) }
+
+    { 48  ;4   ;Column  ;Remaining_Amt___LCY__;
+               SourceExpr=-"Remaining Amt. (LCY)" }
+
+    { 49  ;4   ;Column  ;DiscountTaken_Control49;
+               SourceExpr=DiscountTaken }
+
+    { 50  ;4   ;Column  ;AmountPaid_Control50;
+               SourceExpr=AmountPaid }
+
+    { 1170000010;4;Column;Cust__Ledger_Entry_Entry_No_;
+               SourceExpr="Entry No." }
+
+    { 1170000011;4;Column;Cust__Ledger_Entry_Applies_to_ID;
+               SourceExpr="Applies-to ID" }
+
+    { 4114;3   ;DataItem;                    ;
+               DataItemTable=Table25;
+               DataItemTableView=SORTING(Vendor No.,Open,Positive,Due Date,Currency Code)
+                                 ORDER(Descending)
+                                 WHERE(Open=CONST(Yes));
+               OnPreDataItem=BEGIN
+                               IF "Gen. Journal Line"."Applies-to ID" = '' THEN
+                                 CurrReport.BREAK;
+
+                               IF BankAccountIs = BankAccountIs::Acnt THEN BEGIN
+                                 IF "Gen. Journal Line"."Bal. Account Type" <> "Gen. Journal Line"."Bal. Account Type"::Vendor THEN
+                                   CurrReport.BREAK;
+                                 SETRANGE("Vendor No.","Gen. Journal Line"."Bal. Account No.");
+                               END ELSE BEGIN
+                                 IF "Gen. Journal Line"."Account Type" <> "Gen. Journal Line"."Account Type"::Vendor THEN
+                                   CurrReport.BREAK;
+                                 SETRANGE("Vendor No.","Gen. Journal Line"."Account No.");
+                               END;
+                             END;
+
+               OnAfterGetRecord=BEGIN
+                                  CALCFIELDS("Remaining Amt. (LCY)");
+                                  IF ("Pmt. Discount Date" >= "Gen. Journal Line"."Document Date") AND
+                                     ("Remaining Pmt. Disc. Possible" <> 0) AND
+                                     ((-ExportAmount - TotalAmountPaid) - "Remaining Pmt. Disc. Possible" >= -"Amount to Apply")
+                                  THEN BEGIN
+                                    DiscountTaken := -"Remaining Pmt. Disc. Possible";
+                                    AmountPaid := -("Amount to Apply" - "Remaining Pmt. Disc. Possible");
+                                  END ELSE BEGIN
+                                    DiscountTaken := 0;
+                                    IF (-ExportAmount - TotalAmountPaid) > -"Amount to Apply" THEN
+                                      AmountPaid := -"Amount to Apply"
+                                    ELSE
+                                      AmountPaid := -ExportAmount - TotalAmountPaid;
+                                  END;
+
+                                  TotalAmountPaid := TotalAmountPaid + AmountPaid;
+                                  IsSummary := TRUE;
+                                END;
+
+               DataItemLinkReference=Gen. Journal Line;
+               DataItemLink=Applies-to ID=FIELD(Applies-to ID) }
+
+    { 26  ;4   ;Column  ;Vendor_Ledger_Entry__Document_Type_;
+               SourceExpr="Document Type" }
+
+    { 30  ;4   ;Column  ;Vendor_Ledger_Entry__External_Document_No__;
+               SourceExpr="External Document No." }
+
+    { 34  ;4   ;Column  ;Vendor_Ledger_Entry__Document_Date_;
+               SourceExpr=FORMAT("Document Date",0,4) }
+
+    { 36  ;4   ;Column  ;Remaining_Amt___LCY___Control36;
+               SourceExpr=-"Remaining Amt. (LCY)" }
+
+    { 38  ;4   ;Column  ;DiscountTaken_Control38;
+               SourceExpr=DiscountTaken }
+
+    { 43  ;4   ;Column  ;AmountPaid_Control43;
+               SourceExpr=AmountPaid }
+
+    { 1170000013;4;Column;Vendor_Ledger_Entry_Entry_No_;
+               SourceExpr="Entry No." }
+
+    { 1170000014;4;Column;Vendor_Ledger_Entry_Applies_to_ID;
+               SourceExpr="Applies-to ID" }
+
+    { 1020027;3;DataItem;CustomerInfo        ;
+               DataItemTable=Table2000000026;
+               DataItemTableView=SORTING(Number)
+                                 ORDER(Ascending)
+                                 WHERE(Number=CONST(1));
+               OnPreDataItem=BEGIN
+                               IF (PayeeType <> PayeeType::Customer) OR IsSummary THEN
+                                 CurrReport.BREAK;
+                             END;
+                              }
+
+    { 1020026;4;Column  ;AmountPaid_Customer ;
+               SourceExpr=AmountPaid }
+
+    { 1020025;4;Column  ;DiscountTaken_Customer;
+               SourceExpr=DiscountTaken }
+
+    { 1020024;4;Column  ;Cust_Remaining_Amt_LCY;
+               SourceExpr=-CustLedgEntry."Remaining Amt. (LCY)" }
+
+    { 1020023;4;Column  ;Cust_Document_Date  ;
+               SourceExpr=FORMAT(CustLedgEntry."Document Date",0,4) }
+
+    { 1020022;4;Column  ;Cust_Document_No    ;
+               SourceExpr=CustLedgEntry."Document No." }
+
+    { 1020021;4;Column  ;Cust_Document_Type  ;
+               OptionString=,Payment,Invoice,Credit Memo,Finance Charge Memo,Reminder,Refund;
+               SourceExpr=CustLedgEntry."Document Type" }
+
+    { 1020028;3;DataItem;VendorInfo          ;
+               DataItemTable=Table2000000026;
+               DataItemTableView=SORTING(Number)
+                                 ORDER(Ascending)
+                                 WHERE(Number=CONST(1));
+               OnPreDataItem=BEGIN
+                               IF (PayeeType <> PayeeType::Vendor) OR IsSummary THEN
+                                 CurrReport.BREAK;
+                             END;
+                              }
+
+    { 1020034;4;Column  ;Vend_Remaining_Amt_LCY;
+               SourceExpr=-VendLedgEntry."Remaining Amt. (LCY)" }
+
+    { 1020033;4;Column  ;Vend_Document_Date  ;
+               SourceExpr=FORMAT(VendLedgEntry."Document Date",0,4) }
+
+    { 1020032;4;Column  ;Vend_External_Document_No;
+               SourceExpr=VendLedgEntry."External Document No." }
+
+    { 1020031;4;Column  ;Vend_Document_Type  ;
+               OptionString=,Payment,Invoice,Credit Memo,Finance Charge Memo,Reminder,Refund;
+               SourceExpr=VendLedgEntry."Document Type" }
+
+    { 1020030;4;Column  ;AmountPaid_Vendor   ;
+               SourceExpr=AmountPaid }
+
+    { 1020029;4;Column  ;DiscountTaken_Vendor;
+               SourceExpr=DiscountTaken }
+
+    { 6150;3   ;DataItem;Unapplied           ;
+               DataItemTable=Table2000000026;
+               DataItemTableView=SORTING(Number)
+                                 WHERE(Number=CONST(1));
+               OnPreDataItem=BEGIN
+                               IF TotalAmountPaid >= -ExportAmount THEN
+                                 CurrReport.BREAK;
+                             END;
+
+               OnAfterGetRecord=BEGIN
+                                  AmountPaid := -ExportAmount - TotalAmountPaid;
+                                END;
+                                 }
+
+    { 64  ;4   ;Column  ;Text004             ;
+               SourceExpr=Text004Lbl }
+
+    { 65  ;4   ;Column  ;AmountPaid_Control65;
+               SourceExpr=AmountPaid }
+
+    { 1170000015;4;Column;Unapplied_Number   ;
+               SourceExpr=Number }
+
+  }
+  REQUESTPAGE
+  {
+    PROPERTIES
+    {
+      CaptionML=ENU=Export Electronic Payments;
+      SaveValues=Yes;
+      OnOpenPage=BEGIN
+                   MapOutputMethod;
+                 END;
+
+    }
+    CONTROLS
+    {
+      { 1020006;0;Container ;
+                  ContainerType=ContentArea }
+
+      { 1020005;1;Group     ;
+                  CaptionML=ENU=Options }
+
+      { 1020004;2;Field     ;
+                  Name=BankAccountNo;
+                  CaptionML=ENU=Bank Account No.;
+                  ToolTipML=ENU=Specifies the bank account that the payment is transmitted to.;
+                  ApplicationArea=#Basic,#Suite;
+                  SourceExpr=BankAccount."No.";
+                  TableRelation="Bank Account" }
+
+      { 1020001;2;Field     ;
+                  Name=NumberOfCopies;
+                  CaptionML=ENU=Number of Copies;
+                  ToolTipML=ENU=Specifies the number of copies of each document (in addition to the original) that you want to print.;
+                  ApplicationArea=#Basic,#Suite;
+                  SourceExpr=NoCopies;
+                  MinValue=0;
+                  MaxValue=9 }
+
+      { 1020000;2;Field     ;
+                  Name=PrintCompanyAddress;
+                  CaptionML=ENU=Print Company Address;
+                  ToolTipML=ENU=Specifies if your company address is printed at the top of the sheet, because you do not use pre-printed paper. Leave this check box blank to omit your company's address.;
+                  ApplicationArea=#Basic,#Suite;
+                  SourceExpr=PrintCompany }
+
+      { 1020008;2;Group     ;
+                  Name=OutputOptions;
+                  CaptionML=ENU=Output Options;
+                  GroupType=Group }
+
+      { 1020007;3;Field     ;
+                  Name=OutputMethod;
+                  CaptionML=ENU=Output Method;
+                  ToolTipML=ENU=Specifies how the electronic payment is exported.;
+                  OptionCaptionML=[@@@=Verbs - to print, to preview, to export to PDF, to email, to export to word, to export to XML (with note that it's for RDLC layouts only);
+                                   ENU=Print,Preview,PDF,Email,Word,XML - RDLC layouts only];
+                  ApplicationArea=#Basic,#Suite;
+                  SourceExpr=SupportedOutputMethod;
+                  OnValidate=BEGIN
+                               MapOutputMethod;
+                             END;
+                              }
+
+      { 1020011;3;Field     ;
+                  Name=ChosenOutputMethod;
+                  SourceExpr=ChosenOutputMethod;
+                  Visible=false }
+
+      { 1020010;2;Group     ;
+                  Name=EmailOptions;
+                  CaptionML=ENU=Email Options;
+                  Visible=ShowPrintIfEmailIsMissing;
+                  GroupType=Group }
+
+      { 1020009;3;Field     ;
+                  Name=PrintMissingAddresses;
+                  CaptionML=ENU=Print remaining statements;
+                  ToolTipML=ENU=Specifies that amounts remaining to be paid will be included.;
+                  ApplicationArea=#Basic,#Suite;
+                  SourceExpr=PrintIfEmailIsMissing }
+
+    }
+  }
+  LABELS
+  {
+  }
+  CODE
+  {
+    VAR
+      AccountTypeErr@1020018 : TextConst '@@@="%1=Balance account type,%2=Customer table caption,%3=Vendor table caption";ENU=For Electronic Payments, the %1 must be %2 or %3.';
+      BankAcctElecPaymentErr@1020017 : TextConst '@@@="%1=Bank account table caption,%2=Bank account field caption - use for electronic payments,%3=Vendor/Customer table caption,%4=Vendor/Customer number";ENU=You must have exactly one %1 with %2 checked for %3 %4.';
+      CopyLoopLbl@1020015 : TextConst 'ENU=- COPY';
+      CannotVoidQst@1020014 : TextConst 'ENU=Warning:  Transactions cannot be financially voided when Force Doc. Balance is set to No in the Journal Template.  Do you want to continue anyway?';
+      UserCancelledErr@1020013 : TextConst 'ENU=Process canceled at user request.';
+      REMITTANCE_ADVICECaptionLbl@1020012 : TextConst 'ENU=REMITTANCE ADVICE';
+      To_CaptionLbl@1020011 : TextConst 'ENU=To:';
+      Remittance_Advice_Number_CaptionLbl@1020010 : TextConst 'ENU=Remittance Advice Number:';
+      Settlement_Date_CaptionLbl@1020009 : TextConst 'ENU=Settlement Date:';
+      Page_CaptionLbl@1020008 : TextConst 'ENU=Page:';
+      ExportAmountCaptionLbl@1020007 : TextConst 'ENU=Deposit Amount:';
+      PayeeBankTransitNoCaptionLbl@1020006 : TextConst 'ENU=Bank Transit No:';
+      Deposited_In_CaptionLbl@1020005 : TextConst 'ENU=Deposited In:';
+      PayeeBankAccountNoCaptionLbl@1020004 : TextConst 'ENU=Bank Account No:';
+      Remaining_Amt___LCY___Control36CaptionLbl@1020003 : TextConst 'ENU=Amount Due';
+      DiscountTaken_Control38CaptionLbl@1020002 : TextConst 'ENU=Discount Taken';
+      AmountPaid_Control43CaptionLbl@1020001 : TextConst 'ENU=Amount Paid';
+      Text004Lbl@1020000 : TextConst 'ENU=Unapplied Amount';
+      CompanyInformation@1020056 : Record 79;
+      GenJournalTemplate@1020055 : Record 80;
+      BankAccount@1020054 : Record 270;
+      Customer@1020053 : Record 18;
+      CustBankAccount@1020052 : Record 287;
+      CustLedgEntry@1020051 : Record 21;
+      VendBankAccount@1020049 : Record 288;
+      VendLedgEntry@1020048 : Record 25;
+      Vendor@1020050 : Record 23;
+      CompanyInfo@1020062 : Record 79;
+      FormatAddress@1020041 : Codeunit 365;
+      ExportAmount@1020037 : Decimal;
+      BankAccountIs@1020035 : 'Acnt,BalAcnt';
+      NoCopies@1020032 : Integer;
+      CopyTxt@1020031 : Code[10];
+      PrintCompany@1020030 : Boolean;
+      CompanyAddress@1020029 : ARRAY [8] OF Text[100];
+      PayeeAddress@1020028 : ARRAY [8] OF Text[100];
+      PayeeType@1020027 : 'Vendor,Customer';
+      PayeeNo@1020039 : Text;
+      PayeeBankTransitNo@1020026 : Text[30];
+      PayeeBankAccountNo@1020025 : Text[30];
+      DiscountTaken@1020024 : Decimal;
+      AmountPaid@1020023 : Decimal;
+      TotalAmountPaid@1020022 : Decimal;
+      myType@1020021 : Integer;
+      SaveAmountPaid@1020020 : Decimal;
+      SupportedOutputMethod@1020061 : 'Print,Preview,PDF,Email,Word,XML';
+      ChosenOutputMethod@1020059 : Integer INDATASET;
+      PrintIfEmailIsMissing@1020058 : Boolean INDATASET;
+      ShowPrintIfEmailIsMissing@1020060 : Boolean INDATASET;
+      IsSummary@1020057 : Boolean;
+      GreetingLbl@1020038 : TextConst 'ENU=Hello';
+      ClosingLbl@1020036 : TextConst 'ENU=Sincerely';
+      BodyLbl@1020019 : TextConst 'ENU=Thank you for your business. Your remittance is attached to this message.';
+
+    LOCAL PROCEDURE MapOutputMethod@1020003();
+    VAR
+      CustomLayoutReporting@1020000 : Codeunit 8800;
+    BEGIN
+      ShowPrintIfEmailIsMissing := (SupportedOutputMethod = SupportedOutputMethod::Email);
+      // Map the supported option (shown on the page) to the list of supported output methods
+      CASE SupportedOutputMethod OF
+        SupportedOutputMethod::Print:
+          ChosenOutputMethod := CustomLayoutReporting.GetPrintOption;
+        SupportedOutputMethod::Preview:
+          ChosenOutputMethod := CustomLayoutReporting.GetPreviewOption;
+        SupportedOutputMethod::PDF:
+          ChosenOutputMethod := CustomLayoutReporting.GetPDFOption;
+        SupportedOutputMethod::Email:
+          ChosenOutputMethod := CustomLayoutReporting.GetEmailOption;
+        SupportedOutputMethod::Word:
+          ChosenOutputMethod := CustomLayoutReporting.GetWordOption;
+        SupportedOutputMethod::XML:
+          ChosenOutputMethod := CustomLayoutReporting.GetXMLOption;
+      END;
+    END;
+
+    LOCAL PROCEDURE ProcessVendor@1020005(VAR GenJnlLine@1020000 : Record 81);
+    BEGIN
+      FormatAddress.Vendor(PayeeAddress,Vendor);
+      VendBankAccount.SETRANGE("Vendor No.",Vendor."No.");
+      VendBankAccount.SETRANGE("Use for Electronic Payments",TRUE);
+      IF VendBankAccount.COUNT <> 1 THEN
+        ERROR(BankAcctElecPaymentErr,
+          VendBankAccount.TABLECAPTION,VendBankAccount.FIELDCAPTION("Use for Electronic Payments"),
+          Vendor.TABLECAPTION,Vendor."No.");
+      VendBankAccount.FINDFIRST;
+      PayeeBankTransitNo := VendBankAccount."Transit No.";
+      PayeeBankAccountNo := VendBankAccount."Bank Account No.";
+      IF GenJnlLine."Applies-to Doc. No." <> '' THEN BEGIN
+        VendLedgEntry.RESET;
+        VendLedgEntry.SETCURRENTKEY("Document No.","Document Type","Vendor No.");
+        VendLedgEntry.SETRANGE("Document Type",GenJnlLine."Applies-to Doc. Type");
+        VendLedgEntry.SETRANGE("Document No.",GenJnlLine."Applies-to Doc. No.");
+        VendLedgEntry.SETRANGE("Vendor No.",Vendor."No.");
+        VendLedgEntry.SETRANGE(Open,TRUE);
+        VendLedgEntry.FINDFIRST;
+        VendLedgEntry.CALCFIELDS("Remaining Amt. (LCY)");
+        IF (VendLedgEntry."Pmt. Discount Date" >= GenJnlLine."Document Date") AND
+           (VendLedgEntry."Remaining Pmt. Disc. Possible" <> 0) AND
+           (-(ExportAmount + VendLedgEntry."Remaining Pmt. Disc. Possible") >= -VendLedgEntry."Amount to Apply")
+        THEN BEGIN
+          DiscountTaken := -VendLedgEntry."Remaining Pmt. Disc. Possible";
+          AmountPaid := -(VendLedgEntry."Amount to Apply" - VendLedgEntry."Remaining Pmt. Disc. Possible");
+        END ELSE
+          IF -ExportAmount > -VendLedgEntry."Amount to Apply" THEN
+            AmountPaid := -VendLedgEntry."Amount to Apply"
+          ELSE
+            AmountPaid := -ExportAmount;
+      END;
+    END;
+
+    LOCAL PROCEDURE ProcessCustomer@1020006(VAR GenJnlLine@1020000 : Record 81);
+    BEGIN
+      FormatAddress.Customer(PayeeAddress,Customer);
+      CustBankAccount.SETRANGE("Customer No.",Customer."No.");
+      CustBankAccount.SETRANGE("Use for Electronic Payments",TRUE);
+      IF CustBankAccount.COUNT <> 1 THEN
+        ERROR(BankAcctElecPaymentErr,
+          CustBankAccount.TABLECAPTION,CustBankAccount.FIELDCAPTION("Use for Electronic Payments"),
+          Customer.TABLECAPTION,Customer."No.");
+      CustBankAccount.FINDFIRST;
+      PayeeBankTransitNo := CustBankAccount."Transit No.";
+      PayeeBankAccountNo := CustBankAccount."Bank Account No.";
+      IF GenJnlLine."Applies-to Doc. No." <> '' THEN BEGIN
+        CustLedgEntry.RESET;
+        CustLedgEntry.SETCURRENTKEY("Document No.","Document Type","Customer No.");
+        CustLedgEntry.SETRANGE("Document Type",GenJnlLine."Applies-to Doc. Type");
+        CustLedgEntry.SETRANGE("Document No.",GenJnlLine."Applies-to Doc. No.");
+        CustLedgEntry.SETRANGE("Customer No.",Customer."No.");
+        CustLedgEntry.SETRANGE(Open,TRUE);
+        CustLedgEntry.FINDFIRST;
+        CustLedgEntry.CALCFIELDS("Remaining Amt. (LCY)");
+        IF (CustLedgEntry."Pmt. Discount Date" >= GenJnlLine."Document Date") AND
+           (CustLedgEntry."Remaining Pmt. Disc. Possible" <> 0) AND
+           (-(ExportAmount - CustLedgEntry."Remaining Pmt. Disc. Possible") >= -CustLedgEntry."Amount to Apply")
+        THEN BEGIN
+          DiscountTaken := -CustLedgEntry."Remaining Pmt. Disc. Possible";
+          AmountPaid := -(CustLedgEntry."Amount to Apply" - CustLedgEntry."Remaining Pmt. Disc. Possible");
+        END ELSE
+          IF -ExportAmount > -CustLedgEntry."Amount to Apply" THEN
+            AmountPaid := -CustLedgEntry."Amount to Apply"
+          ELSE
+            AmountPaid := -ExportAmount;
+      END;
+    END;
+
+    BEGIN
+    END.
+  }
+  RDLDATA
+  {
+    <?xml version="1.0" encoding="utf-8"?>
+<Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner">
+  <AutoRefresh>0</AutoRefresh>
+  <DataSources>
+    <DataSource Name="DataSource">
+      <ConnectionProperties>
+        <DataProvider>SQL</DataProvider>
+        <ConnectString />
+      </ConnectionProperties>
+      <rd:SecurityType>None</rd:SecurityType>
+      <rd:DataSourceID>4cf4cd5c-d61a-4168-b877-571b65195deb</rd:DataSourceID>
+    </DataSource>
+  </DataSources>
+  <DataSets>
+    <DataSet Name="DataSet_Result">
+      <Query>
+        <DataSourceName>DataSource</DataSourceName>
+        <CommandText />
+      </Query>
+      <Fields>
+        <Field Name="Gen__Journal_Line_Journal_Template_Name">
+          <DataField>Gen__Journal_Line_Journal_Template_Name</DataField>
+        </Field>
+        <Field Name="Gen__Journal_Line_Journal_Batch_Name">
+          <DataField>Gen__Journal_Line_Journal_Batch_Name</DataField>
+        </Field>
+        <Field Name="Gen__Journal_Line_Line_No_">
+          <DataField>Gen__Journal_Line_Line_No_</DataField>
+        </Field>
+        <Field Name="Gen__Journal_Line_Applies_to_ID">
+          <DataField>Gen__Journal_Line_Applies_to_ID</DataField>
+        </Field>
+        <Field Name="GreetingText">
+          <DataField>GreetingText</DataField>
+        </Field>
+        <Field Name="ClosingText">
+          <DataField>ClosingText</DataField>
+        </Field>
+        <Field Name="BodyText">
+          <DataField>BodyText</DataField>
+        </Field>
+        <Field Name="CompanyAddress_1">
+          <DataField>CompanyAddress_1</DataField>
+        </Field>
+        <Field Name="CompanyAddress_2">
+          <DataField>CompanyAddress_2</DataField>
+        </Field>
+        <Field Name="CompanyAddress_3">
+          <DataField>CompanyAddress_3</DataField>
+        </Field>
+        <Field Name="CompanyAddress_4">
+          <DataField>CompanyAddress_4</DataField>
+        </Field>
+        <Field Name="CompanyAddress_5">
+          <DataField>CompanyAddress_5</DataField>
+        </Field>
+        <Field Name="CompanyAddress_6">
+          <DataField>CompanyAddress_6</DataField>
+        </Field>
+        <Field Name="CompanyAddress_7">
+          <DataField>CompanyAddress_7</DataField>
+        </Field>
+        <Field Name="CompanyAddress_8">
+          <DataField>CompanyAddress_8</DataField>
+        </Field>
+        <Field Name="CompanyLegalOffice">
+          <DataField>CompanyLegalOffice</DataField>
+        </Field>
+        <Field Name="CopyTxt">
+          <DataField>CopyTxt</DataField>
+        </Field>
+        <Field Name="PayeeAddress_1_">
+          <DataField>PayeeAddress_1_</DataField>
+        </Field>
+        <Field Name="PayeeAddress_2_">
+          <DataField>PayeeAddress_2_</DataField>
+        </Field>
+        <Field Name="PayeeAddress_3_">
+          <DataField>PayeeAddress_3_</DataField>
+        </Field>
+        <Field Name="PayeeAddress_4_">
+          <DataField>PayeeAddress_4_</DataField>
+        </Field>
+        <Field Name="PayeeAddress_5_">
+          <DataField>PayeeAddress_5_</DataField>
+        </Field>
+        <Field Name="PayeeAddress_6_">
+          <DataField>PayeeAddress_6_</DataField>
+        </Field>
+        <Field Name="PayeeAddress_7_">
+          <DataField>PayeeAddress_7_</DataField>
+        </Field>
+        <Field Name="PayeeAddress_8_">
+          <DataField>PayeeAddress_8_</DataField>
+        </Field>
+        <Field Name="PayeeType">
+          <DataField>PayeeType</DataField>
+        </Field>
+        <Field Name="PayeeNo">
+          <DataField>PayeeNo</DataField>
+        </Field>
+        <Field Name="Gen__Journal_Line___Document_No__">
+          <DataField>Gen__Journal_Line___Document_No__</DataField>
+        </Field>
+        <Field Name="SettleDate">
+          <DataField>SettleDate</DataField>
+        </Field>
+        <Field Name="CurrReport_PAGENO">
+          <DataField>CurrReport_PAGENO</DataField>
+        </Field>
+        <Field Name="ExportAmount">
+          <DataField>ExportAmount</DataField>
+        </Field>
+        <Field Name="ExportAmountFormat">
+          <DataField>ExportAmountFormat</DataField>
+        </Field>
+        <Field Name="PayeeBankTransitNo">
+          <DataField>PayeeBankTransitNo</DataField>
+        </Field>
+        <Field Name="PayeeBankAccountNo">
+          <DataField>PayeeBankAccountNo</DataField>
+        </Field>
+        <Field Name="myNumber">
+          <DataField>myNumber</DataField>
+        </Field>
+        <Field Name="myBal">
+          <DataField>myBal</DataField>
+        </Field>
+        <Field Name="mypostingdate">
+          <DataField>mypostingdate</DataField>
+        </Field>
+        <Field Name="Gen__Journal_Line___Applies_to_Doc__No__">
+          <DataField>Gen__Journal_Line___Applies_to_Doc__No__</DataField>
+        </Field>
+        <Field Name="myType">
+          <DataField>myType</DataField>
+        </Field>
+        <Field Name="AmountPaid">
+          <DataField>AmountPaid</DataField>
+        </Field>
+        <Field Name="AmountPaidFormat">
+          <DataField>AmountPaidFormat</DataField>
+        </Field>
+        <Field Name="DiscountTaken">
+          <DataField>DiscountTaken</DataField>
+        </Field>
+        <Field Name="DiscountTakenFormat">
+          <DataField>DiscountTakenFormat</DataField>
+        </Field>
+        <Field Name="VendLedgEntry__Remaining_Amt___LCY__">
+          <DataField>VendLedgEntry__Remaining_Amt___LCY__</DataField>
+        </Field>
+        <Field Name="VendLedgEntry__Remaining_Amt___LCY__Format">
+          <DataField>VendLedgEntry__Remaining_Amt___LCY__Format</DataField>
+        </Field>
+        <Field Name="VendLedgEntry__Document_Date_">
+          <DataField>VendLedgEntry__Document_Date_</DataField>
+        </Field>
+        <Field Name="VendLedgEntry__External_Document_No__">
+          <DataField>VendLedgEntry__External_Document_No__</DataField>
+        </Field>
+        <Field Name="VendLedgEntry__Document_Type_">
+          <DataField>VendLedgEntry__Document_Type_</DataField>
+        </Field>
+        <Field Name="AmountPaid_Control57">
+          <DataField>AmountPaid_Control57</DataField>
+        </Field>
+        <Field Name="AmountPaid_Control57Format">
+          <DataField>AmountPaid_Control57Format</DataField>
+        </Field>
+        <Field Name="DiscountTaken_Control58">
+          <DataField>DiscountTaken_Control58</DataField>
+        </Field>
+        <Field Name="DiscountTaken_Control58Format">
+          <DataField>DiscountTaken_Control58Format</DataField>
+        </Field>
+        <Field Name="CustLedgEntry__Remaining_Amt___LCY__">
+          <DataField>CustLedgEntry__Remaining_Amt___LCY__</DataField>
+        </Field>
+        <Field Name="CustLedgEntry__Remaining_Amt___LCY__Format">
+          <DataField>CustLedgEntry__Remaining_Amt___LCY__Format</DataField>
+        </Field>
+        <Field Name="CustLedgEntry__Document_Date_">
+          <DataField>CustLedgEntry__Document_Date_</DataField>
+        </Field>
+        <Field Name="CustLedgEntry__Document_No__">
+          <DataField>CustLedgEntry__Document_No__</DataField>
+        </Field>
+        <Field Name="CustLedgEntry__Document_Type_">
+          <DataField>CustLedgEntry__Document_Type_</DataField>
+        </Field>
+        <Field Name="PageLoop_Number">
+          <DataField>PageLoop_Number</DataField>
+        </Field>
+        <Field Name="REMITTANCE_ADVICECaption">
+          <DataField>REMITTANCE_ADVICECaption</DataField>
+        </Field>
+        <Field Name="To_Caption">
+          <DataField>To_Caption</DataField>
+        </Field>
+        <Field Name="Remittance_Advice_Number_Caption">
+          <DataField>Remittance_Advice_Number_Caption</DataField>
+        </Field>
+        <Field Name="Settlement_Date_Caption">
+          <DataField>Settlement_Date_Caption</DataField>
+        </Field>
+        <Field Name="Page_Caption">
+          <DataField>Page_Caption</DataField>
+        </Field>
+        <Field Name="ExportAmountCaption">
+          <DataField>ExportAmountCaption</DataField>
+        </Field>
+        <Field Name="PayeeBankTransitNoCaption">
+          <DataField>PayeeBankTransitNoCaption</DataField>
+        </Field>
+        <Field Name="Deposited_In_Caption">
+          <DataField>Deposited_In_Caption</DataField>
+        </Field>
+        <Field Name="PayeeBankAccountNoCaption">
+          <DataField>PayeeBankAccountNoCaption</DataField>
+        </Field>
+        <Field Name="Vendor_Ledger_Entry__Document_Type_Caption">
+          <DataField>Vendor_Ledger_Entry__Document_Type_Caption</DataField>
+        </Field>
+        <Field Name="Cust__Ledger_Entry__Document_No__Caption">
+          <DataField>Cust__Ledger_Entry__Document_No__Caption</DataField>
+        </Field>
+        <Field Name="Vendor_Ledger_Entry__Document_Date_Caption">
+          <DataField>Vendor_Ledger_Entry__Document_Date_Caption</DataField>
+        </Field>
+        <Field Name="Remaining_Amt___LCY___Control36Caption">
+          <DataField>Remaining_Amt___LCY___Control36Caption</DataField>
+        </Field>
+        <Field Name="DiscountTaken_Control38Caption">
+          <DataField>DiscountTaken_Control38Caption</DataField>
+        </Field>
+        <Field Name="AmountPaid_Control43Caption">
+          <DataField>AmountPaid_Control43Caption</DataField>
+        </Field>
+        <Field Name="CompanyPicture">
+          <DataField>CompanyPicture</DataField>
+        </Field>
+        <Field Name="CompanyAddress_1_">
+          <DataField>CompanyAddress_1_</DataField>
+        </Field>
+        <Field Name="CompanyAddress_2_">
+          <DataField>CompanyAddress_2_</DataField>
+        </Field>
+        <Field Name="CompanyAddress_3_">
+          <DataField>CompanyAddress_3_</DataField>
+        </Field>
+        <Field Name="CompanyAddress_4_">
+          <DataField>CompanyAddress_4_</DataField>
+        </Field>
+        <Field Name="CompanyAddress_5_">
+          <DataField>CompanyAddress_5_</DataField>
+        </Field>
+        <Field Name="CompanyAddress_6_">
+          <DataField>CompanyAddress_6_</DataField>
+        </Field>
+        <Field Name="CompanyAddress_7_">
+          <DataField>CompanyAddress_7_</DataField>
+        </Field>
+        <Field Name="CompanyAddress_8_">
+          <DataField>CompanyAddress_8_</DataField>
+        </Field>
+        <Field Name="Cust__Ledger_Entry__Document_Type_">
+          <DataField>Cust__Ledger_Entry__Document_Type_</DataField>
+        </Field>
+        <Field Name="Cust__Ledger_Entry__Document_No__">
+          <DataField>Cust__Ledger_Entry__Document_No__</DataField>
+        </Field>
+        <Field Name="Cust__Ledger_Entry__Document_Date_">
+          <DataField>Cust__Ledger_Entry__Document_Date_</DataField>
+        </Field>
+        <Field Name="Remaining_Amt___LCY__">
+          <DataField>Remaining_Amt___LCY__</DataField>
+        </Field>
+        <Field Name="Remaining_Amt___LCY__Format">
+          <DataField>Remaining_Amt___LCY__Format</DataField>
+        </Field>
+        <Field Name="DiscountTaken_Control49">
+          <DataField>DiscountTaken_Control49</DataField>
+        </Field>
+        <Field Name="DiscountTaken_Control49Format">
+          <DataField>DiscountTaken_Control49Format</DataField>
+        </Field>
+        <Field Name="AmountPaid_Control50">
+          <DataField>AmountPaid_Control50</DataField>
+        </Field>
+        <Field Name="AmountPaid_Control50Format">
+          <DataField>AmountPaid_Control50Format</DataField>
+        </Field>
+        <Field Name="Cust__Ledger_Entry_Entry_No_">
+          <DataField>Cust__Ledger_Entry_Entry_No_</DataField>
+        </Field>
+        <Field Name="Cust__Ledger_Entry_Applies_to_ID">
+          <DataField>Cust__Ledger_Entry_Applies_to_ID</DataField>
+        </Field>
+        <Field Name="Vendor_Ledger_Entry__Document_Type_">
+          <DataField>Vendor_Ledger_Entry__Document_Type_</DataField>
+        </Field>
+        <Field Name="Vendor_Ledger_Entry__External_Document_No__">
+          <DataField>Vendor_Ledger_Entry__External_Document_No__</DataField>
+        </Field>
+        <Field Name="Vendor_Ledger_Entry__Document_Date_">
+          <DataField>Vendor_Ledger_Entry__Document_Date_</DataField>
+        </Field>
+        <Field Name="Remaining_Amt___LCY___Control36">
+          <DataField>Remaining_Amt___LCY___Control36</DataField>
+        </Field>
+        <Field Name="Remaining_Amt___LCY___Control36Format">
+          <DataField>Remaining_Amt___LCY___Control36Format</DataField>
+        </Field>
+        <Field Name="DiscountTaken_Control38">
+          <DataField>DiscountTaken_Control38</DataField>
+        </Field>
+        <Field Name="DiscountTaken_Control38Format">
+          <DataField>DiscountTaken_Control38Format</DataField>
+        </Field>
+        <Field Name="AmountPaid_Control43">
+          <DataField>AmountPaid_Control43</DataField>
+        </Field>
+        <Field Name="AmountPaid_Control43Format">
+          <DataField>AmountPaid_Control43Format</DataField>
+        </Field>
+        <Field Name="Vendor_Ledger_Entry_Entry_No_">
+          <DataField>Vendor_Ledger_Entry_Entry_No_</DataField>
+        </Field>
+        <Field Name="Vendor_Ledger_Entry_Applies_to_ID">
+          <DataField>Vendor_Ledger_Entry_Applies_to_ID</DataField>
+        </Field>
+        <Field Name="AmountPaid_Customer">
+          <DataField>AmountPaid_Customer</DataField>
+        </Field>
+        <Field Name="AmountPaid_CustomerFormat">
+          <DataField>AmountPaid_CustomerFormat</DataField>
+        </Field>
+        <Field Name="DiscountTaken_Customer">
+          <DataField>DiscountTaken_Customer</DataField>
+        </Field>
+        <Field Name="DiscountTaken_CustomerFormat">
+          <DataField>DiscountTaken_CustomerFormat</DataField>
+        </Field>
+        <Field Name="Cust_Remaining_Amt_LCY">
+          <DataField>Cust_Remaining_Amt_LCY</DataField>
+        </Field>
+        <Field Name="Cust_Remaining_Amt_LCYFormat">
+          <DataField>Cust_Remaining_Amt_LCYFormat</DataField>
+        </Field>
+        <Field Name="Cust_Document_Date">
+          <DataField>Cust_Document_Date</DataField>
+        </Field>
+        <Field Name="Cust_Document_No">
+          <DataField>Cust_Document_No</DataField>
+        </Field>
+        <Field Name="Cust_Document_Type">
+          <DataField>Cust_Document_Type</DataField>
+        </Field>
+        <Field Name="Vend_Remaining_Amt_LCY">
+          <DataField>Vend_Remaining_Amt_LCY</DataField>
+        </Field>
+        <Field Name="Vend_Remaining_Amt_LCYFormat">
+          <DataField>Vend_Remaining_Amt_LCYFormat</DataField>
+        </Field>
+        <Field Name="Vend_Document_Date">
+          <DataField>Vend_Document_Date</DataField>
+        </Field>
+        <Field Name="Vend_External_Document_No">
+          <DataField>Vend_External_Document_No</DataField>
+        </Field>
+        <Field Name="Vend_Document_Type">
+          <DataField>Vend_Document_Type</DataField>
+        </Field>
+        <Field Name="AmountPaid_Vendor">
+          <DataField>AmountPaid_Vendor</DataField>
+        </Field>
+        <Field Name="AmountPaid_VendorFormat">
+          <DataField>AmountPaid_VendorFormat</DataField>
+        </Field>
+        <Field Name="DiscountTaken_Vendor">
+          <DataField>DiscountTaken_Vendor</DataField>
+        </Field>
+        <Field Name="DiscountTaken_VendorFormat">
+          <DataField>DiscountTaken_VendorFormat</DataField>
+        </Field>
+        <Field Name="Text004">
+          <DataField>Text004</DataField>
+        </Field>
+        <Field Name="AmountPaid_Control65">
+          <DataField>AmountPaid_Control65</DataField>
+        </Field>
+        <Field Name="AmountPaid_Control65Format">
+          <DataField>AmountPaid_Control65Format</DataField>
+        </Field>
+        <Field Name="Unapplied_Number">
+          <DataField>Unapplied_Number</DataField>
+        </Field>
+      </Fields>
+      <rd:DataSetInfo>
+        <rd:DataSetName>DataSet</rd:DataSetName>
+        <rd:SchemaPath>Report.xsd</rd:SchemaPath>
+        <rd:TableName>Result</rd:TableName>
+      </rd:DataSetInfo>
+    </DataSet>
+  </DataSets>
+  <ReportSections>
+    <ReportSection>
+      <Body>
+        <ReportItems>
+          <Tablix Name="Table1">
+            <TablixBody>
+              <TablixColumns>
+                <TablixColumn>
+                  <Width>0.88583in</Width>
+                </TablixColumn>
+                <TablixColumn>
+                  <Width>1.48819in</Width>
+                </TablixColumn>
+                <TablixColumn>
+                  <Width>1.05118in</Width>
+                </TablixColumn>
+                <TablixColumn>
+                  <Width>1.29921in</Width>
+                </TablixColumn>
+                <TablixColumn>
+                  <Width>1.29921in</Width>
+                </TablixColumn>
+                <TablixColumn>
+                  <Width>1.37795in</Width>
+                </TablixColumn>
+              </TablixColumns>
+              <TablixRows>
+                <TablixRow>
+                  <Height>0.49961in</Height>
+                  <TablixCells>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Vendor_Ledger_Entry__Document_Type_Caption">
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=First(Fields!Vendor_Ledger_Entry__Document_Type_Caption.Value)</Value>
+                                  <Style>
+                                    <FontWeight>Bold</FontWeight>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <ZIndex>35</ZIndex>
+                          <Style>
+                            <VerticalAlign>Bottom</VerticalAlign>
+                            <PaddingBottom>8pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Cust__Ledger_Entry__Document_No__Caption">
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=First(Fields!Cust__Ledger_Entry__Document_No__Caption.Value)</Value>
+                                  <Style>
+                                    <FontWeight>Bold</FontWeight>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <ZIndex>34</ZIndex>
+                          <Style>
+                            <VerticalAlign>Bottom</VerticalAlign>
+                            <PaddingLeft>0.04134in</PaddingLeft>
+                            <PaddingRight>0.04134in</PaddingRight>
+                            <PaddingBottom>8pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Vendor_Ledger_Entry__Document_Date_Caption">
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=First(Fields!Vendor_Ledger_Entry__Document_Date_Caption.Value)</Value>
+                                  <Style>
+                                    <FontWeight>Bold</FontWeight>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <ZIndex>33</ZIndex>
+                          <Style>
+                            <VerticalAlign>Bottom</VerticalAlign>
+                            <PaddingLeft>0.04134in</PaddingLeft>
+                            <PaddingRight>0.04134in</PaddingRight>
+                            <PaddingBottom>8pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Remaining_Amt___LCY___Control36Caption">
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=First(Fields!Remaining_Amt___LCY___Control36Caption.Value)</Value>
+                                  <Style>
+                                    <FontWeight>Bold</FontWeight>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Right</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <ZIndex>32</ZIndex>
+                          <Style>
+                            <VerticalAlign>Bottom</VerticalAlign>
+                            <PaddingLeft>0.04134in</PaddingLeft>
+                            <PaddingRight>0.04134in</PaddingRight>
+                            <PaddingBottom>8pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="DiscountTaken_Control38Caption">
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=First(Fields!DiscountTaken_Control38Caption.Value)</Value>
+                                  <Style>
+                                    <FontWeight>Bold</FontWeight>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Right</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <ZIndex>31</ZIndex>
+                          <Style>
+                            <VerticalAlign>Bottom</VerticalAlign>
+                            <PaddingLeft>0.04134in</PaddingLeft>
+                            <PaddingRight>0.04134in</PaddingRight>
+                            <PaddingBottom>8pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="AmountPaid_Control43Caption">
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=First(Fields!AmountPaid_Control43Caption.Value)</Value>
+                                  <Style>
+                                    <FontWeight>Bold</FontWeight>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Right</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <ZIndex>30</ZIndex>
+                          <Style>
+                            <VerticalAlign>Bottom</VerticalAlign>
+                            <PaddingLeft>0.04134in</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingBottom>8pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                  </TablixCells>
+                </TablixRow>
+                <TablixRow>
+                  <Height>0.03125in</Height>
+                  <TablixCells>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="CompAddr">
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!CompanyAddress_1_.Value+Chr(177)+Fields!CompanyAddress_2_.Value+Chr(177)+Fields!CompanyAddress_3_.Value+Chr(177)+Fields!CompanyAddress_4_.Value+Chr(177)+Fields!CompanyAddress_5_.Value+Chr(177)+Fields!CompanyAddress_6_.Value+Chr(177)+Fields!CompanyAddress_7_.Value+Chr(177)+Fields!CompanyAddress_8_.Value</Value>
+                                  <Style>
+                                    <FontWeight>Bold</FontWeight>
+                                    <Color>Red</Color>
+                                    <Language>sq</Language>
+                                    <NumeralVariant>2</NumeralVariant>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <Visibility>
+                            <Hidden>true</Hidden>
+                          </Visibility>
+                          <Style>
+                            <VerticalAlign>Bottom</VerticalAlign>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>0.04134in</PaddingRight>
+                            <PaddingBottom>8pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="PayeeAddress">
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!PayeeAddress_1_.Value+Chr(177)+Fields!PayeeAddress_2_.Value+Chr(177)+Fields!PayeeAddress_3_.Value+Chr(177)+Fields!PayeeAddress_4_.Value+Chr(177)+Fields!PayeeAddress_5_.Value+Chr(177)+Fields!PayeeAddress_6_.Value+Chr(177)+Fields!PayeeAddress_7_.Value+Chr(177)+Fields!PayeeAddress_8_.Value</Value>
+                                  <Style>
+                                    <FontWeight>Bold</FontWeight>
+                                    <Color>Red</Color>
+                                    <Language>sq</Language>
+                                    <NumeralVariant>2</NumeralVariant>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <Visibility>
+                            <Hidden>true</Hidden>
+                          </Visibility>
+                          <Style>
+                            <VerticalAlign>Bottom</VerticalAlign>
+                            <PaddingLeft>0.04134in</PaddingLeft>
+                            <PaddingRight>0.04134in</PaddingRight>
+                            <PaddingBottom>8pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Captions">
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!To_Caption.Value+Chr(177)+Fields!REMITTANCE_ADVICECaption.Value+Chr(177)+Fields!Remittance_Advice_Number_Caption.Value+Chr(177)+Fields!Settlement_Date_Caption.Value+Chr(177)+Fields!Page_Caption.Value+Chr(177)+Fields!ExportAmountCaption.Value+Chr(177)+Fields!Deposited_In_Caption.Value+Chr(177)+Fields!PayeeBankTransitNoCaption.Value+Chr(177)+Fields!PayeeBankAccountNoCaption.Value</Value>
+                                  <Style>
+                                    <FontWeight>Bold</FontWeight>
+                                    <Color>Red</Color>
+                                    <Language>sq</Language>
+                                    <NumeralVariant>2</NumeralVariant>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <Visibility>
+                            <Hidden>true</Hidden>
+                          </Visibility>
+                          <Style>
+                            <VerticalAlign>Bottom</VerticalAlign>
+                            <PaddingLeft>0.04134in</PaddingLeft>
+                            <PaddingRight>0.04134in</PaddingRight>
+                            <PaddingBottom>8pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="values">
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!CopyTxt.Value+Chr(177)+Fields!Gen__Journal_Line___Document_No__.Value+Chr(177)+Cstr(Fields!SettleDate.Value)+Chr(177)+Cstr(Fields!PayeeBankTransitNo.Value)+Chr(177)+Cstr(Fields!PayeeBankAccountNo.Value)</Value>
+                                  <Style>
+                                    <FontWeight>Bold</FontWeight>
+                                    <Color>Red</Color>
+                                    <Language>sq</Language>
+                                    <NumeralLanguage>ar</NumeralLanguage>
+                                    <NumeralVariant>2</NumeralVariant>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Right</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <Visibility>
+                            <Hidden>true</Hidden>
+                          </Visibility>
+                          <Style>
+                            <VerticalAlign>Bottom</VerticalAlign>
+                            <PaddingLeft>0.04134in</PaddingLeft>
+                            <PaddingRight>0.04134in</PaddingRight>
+                            <PaddingBottom>8pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="data">
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value />
+                                  <Style>
+                                    <FontWeight>Bold</FontWeight>
+                                    <Color>Red</Color>
+                                    <Language>sq</Language>
+                                    <NumeralLanguage>ar</NumeralLanguage>
+                                    <NumeralVariant>2</NumeralVariant>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Right</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <Visibility>
+                            <Hidden>=Code.SetData(Fields!Gen__Journal_Line_Journal_Template_Name.Value+Chr(177)+Cstr(Fields!myNumber.Value)+Chr(177)+Fields!Gen__Journal_Line_Journal_Template_Name.Value+Chr(177)+Fields!Gen__Journal_Line_Journal_Batch_Name.Value+Chr(177)+Fields!Gen__Journal_Line___Document_No__.Value+Chr(177)+Cstr(Fields!ExportAmountFormat.Value))</Hidden>
+                          </Visibility>
+                          <Style>
+                            <VerticalAlign>Bottom</VerticalAlign>
+                            <PaddingLeft>0.04134in</PaddingLeft>
+                            <PaddingRight>0.04134in</PaddingRight>
+                            <PaddingBottom>8pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="exportamount">
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!ExportAmount.Value</Value>
+                                  <Style>
+                                    <FontWeight>Bold</FontWeight>
+                                    <Format>=Fields!ExportAmountFormat.Value</Format>
+                                    <Color>Red</Color>
+                                    <Language>sq</Language>
+                                    <NumeralVariant>2</NumeralVariant>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Left</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <Visibility>
+                            <Hidden>true</Hidden>
+                          </Visibility>
+                          <Style>
+                            <VerticalAlign>Bottom</VerticalAlign>
+                            <PaddingLeft>0.04134in</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingBottom>8pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                  </TablixCells>
+                </TablixRow>
+                <TablixRow>
+                  <Height>0.16654in</Height>
+                  <TablixCells>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Vendor_Ledger_Entry__Document_Type_">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!VendLedgEntry__Document_Type_.Value</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Left</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <ZIndex>29</ZIndex>
+                          <Style>
+                            <VerticalAlign>Middle</VerticalAlign>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Vendor_Ledger_Entry__External_Document_No__">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!VendLedgEntry__External_Document_No__.Value</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Left</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <ZIndex>28</ZIndex>
+                          <Style>
+                            <VerticalAlign>Middle</VerticalAlign>
+                            <PaddingLeft>0.04134in</PaddingLeft>
+                            <PaddingRight>0.04134in</PaddingRight>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Vendor_Ledger_Entry__Document_Date_">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!VendLedgEntry__Document_Date_.Value</Value>
+                                  <Style>
+                                    <Format>d</Format>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Left</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <ZIndex>27</ZIndex>
+                          <Style>
+                            <VerticalAlign>Middle</VerticalAlign>
+                            <PaddingLeft>0.04134in</PaddingLeft>
+                            <PaddingRight>0.04134in</PaddingRight>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Remaining_Amt___LCY___Control36">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!VendLedgEntry__Remaining_Amt___LCY__.Value</Value>
+                                  <Style>
+                                    <Format>=Fields!CustLedgEntry__Remaining_Amt___LCY__Format.Value</Format>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Right</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <ZIndex>26</ZIndex>
+                          <Style>
+                            <VerticalAlign>Middle</VerticalAlign>
+                            <PaddingLeft>0.04134in</PaddingLeft>
+                            <PaddingRight>0.04134in</PaddingRight>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="DiscountTaken_Control38">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Code.BlankZero(Fields!DiscountTaken.Value)</Value>
+                                  <Style>
+                                    <Format>=Fields!DiscountTakenFormat.Value</Format>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Right</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <ZIndex>25</ZIndex>
+                          <Style>
+                            <VerticalAlign>Middle</VerticalAlign>
+                            <PaddingLeft>0.04134in</PaddingLeft>
+                            <PaddingRight>0.04134in</PaddingRight>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="AmountPaid_Control43">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!AmountPaid.Value</Value>
+                                  <Style>
+                                    <Format>=Fields!AmountPaidFormat.Value</Format>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Right</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <ZIndex>24</ZIndex>
+                          <Style>
+                            <VerticalAlign>Middle</VerticalAlign>
+                            <PaddingLeft>0.04134in</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                  </TablixCells>
+                </TablixRow>
+                <TablixRow>
+                  <Height>0.16654in</Height>
+                  <TablixCells>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="CustLedgEntry__Document_Type_">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!CustLedgEntry__Document_Type_.Value</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Left</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>CustLedgEntry__Document_Type_</rd:DefaultName>
+                          <ZIndex>23</ZIndex>
+                          <Style>
+                            <VerticalAlign>Middle</VerticalAlign>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="CustLedgEntry__Document_No__">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!CustLedgEntry__Document_No__.Value</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Left</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>CustLedgEntry__Document_No__</rd:DefaultName>
+                          <ZIndex>22</ZIndex>
+                          <Style>
+                            <VerticalAlign>Middle</VerticalAlign>
+                            <PaddingLeft>0.04134in</PaddingLeft>
+                            <PaddingRight>0.04134in</PaddingRight>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="CustLedgEntry__Document_Date_">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!CustLedgEntry__Document_Date_.Value</Value>
+                                  <Style>
+                                    <Format>d</Format>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Left</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>CustLedgEntry__Document_Date_</rd:DefaultName>
+                          <ZIndex>21</ZIndex>
+                          <Style>
+                            <VerticalAlign>Middle</VerticalAlign>
+                            <PaddingLeft>0.04134in</PaddingLeft>
+                            <PaddingRight>0.04134in</PaddingRight>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="CustLedgEntry__Remaining_Amt___LCY__">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!CustLedgEntry__Remaining_Amt___LCY__.Value</Value>
+                                  <Style>
+                                    <Format>=Fields!CustLedgEntry__Remaining_Amt___LCY__Format.Value</Format>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Right</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>CustLedgEntry__Remaining_Amt___LCY__</rd:DefaultName>
+                          <ZIndex>20</ZIndex>
+                          <Style>
+                            <VerticalAlign>Middle</VerticalAlign>
+                            <PaddingLeft>0.04134in</PaddingLeft>
+                            <PaddingRight>0.04134in</PaddingRight>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="DiscountTaken">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Code.BlankZero(Fields!DiscountTaken.Value)</Value>
+                                  <Style>
+                                    <Format>=Fields!DiscountTakenFormat.Value</Format>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Right</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>DiscountTaken</rd:DefaultName>
+                          <ZIndex>19</ZIndex>
+                          <Style>
+                            <VerticalAlign>Middle</VerticalAlign>
+                            <PaddingLeft>0.04134in</PaddingLeft>
+                            <PaddingRight>0.04134in</PaddingRight>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="AmountPaid">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!AmountPaid.Value</Value>
+                                  <Style>
+                                    <Format>=Fields!AmountPaidFormat.Value</Format>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Right</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>AmountPaid</rd:DefaultName>
+                          <ZIndex>18</ZIndex>
+                          <Style>
+                            <VerticalAlign>Middle</VerticalAlign>
+                            <PaddingLeft>0.04134in</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                  </TablixCells>
+                </TablixRow>
+                <TablixRow>
+                  <Height>0.16654in</Height>
+                  <TablixCells>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Cust__Ledger_Entry__Document_Type_">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!Cust__Ledger_Entry__Document_Type_.Value</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Left</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Cust__Ledger_Entry__Document_Type_</rd:DefaultName>
+                          <ZIndex>17</ZIndex>
+                          <Style>
+                            <VerticalAlign>Middle</VerticalAlign>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Cust__Ledger_Entry__Document_No__">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!Cust__Ledger_Entry__Document_No__.Value</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Left</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Cust__Ledger_Entry__Document_No__</rd:DefaultName>
+                          <ZIndex>16</ZIndex>
+                          <Style>
+                            <VerticalAlign>Middle</VerticalAlign>
+                            <PaddingLeft>0.04134in</PaddingLeft>
+                            <PaddingRight>0.04134in</PaddingRight>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Cust__Ledger_Entry__Document_Date_">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!Cust__Ledger_Entry__Document_Date_.Value</Value>
+                                  <Style>
+                                    <Format>d</Format>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Left</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Cust__Ledger_Entry__Document_Date_</rd:DefaultName>
+                          <ZIndex>15</ZIndex>
+                          <Style>
+                            <VerticalAlign>Middle</VerticalAlign>
+                            <PaddingLeft>0.04134in</PaddingLeft>
+                            <PaddingRight>0.04134in</PaddingRight>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Remaining_Amt___LCY__">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!Remaining_Amt___LCY__.Value</Value>
+                                  <Style>
+                                    <Format>=Fields!Remaining_Amt___LCY__Format.Value</Format>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Right</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Remaining_Amt___LCY__</rd:DefaultName>
+                          <ZIndex>14</ZIndex>
+                          <Style>
+                            <VerticalAlign>Middle</VerticalAlign>
+                            <PaddingLeft>0.04134in</PaddingLeft>
+                            <PaddingRight>0.04134in</PaddingRight>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="DiscountTaken_Control49">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Code.BlankZero(Fields!DiscountTaken_Control49.Value)</Value>
+                                  <Style>
+                                    <Format>=Fields!DiscountTaken_Control38Format.Value</Format>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Right</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>DiscountTaken_Control49</rd:DefaultName>
+                          <ZIndex>13</ZIndex>
+                          <Style>
+                            <VerticalAlign>Middle</VerticalAlign>
+                            <PaddingLeft>0.04134in</PaddingLeft>
+                            <PaddingRight>0.04134in</PaddingRight>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="AmountPaid_Control50">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!AmountPaid_Control50.Value</Value>
+                                  <Style>
+                                    <Format>=Fields!AmountPaid_Control50Format.Value</Format>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Right</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>AmountPaid_Control50</rd:DefaultName>
+                          <ZIndex>12</ZIndex>
+                          <Style>
+                            <VerticalAlign>Middle</VerticalAlign>
+                            <PaddingLeft>0.04134in</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                  </TablixCells>
+                </TablixRow>
+                <TablixRow>
+                  <Height>0.16654in</Height>
+                  <TablixCells>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Vendor_Ledger_Entry__Document_Type__1">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!Vendor_Ledger_Entry__Document_Type_.Value</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Left</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Vendor_Ledger_Entry__Document_Type__1</rd:DefaultName>
+                          <ZIndex>11</ZIndex>
+                          <Style>
+                            <VerticalAlign>Middle</VerticalAlign>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Vendor_Ledger_Entry__External_Document_No___1">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!Vendor_Ledger_Entry__External_Document_No__.Value</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Left</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Vendor_Ledger_Entry__External_Document_No___1</rd:DefaultName>
+                          <ZIndex>10</ZIndex>
+                          <Style>
+                            <VerticalAlign>Middle</VerticalAlign>
+                            <PaddingLeft>0.04134in</PaddingLeft>
+                            <PaddingRight>0.04134in</PaddingRight>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Vendor_Ledger_Entry__Document_Date__1">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!Vendor_Ledger_Entry__Document_Date_.Value</Value>
+                                  <Style>
+                                    <Format>d</Format>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Left</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Vendor_Ledger_Entry__Document_Date__1</rd:DefaultName>
+                          <ZIndex>9</ZIndex>
+                          <Style>
+                            <VerticalAlign>Middle</VerticalAlign>
+                            <PaddingLeft>0.04134in</PaddingLeft>
+                            <PaddingRight>0.04134in</PaddingRight>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Remaining_Amt___LCY___Control36_1">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!Remaining_Amt___LCY___Control36.Value</Value>
+                                  <Style>
+                                    <Format>=Fields!Remaining_Amt___LCY___Control36Format.Value</Format>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Right</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Remaining_Amt___LCY___Control36_1</rd:DefaultName>
+                          <ZIndex>8</ZIndex>
+                          <Style>
+                            <VerticalAlign>Middle</VerticalAlign>
+                            <PaddingLeft>0.04134in</PaddingLeft>
+                            <PaddingRight>0.04134in</PaddingRight>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="DiscountTaken_Control38_1">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Code.BlankZero(Fields!DiscountTaken_Control38.Value)</Value>
+                                  <Style>
+                                    <Format>=Fields!DiscountTaken_Control38Format.Value</Format>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Right</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>DiscountTaken_Control38_1</rd:DefaultName>
+                          <ZIndex>7</ZIndex>
+                          <Style>
+                            <VerticalAlign>Middle</VerticalAlign>
+                            <PaddingLeft>0.04134in</PaddingLeft>
+                            <PaddingRight>0.04134in</PaddingRight>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="AmountPaid_Control43_1">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!AmountPaid_Control43.Value</Value>
+                                  <Style>
+                                    <Format>=Fields!AmountPaid_Control43Format.Value</Format>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Right</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>AmountPaid_Control43_1</rd:DefaultName>
+                          <ZIndex>6</ZIndex>
+                          <Style>
+                            <VerticalAlign>Middle</VerticalAlign>
+                            <PaddingLeft>0.04134in</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                  </TablixCells>
+                </TablixRow>
+                <TablixRow>
+                  <Height>0.16654in</Height>
+                  <TablixCells>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="format">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value />
+                                  <Style>
+                                    <FontWeight>Bold</FontWeight>
+                                    <Color>Red</Color>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Left</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <Style>
+                            <VerticalAlign>Bottom</VerticalAlign>
+                            <PaddingLeft>0.04134in</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Text004">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!Text004.Value</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Text004</rd:DefaultName>
+                          <ZIndex>4</ZIndex>
+                          <Style>
+                            <VerticalAlign>Middle</VerticalAlign>
+                            <PaddingLeft>0.04134in</PaddingLeft>
+                            <PaddingRight>0.04134in</PaddingRight>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="textbox3">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value />
+                                  <Style>
+                                    <Format>d</Format>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>textbox3</rd:DefaultName>
+                          <ZIndex>3</ZIndex>
+                          <Style>
+                            <VerticalAlign>Middle</VerticalAlign>
+                            <PaddingLeft>0.04134in</PaddingLeft>
+                            <PaddingRight>0.04134in</PaddingRight>
+                          </Style>
+                        </Textbox>
+                        <ColSpan>3</ColSpan>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell />
+                    <TablixCell />
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="AmountPaid_Control65">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!AmountPaid_Control65.Value</Value>
+                                  <Style>
+                                    <Format>=Fields!AmountPaidFormat.Value</Format>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Right</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>AmountPaid_Control65</rd:DefaultName>
+                          <Style>
+                            <VerticalAlign>Middle</VerticalAlign>
+                            <PaddingLeft>0.04134in</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                  </TablixCells>
+                </TablixRow>
+              </TablixRows>
+            </TablixBody>
+            <TablixColumnHierarchy>
+              <TablixMembers>
+                <TablixMember />
+                <TablixMember />
+                <TablixMember />
+                <TablixMember />
+                <TablixMember />
+                <TablixMember />
+              </TablixMembers>
+            </TablixColumnHierarchy>
+            <TablixRowHierarchy>
+              <TablixMembers>
+                <TablixMember>
+                  <KeepWithGroup>After</KeepWithGroup>
+                  <RepeatOnNewPage>true</RepeatOnNewPage>
+                  <KeepTogether>true</KeepTogether>
+                </TablixMember>
+                <TablixMember>
+                  <Group Name="GroupOn_Key2">
+                    <GroupExpressions>
+                      <GroupExpression>=Fields!Gen__Journal_Line_Journal_Template_Name.Value</GroupExpression>
+                      <GroupExpression>=Fields!Gen__Journal_Line_Journal_Batch_Name.Value</GroupExpression>
+                      <GroupExpression>=Fields!mypostingdate.Value</GroupExpression>
+                      <GroupExpression>=Fields!Gen__Journal_Line___Document_No__.Value</GroupExpression>
+                      <GroupExpression>=Fields!myNumber.Value</GroupExpression>
+                    </GroupExpressions>
+                    <PageBreak>
+                      <BreakLocation>Between</BreakLocation>
+                    </PageBreak>
+                  </Group>
+                  <TablixMembers>
+                    <TablixMember>
+                      <KeepWithGroup>After</KeepWithGroup>
+                      <RepeatOnNewPage>true</RepeatOnNewPage>
+                      <KeepTogether>true</KeepTogether>
+                    </TablixMember>
+                    <TablixMember>
+                      <Visibility>
+                        <Hidden>=IIF(Fields!Gen__Journal_Line___Applies_to_Doc__No__.Value&lt;&gt;"" and Fields!myType.Value=0,false,true)</Hidden>
+                      </Visibility>
+                      <KeepWithGroup>After</KeepWithGroup>
+                      <RepeatOnNewPage>true</RepeatOnNewPage>
+                      <KeepTogether>true</KeepTogether>
+                    </TablixMember>
+                    <TablixMember>
+                      <Visibility>
+                        <Hidden>=IIF(Fields!Gen__Journal_Line___Applies_to_Doc__No__.Value&lt;&gt;"" and Fields!myType.Value=1,false,true)</Hidden>
+                      </Visibility>
+                      <KeepWithGroup>After</KeepWithGroup>
+                      <RepeatOnNewPage>true</RepeatOnNewPage>
+                      <KeepTogether>true</KeepTogether>
+                    </TablixMember>
+                    <TablixMember>
+                      <Group Name="Table1_Details_Group">
+                        <DataElementName>Detail</DataElementName>
+                      </Group>
+                      <TablixMembers>
+                        <TablixMember>
+                          <Visibility>
+                            <Hidden>=IIF(Fields!Cust__Ledger_Entry__Document_No__.Value &lt;&gt; "",False,True)</Hidden>
+                          </Visibility>
+                        </TablixMember>
+                        <TablixMember />
+                        <TablixMember>
+                          <Visibility>
+                            <Hidden>=IIF(Fields!Text004.Value &lt;&gt; "",False,True)</Hidden>
+                          </Visibility>
+                        </TablixMember>
+                      </TablixMembers>
+                      <DataElementName>Detail_Collection</DataElementName>
+                      <DataElementOutput>Output</DataElementOutput>
+                      <KeepTogether>true</KeepTogether>
+                    </TablixMember>
+                  </TablixMembers>
+                </TablixMember>
+              </TablixMembers>
+            </TablixRowHierarchy>
+            <DataSetName>DataSet_Result</DataSetName>
+            <PageBreak>
+              <BreakLocation>End</BreakLocation>
+            </PageBreak>
+            <Height>1.36356in</Height>
+            <Width>7.40157in</Width>
+            <Style />
+          </Tablix>
+        </ReportItems>
+        <Height>1.36356in</Height>
+        <Style />
+      </Body>
+      <Width>7.6063in</Width>
+      <Page>
+        <PageHeader>
+          <Height>3.74953in</Height>
+          <PrintOnFirstPage>true</PrintOnFirstPage>
+          <PrintOnLastPage>true</PrintOnLastPage>
+          <ReportItems>
+            <Textbox Name="PayeeBankAccountNoCaption11">
+              <KeepTogether>true</KeepTogether>
+              <Paragraphs>
+                <Paragraph>
+                  <TextRuns>
+                    <TextRun>
+                      <Value>=Cstr(Choose(9,Split(Cstr(ReportItems!Captions.Value),Chr(177))))</Value>
+                      <Style />
+                    </TextRun>
+                  </TextRuns>
+                  <Style>
+                    <TextAlign>Right</TextAlign>
+                  </Style>
+                </Paragraph>
+              </Paragraphs>
+              <Top>2.8311in</Top>
+              <Left>4.21654in</Left>
+              <Height>0.16654in</Height>
+              <Width>1.48819in</Width>
+              <Style>
+                <VerticalAlign>Middle</VerticalAlign>
+              </Style>
+            </Textbox>
+            <Textbox Name="Deposited_In_Caption11">
+              <KeepTogether>true</KeepTogether>
+              <Paragraphs>
+                <Paragraph>
+                  <TextRuns>
+                    <TextRun>
+                      <Value>=Cstr(Choose(7,Split(Cstr(ReportItems!Captions.Value),Chr(177))))</Value>
+                      <Style />
+                    </TextRun>
+                  </TextRuns>
+                  <Style />
+                </Paragraph>
+              </Paragraphs>
+              <Top>2.49803in</Top>
+              <Left>4.21654in</Left>
+              <Height>0.16654in</Height>
+              <Width>1.48819in</Width>
+              <ZIndex>1</ZIndex>
+              <Style>
+                <VerticalAlign>Middle</VerticalAlign>
+              </Style>
+            </Textbox>
+            <Textbox Name="PayeeBankTransitNoCaption11">
+              <KeepTogether>true</KeepTogether>
+              <Paragraphs>
+                <Paragraph>
+                  <TextRuns>
+                    <TextRun>
+                      <Value>=Cstr(Choose(8,Split(Cstr(ReportItems!Captions.Value),Chr(177))))</Value>
+                      <Style />
+                    </TextRun>
+                  </TextRuns>
+                  <Style>
+                    <TextAlign>Right</TextAlign>
+                  </Style>
+                </Paragraph>
+              </Paragraphs>
+              <Top>2.66457in</Top>
+              <Left>4.21654in</Left>
+              <Height>0.16654in</Height>
+              <Width>1.48819in</Width>
+              <ZIndex>2</ZIndex>
+              <Style>
+                <VerticalAlign>Middle</VerticalAlign>
+              </Style>
+            </Textbox>
+            <Textbox Name="ExportAmountCaption11">
+              <KeepTogether>true</KeepTogether>
+              <Paragraphs>
+                <Paragraph>
+                  <TextRuns>
+                    <TextRun>
+                      <Value>=Cstr(Choose(6,Split(Cstr(ReportItems!Captions.Value),Chr(177))))</Value>
+                      <Style />
+                    </TextRun>
+                  </TextRuns>
+                  <Style>
+                    <TextAlign>Right</TextAlign>
+                  </Style>
+                </Paragraph>
+              </Paragraphs>
+              <Top>2.16496in</Top>
+              <Left>4.21654in</Left>
+              <Height>0.16654in</Height>
+              <Width>1.48819in</Width>
+              <ZIndex>3</ZIndex>
+              <Style>
+                <VerticalAlign>Middle</VerticalAlign>
+              </Style>
+            </Textbox>
+            <Textbox Name="Page_Caption11">
+              <KeepTogether>true</KeepTogether>
+              <Paragraphs>
+                <Paragraph>
+                  <TextRuns>
+                    <TextRun>
+                      <Value>=Cstr(Choose(5,Split(Cstr(ReportItems!Captions.Value),Chr(177))))</Value>
+                      <Style />
+                    </TextRun>
+                  </TextRuns>
+                  <Style>
+                    <TextAlign>Right</TextAlign>
+                  </Style>
+                </Paragraph>
+              </Paragraphs>
+              <Top>1.33202in</Top>
+              <Left>6.03544in</Left>
+              <Height>0.16654in</Height>
+              <Width>0.49606in</Width>
+              <ZIndex>4</ZIndex>
+              <Style>
+                <VerticalAlign>Middle</VerticalAlign>
+              </Style>
+            </Textbox>
+            <Textbox Name="Remittance_Advice_Number_Caption11">
+              <KeepTogether>true</KeepTogether>
+              <Paragraphs>
+                <Paragraph>
+                  <TextRuns>
+                    <TextRun>
+                      <Value>=Cstr(Choose(3,Split(Cstr(ReportItems!Captions.Value),Chr(177))))</Value>
+                      <Style />
+                    </TextRun>
+                  </TextRuns>
+                  <Style>
+                    <TextAlign>Right</TextAlign>
+                  </Style>
+                </Paragraph>
+              </Paragraphs>
+              <Top>0.99921in</Top>
+              <Left>4.68504in</Left>
+              <Height>0.16654in</Height>
+              <Width>1.84646in</Width>
+              <ZIndex>5</ZIndex>
+              <Style>
+                <VerticalAlign>Middle</VerticalAlign>
+              </Style>
+            </Textbox>
+            <Textbox Name="To_Caption11">
+              <KeepTogether>true</KeepTogether>
+              <Paragraphs>
+                <Paragraph>
+                  <TextRuns>
+                    <TextRun>
+                      <Value>=Cstr(Choose(1,Split(Cstr(ReportItems!Captions.Value),Chr(177))))</Value>
+                      <Style />
+                    </TextRun>
+                  </TextRuns>
+                  <Style />
+                </Paragraph>
+              </Paragraphs>
+              <Top>1.99843in</Top>
+              <Height>0.16654in</Height>
+              <Width>0.33071in</Width>
+              <ZIndex>6</ZIndex>
+              <Style>
+                <VerticalAlign>Middle</VerticalAlign>
+              </Style>
+            </Textbox>
+            <Textbox Name="REMITTANCE_ADVICECaption11">
+              <KeepTogether>true</KeepTogether>
+              <Paragraphs>
+                <Paragraph>
+                  <TextRuns>
+                    <TextRun>
+                      <Value>=Cstr(Choose(2,Split(Cstr(ReportItems!Captions.Value),Chr(177))))</Value>
+                      <Style />
+                    </TextRun>
+                  </TextRuns>
+                  <Style />
+                </Paragraph>
+              </Paragraphs>
+              <Top>0.33307in</Top>
+              <Left>3.80315in</Left>
+              <Height>0.16654in</Height>
+              <Width>1.77165in</Width>
+              <ZIndex>7</ZIndex>
+              <Style>
+                <VerticalAlign>Middle</VerticalAlign>
+              </Style>
+            </Textbox>
+            <Textbox Name="PayeeBankAccountNo11">
+              <KeepTogether>true</KeepTogether>
+              <Paragraphs>
+                <Paragraph>
+                  <TextRuns>
+                    <TextRun>
+                      <Value>=Cstr(Choose(5,Split(Cstr(ReportItems!values.Value),Chr(177))))</Value>
+                      <Style />
+                    </TextRun>
+                  </TextRuns>
+                  <Style />
+                </Paragraph>
+              </Paragraphs>
+              <Top>2.8311in</Top>
+              <Left>5.81102in</Left>
+              <Height>0.16654in</Height>
+              <Width>1.40551in</Width>
+              <ZIndex>8</ZIndex>
+              <Style>
+                <VerticalAlign>Middle</VerticalAlign>
+              </Style>
+            </Textbox>
+            <Textbox Name="PayeeBankTransitNo11">
+              <KeepTogether>true</KeepTogether>
+              <Paragraphs>
+                <Paragraph>
+                  <TextRuns>
+                    <TextRun>
+                      <Value>=Cstr(Choose(4,Split(Cstr(ReportItems!values.Value),Chr(177))))</Value>
+                      <Style />
+                    </TextRun>
+                  </TextRuns>
+                  <Style />
+                </Paragraph>
+              </Paragraphs>
+              <Top>2.66457in</Top>
+              <Left>5.7874in</Left>
+              <Height>0.16654in</Height>
+              <Width>1.40551in</Width>
+              <ZIndex>9</ZIndex>
+              <Style>
+                <VerticalAlign>Middle</VerticalAlign>
+              </Style>
+            </Textbox>
+            <Textbox Name="ExportAmount11">
+              <KeepTogether>true</KeepTogether>
+              <Paragraphs>
+                <Paragraph>
+                  <TextRuns>
+                    <TextRun>
+                      <Value>=ReportItems!exportamount.Value</Value>
+                      <Style>
+                        <Format>=Cstr(Choose(6,Split(Cstr(ReportItems!data.Value),Chr(177))))</Format>
+                      </Style>
+                    </TextRun>
+                  </TextRuns>
+                  <Style>
+                    <TextAlign>Left</TextAlign>
+                  </Style>
+                </Paragraph>
+              </Paragraphs>
+              <Top>2.16496in</Top>
+              <Left>5.81102in</Left>
+              <Height>0.16654in</Height>
+              <Width>1.40551in</Width>
+              <ZIndex>10</ZIndex>
+              <Style>
+                <VerticalAlign>Middle</VerticalAlign>
+              </Style>
+            </Textbox>
+            <Textbox Name="Gen__Journal_Line___Document_No__11">
+              <KeepTogether>true</KeepTogether>
+              <Paragraphs>
+                <Paragraph>
+                  <TextRuns>
+                    <TextRun>
+                      <Value>=Cstr(Choose(2,Split(Cstr(ReportItems!values.Value),Chr(177))))</Value>
+                      <Style />
+                    </TextRun>
+                  </TextRuns>
+                  <Style>
+                    <TextAlign>Left</TextAlign>
+                  </Style>
+                </Paragraph>
+              </Paragraphs>
+              <Top>0.99921in</Top>
+              <Left>6.61417in</Left>
+              <Height>0.16654in</Height>
+              <Width>0.99213in</Width>
+              <ZIndex>11</ZIndex>
+              <Style>
+                <VerticalAlign>Middle</VerticalAlign>
+              </Style>
+            </Textbox>
+            <Textbox Name="PayeeAddress_8_11">
+              <KeepTogether>true</KeepTogether>
+              <Paragraphs>
+                <Paragraph>
+                  <TextRuns>
+                    <TextRun>
+                      <Value>=Cstr(Choose(8,Split(Cstr(ReportItems!PayeeAddress.Value),Chr(177))))</Value>
+                      <Style />
+                    </TextRun>
+                  </TextRuns>
+                  <Style />
+                </Paragraph>
+              </Paragraphs>
+              <Top>3.16417in</Top>
+              <Left>0.33071in</Left>
+              <Height>0.16654in</Height>
+              <Width>2.48031in</Width>
+              <ZIndex>12</ZIndex>
+              <Style>
+                <VerticalAlign>Middle</VerticalAlign>
+              </Style>
+            </Textbox>
+            <Textbox Name="PayeeAddress_7_11">
+              <KeepTogether>true</KeepTogether>
+              <Paragraphs>
+                <Paragraph>
+                  <TextRuns>
+                    <TextRun>
+                      <Value>=Cstr(Choose(7,Split(Cstr(ReportItems!PayeeAddress.Value),Chr(177))))</Value>
+                      <Style />
+                    </TextRun>
+                  </TextRuns>
+                  <Style />
+                </Paragraph>
+              </Paragraphs>
+              <Top>2.99764in</Top>
+              <Left>0.33071in</Left>
+              <Height>0.16654in</Height>
+              <Width>2.48031in</Width>
+              <ZIndex>13</ZIndex>
+              <Style>
+                <VerticalAlign>Middle</VerticalAlign>
+              </Style>
+            </Textbox>
+            <Textbox Name="PayeeAddress_6_11">
+              <KeepTogether>true</KeepTogether>
+              <Paragraphs>
+                <Paragraph>
+                  <TextRuns>
+                    <TextRun>
+                      <Value>=Cstr(Choose(6,Split(Cstr(ReportItems!PayeeAddress.Value),Chr(177))))</Value>
+                      <Style />
+                    </TextRun>
+                  </TextRuns>
+                  <Style />
+                </Paragraph>
+              </Paragraphs>
+              <Top>2.8311in</Top>
+              <Left>0.33071in</Left>
+              <Height>0.16654in</Height>
+              <Width>2.48031in</Width>
+              <ZIndex>14</ZIndex>
+              <Style>
+                <VerticalAlign>Middle</VerticalAlign>
+              </Style>
+            </Textbox>
+            <Textbox Name="PayeeAddress_5_11">
+              <KeepTogether>true</KeepTogether>
+              <Paragraphs>
+                <Paragraph>
+                  <TextRuns>
+                    <TextRun>
+                      <Value>=Cstr(Choose(5,Split(Cstr(ReportItems!PayeeAddress.Value),Chr(177))))</Value>
+                      <Style />
+                    </TextRun>
+                  </TextRuns>
+                  <Style />
+                </Paragraph>
+              </Paragraphs>
+              <Top>2.66457in</Top>
+              <Left>0.33071in</Left>
+              <Height>0.16654in</Height>
+              <Width>2.48031in</Width>
+              <ZIndex>15</ZIndex>
+              <Style>
+                <VerticalAlign>Middle</VerticalAlign>
+              </Style>
+            </Textbox>
+            <Textbox Name="PayeeAddress_4_11">
+              <KeepTogether>true</KeepTogether>
+              <Paragraphs>
+                <Paragraph>
+                  <TextRuns>
+                    <TextRun>
+                      <Value>=Cstr(Choose(4,Split(Cstr(ReportItems!PayeeAddress.Value),Chr(177))))</Value>
+                      <Style />
+                    </TextRun>
+                  </TextRuns>
+                  <Style />
+                </Paragraph>
+              </Paragraphs>
+              <Top>2.49803in</Top>
+              <Left>0.33071in</Left>
+              <Height>0.16654in</Height>
+              <Width>2.48031in</Width>
+              <ZIndex>16</ZIndex>
+              <Style>
+                <VerticalAlign>Middle</VerticalAlign>
+              </Style>
+            </Textbox>
+            <Textbox Name="PayeeAddress_3_11">
+              <KeepTogether>true</KeepTogether>
+              <Paragraphs>
+                <Paragraph>
+                  <TextRuns>
+                    <TextRun>
+                      <Value>=Cstr(Choose(3,Split(Cstr(ReportItems!PayeeAddress.Value),Chr(177))))</Value>
+                      <Style />
+                    </TextRun>
+                  </TextRuns>
+                  <Style />
+                </Paragraph>
+              </Paragraphs>
+              <Top>2.3315in</Top>
+              <Left>0.33071in</Left>
+              <Height>0.16654in</Height>
+              <Width>2.48031in</Width>
+              <ZIndex>17</ZIndex>
+              <Style>
+                <VerticalAlign>Middle</VerticalAlign>
+              </Style>
+            </Textbox>
+            <Textbox Name="PayeeAddress_2_11">
+              <KeepTogether>true</KeepTogether>
+              <Paragraphs>
+                <Paragraph>
+                  <TextRuns>
+                    <TextRun>
+                      <Value>=Cstr(Choose(2,Split(Cstr(ReportItems!PayeeAddress.Value),Chr(177))))</Value>
+                      <Style />
+                    </TextRun>
+                  </TextRuns>
+                  <Style />
+                </Paragraph>
+              </Paragraphs>
+              <Top>2.16496in</Top>
+              <Left>0.33071in</Left>
+              <Height>0.16654in</Height>
+              <Width>2.48031in</Width>
+              <ZIndex>18</ZIndex>
+              <Style>
+                <VerticalAlign>Middle</VerticalAlign>
+              </Style>
+            </Textbox>
+            <Textbox Name="PayeeAddress_1_11">
+              <KeepTogether>true</KeepTogether>
+              <Paragraphs>
+                <Paragraph>
+                  <TextRuns>
+                    <TextRun>
+                      <Value>=Cstr(Choose(1,Split(Cstr(ReportItems!PayeeAddress.Value),Chr(177))))</Value>
+                      <Style />
+                    </TextRun>
+                  </TextRuns>
+                  <Style />
+                </Paragraph>
+              </Paragraphs>
+              <Top>1.99843in</Top>
+              <Left>0.33071in</Left>
+              <Height>0.16654in</Height>
+              <Width>2.48031in</Width>
+              <ZIndex>19</ZIndex>
+              <Style>
+                <VerticalAlign>Middle</VerticalAlign>
+              </Style>
+            </Textbox>
+            <Textbox Name="CopyTxt11">
+              <KeepTogether>true</KeepTogether>
+              <Paragraphs>
+                <Paragraph>
+                  <TextRuns>
+                    <TextRun>
+                      <Value>=Cstr(Choose(1,Split(Cstr(ReportItems!values.Value),Chr(177))))</Value>
+                      <Style />
+                    </TextRun>
+                  </TextRuns>
+                  <Style />
+                </Paragraph>
+              </Paragraphs>
+              <Top>1.49882in</Top>
+              <Left>0.33071in</Left>
+              <Height>0.16654in</Height>
+              <Width>0.99213in</Width>
+              <ZIndex>20</ZIndex>
+              <Style>
+                <VerticalAlign>Middle</VerticalAlign>
+              </Style>
+            </Textbox>
+            <Textbox Name="CompanyAddress_8_11">
+              <KeepTogether>true</KeepTogether>
+              <Paragraphs>
+                <Paragraph>
+                  <TextRuns>
+                    <TextRun>
+                      <Value>=Cstr(Choose(8,Split(Cstr(ReportItems!CompAddr.Value),Chr(177))))</Value>
+                      <Style />
+                    </TextRun>
+                  </TextRuns>
+                  <Style>
+                    <TextAlign>Left</TextAlign>
+                  </Style>
+                </Paragraph>
+              </Paragraphs>
+              <Top>1.16575in</Top>
+              <Left>0.33071in</Left>
+              <Height>0.16654in</Height>
+              <Width>2.8937in</Width>
+              <ZIndex>21</ZIndex>
+              <Style>
+                <VerticalAlign>Middle</VerticalAlign>
+              </Style>
+            </Textbox>
+            <Textbox Name="CompanyAddress_7_11">
+              <KeepTogether>true</KeepTogether>
+              <Paragraphs>
+                <Paragraph>
+                  <TextRuns>
+                    <TextRun>
+                      <Value>=Cstr(Choose(7,Split(Cstr(ReportItems!CompAddr.Value),Chr(177))))</Value>
+                      <Style />
+                    </TextRun>
+                  </TextRuns>
+                  <Style>
+                    <TextAlign>Left</TextAlign>
+                  </Style>
+                </Paragraph>
+              </Paragraphs>
+              <Top>0.99921in</Top>
+              <Left>0.33071in</Left>
+              <Height>0.16654in</Height>
+              <Width>2.8937in</Width>
+              <ZIndex>22</ZIndex>
+              <Style>
+                <VerticalAlign>Middle</VerticalAlign>
+              </Style>
+            </Textbox>
+            <Textbox Name="CompanyAddress_6_11">
+              <KeepTogether>true</KeepTogether>
+              <Paragraphs>
+                <Paragraph>
+                  <TextRuns>
+                    <TextRun>
+                      <Value>=Cstr(Choose(6,Split(Cstr(ReportItems!CompAddr.Value),Chr(177))))</Value>
+                      <Style />
+                    </TextRun>
+                  </TextRuns>
+                  <Style>
+                    <TextAlign>Left</TextAlign>
+                  </Style>
+                </Paragraph>
+              </Paragraphs>
+              <Top>0.83268in</Top>
+              <Left>0.33071in</Left>
+              <Height>0.16654in</Height>
+              <Width>2.8937in</Width>
+              <ZIndex>23</ZIndex>
+              <Style>
+                <VerticalAlign>Middle</VerticalAlign>
+              </Style>
+            </Textbox>
+            <Textbox Name="CompanyAddress_5_11">
+              <KeepTogether>true</KeepTogether>
+              <Paragraphs>
+                <Paragraph>
+                  <TextRuns>
+                    <TextRun>
+                      <Value>=Cstr(Choose(5,Split(Cstr(ReportItems!CompAddr.Value),Chr(177))))</Value>
+                      <Style />
+                    </TextRun>
+                  </TextRuns>
+                  <Style>
+                    <TextAlign>Left</TextAlign>
+                  </Style>
+                </Paragraph>
+              </Paragraphs>
+              <Top>0.66614in</Top>
+              <Left>0.33071in</Left>
+              <Height>0.16654in</Height>
+              <Width>2.8937in</Width>
+              <ZIndex>24</ZIndex>
+              <Style>
+                <VerticalAlign>Middle</VerticalAlign>
+              </Style>
+            </Textbox>
+            <Textbox Name="CompanyAddress_4_11">
+              <KeepTogether>true</KeepTogether>
+              <Paragraphs>
+                <Paragraph>
+                  <TextRuns>
+                    <TextRun>
+                      <Value>=Cstr(Choose(4,Split(Cstr(ReportItems!CompAddr.Value),Chr(177))))</Value>
+                      <Style />
+                    </TextRun>
+                  </TextRuns>
+                  <Style>
+                    <TextAlign>Left</TextAlign>
+                  </Style>
+                </Paragraph>
+              </Paragraphs>
+              <Top>0.49961in</Top>
+              <Left>0.33071in</Left>
+              <Height>0.16654in</Height>
+              <Width>2.8937in</Width>
+              <ZIndex>25</ZIndex>
+              <Style>
+                <VerticalAlign>Middle</VerticalAlign>
+              </Style>
+            </Textbox>
+            <Textbox Name="CompanyAddress_3_11">
+              <KeepTogether>true</KeepTogether>
+              <Paragraphs>
+                <Paragraph>
+                  <TextRuns>
+                    <TextRun>
+                      <Value>=Cstr(Choose(3,Split(Cstr(ReportItems!CompAddr.Value),Chr(177))))</Value>
+                      <Style />
+                    </TextRun>
+                  </TextRuns>
+                  <Style>
+                    <TextAlign>Left</TextAlign>
+                  </Style>
+                </Paragraph>
+              </Paragraphs>
+              <Top>0.33307in</Top>
+              <Left>0.33071in</Left>
+              <Height>0.16654in</Height>
+              <Width>2.8937in</Width>
+              <ZIndex>26</ZIndex>
+              <Style>
+                <VerticalAlign>Middle</VerticalAlign>
+              </Style>
+            </Textbox>
+            <Textbox Name="CompanyAddress_2_11">
+              <KeepTogether>true</KeepTogether>
+              <Paragraphs>
+                <Paragraph>
+                  <TextRuns>
+                    <TextRun>
+                      <Value>=Cstr(Choose(2,Split(Cstr(ReportItems!CompAddr.Value),Chr(177))))</Value>
+                      <Style />
+                    </TextRun>
+                  </TextRuns>
+                  <Style>
+                    <TextAlign>Left</TextAlign>
+                  </Style>
+                </Paragraph>
+              </Paragraphs>
+              <Top>0.16654in</Top>
+              <Left>0.33071in</Left>
+              <Height>0.16654in</Height>
+              <Width>2.8937in</Width>
+              <ZIndex>27</ZIndex>
+              <Style>
+                <VerticalAlign>Middle</VerticalAlign>
+              </Style>
+            </Textbox>
+            <Textbox Name="CompanyAddress_1_11">
+              <KeepTogether>true</KeepTogether>
+              <Paragraphs>
+                <Paragraph>
+                  <TextRuns>
+                    <TextRun>
+                      <Value>=Cstr(Choose(1,Split(Cstr(ReportItems!CompAddr.Value),Chr(177))))</Value>
+                      <Style />
+                    </TextRun>
+                  </TextRuns>
+                  <Style>
+                    <TextAlign>Left</TextAlign>
+                  </Style>
+                </Paragraph>
+              </Paragraphs>
+              <Left>0.33071in</Left>
+              <Height>0.16654in</Height>
+              <Width>2.8937in</Width>
+              <ZIndex>28</ZIndex>
+              <Style>
+                <VerticalAlign>Middle</VerticalAlign>
+              </Style>
+            </Textbox>
+            <Textbox Name="PageNumber">
+              <KeepTogether>true</KeepTogether>
+              <Paragraphs>
+                <Paragraph>
+                  <TextRuns>
+                    <TextRun>
+                      <Value>=code.GetGroupPageNumber(code.newPage, Globals!PageNumber)</Value>
+                      <Style />
+                    </TextRun>
+                  </TextRuns>
+                  <Style>
+                    <TextAlign>Left</TextAlign>
+                  </Style>
+                </Paragraph>
+              </Paragraphs>
+              <Top>1.33202in</Top>
+              <Left>6.61418in</Left>
+              <Height>0.16654in</Height>
+              <Width>0.24803in</Width>
+              <ZIndex>29</ZIndex>
+              <Style>
+                <VerticalAlign>Middle</VerticalAlign>
+              </Style>
+            </Textbox>
+            <Textbox Name="IsNewPage">
+              <KeepTogether>true</KeepTogether>
+              <Paragraphs>
+                <Paragraph>
+                  <TextRuns>
+                    <TextRun>
+                      <Value>=code.IsNewPage(code.GetData(1),code.GetData(2),code.GetData(3),code.GetData(4),code.GetData(5))</Value>
+                      <Style>
+                        <Color>Red</Color>
+                      </Style>
+                    </TextRun>
+                  </TextRuns>
+                  <Style />
+                </Paragraph>
+              </Paragraphs>
+              <Top>0.25in</Top>
+              <Height>0.25in</Height>
+              <Width>0.25in</Width>
+              <ZIndex>30</ZIndex>
+              <Visibility>
+                <Hidden>true</Hidden>
+              </Visibility>
+              <Style>
+                <PaddingLeft>2pt</PaddingLeft>
+                <PaddingRight>2pt</PaddingRight>
+                <PaddingTop>2pt</PaddingTop>
+                <PaddingBottom>2pt</PaddingBottom>
+              </Style>
+            </Textbox>
+          </ReportItems>
+          <Style />
+        </PageHeader>
+        <LeftMargin>0.07874in</LeftMargin>
+        <TopMargin>0.03937in</TopMargin>
+        <BottomMargin>0.49213in</BottomMargin>
+        <Style />
+      </Page>
+    </ReportSection>
+  </ReportSections>
+  <Code>Public Function BlankZero(ByVal Value As Decimal)
+    if Value = 0 then
+        Return ""
+    end if
+    Return Value
+End Function
+
+Public Function BlankPos(ByVal Value As Decimal)
+    if Value &gt; 0 then
+        Return ""
+    end if
+    Return Value
+End Function
+
+Public Function BlankZeroAndPos(ByVal Value As Decimal)
+    if Value &gt;= 0 then
+        Return ""
+    end if
+    Return Value
+End Function
+
+Public Function BlankNeg(ByVal Value As Decimal)
+    if Value &lt; 0 then
+        Return ""
+    end if
+    Return Value
+End Function
+
+Public Function BlankNegAndZero(ByVal Value As Decimal)
+    if Value &lt;= 0 then
+        Return ""
+    end if
+    Return Value
+End Function
+
+Shared offset as Integer
+Shared public newPage as Object
+Shared currentgroup1 as Object
+Shared currentgroup2 as Object
+Shared currentgroup3 as Object
+Shared currentgroup4 as Object
+Shared currentgroup5 as  Integer
+Shared Data as Object
+Public Function GetGroupPageNumber(NewPage as Boolean, pagenumber as Integer) as Object
+  If NewPage
+    offset = pagenumber - 1
+  End If
+  Return pagenumber - offset
+End Function
+
+Public Function IsNewPage(group1 as Object, group2 as Object,group3 as Object,group4 as Object,group5 as Integer) As Boolean
+newPage = FALSE
+If Not (group1 = currentgroup1)
+    newPage = TRUE
+    currentgroup1 = group1
+    currentgroup2 = group2
+    currentgroup3 = group3
+    currentgroup4 = group4
+    currentgroup5 = group5
+    ELSE 
+      If Not (group2 = currentgroup2)
+        newPage = TRUE 
+        currentgroup2 = group2
+        currentgroup3 = group3
+        currentgroup4 = group4
+        currentgroup5 = group5
+        Else
+          if Not(group3 = currentgroup3)
+             newPage = TRUE
+             currentgroup3 = group3
+             currentgroup4 = group4
+              currentgroup5 = group5
+             Else
+               if Not(group4 = currentgroup4)
+                 newPage = TRUE
+                   currentgroup4 = group4
+                   currentgroup5 = group5
+                 Else
+                   if Not(group5 = currentgroup5)
+                   newPage = TRUE
+                   currentgroup5 = group5
+                   End If
+               End If
+           End If
+      End If
+  End If
+  Return newPage
+End Function
+
+Public Function SetData(NewData as Object)
+  If NewData&gt;""
+    Data=NewData 
+  End If
+  
+  Return True
+End Function
+
+Public Function GetData(Num as Integer)
+  Return Cstr(Choose(Num,Split(Cstr(Data),Chr(177))))
+End Function</Code>
+  <Language>=User!Language</Language>
+  <ConsumeContainerWhitespace>true</ConsumeContainerWhitespace>
+  <rd:ReportUnitType>Inch</rd:ReportUnitType>
+  <rd:ReportID>3a6613b2-7438-4ea7-a569-e063b764958d</rd:ReportID>
+</Report>
+    END_OF_RDLDATA
+  }
+  WORDLAYOUT
+  {
+    UEsDBBQABgAIAAAAIQC++jSRpQEAACMJAAATAAgCW0NvbnRlbnRfVHlwZXNdLnhtbCCiBAIooAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==
+    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==
+    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==
+    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==
+    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==
+    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAzJZLT+swEIX3SPyHyFvUuLC4QldNWfBYAhJFYmucSQ==
+    auGXPFOg//6O0zYXoUIrymsTKfaccz4/Ymd08uxs8QgJTfCVOCyHogCvQ218W4nbycXgWBRIytfKBg+VmAOKk/H+3mgyj4AFqz1WYkoU/0qJegpOYRkieO5pQnKK+DW1Mir9oA==
+    WpBHw+EfqYMn8DSg7CHGozNo1MxScf7MzQuS6FtRnC7qclQljMv63C7XKhJYfCVRMVqjFXG/fPT1K67BkqlkZVeDUxPxgAveSMg9bwcsdVc8mcnUUFyrRJfKcZV8CqmWddAzxw==
+    yvJ9mzWcoWmMhl6f3WIKGhB5lZwt+x6njF/xr+PQM6Tg7pyVhsBdpxDxcGec3jT7QSID/RxuyXD03QzdeiDNLeDnr8bCd3M8ELHgKwCWzhsRnuD+5ssoXphvBGk4d6LuLXw+Rg==
+    b70RorUBUaX5d3yoq6ztoX54t/7n+Plt27P8mv3bE/2KjUx8CcPiufvp3tm8F8mV3SHOl3r6wLBXd3BWD+JWp3efyNY7jw/y9V5DvSZbdr84438AAAD//wMAUEsDBBQABgAIAA==
+    AAAhAB6RGrfvAAAATgIAAAsACAJfcmVscy8ucmVscyCiBAIooAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==
+    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==
+    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==
+    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==
+    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==
+    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAArJLBasMwDEDvg/2D0b1R2sEYo04vY9DbGNkHCFtJTBPb2GrX/v082NgCXelhR8vS0w==
+    k9B6c5xGdeCUXfAallUNir0J1vlew1v7vHgAlYW8pTF41nDiDJvm9mb9yiNJKcqDi1kVis8aBpH4iJjNwBPlKkT25acLaSIpz9RjJLOjnnFV1/eYfjOgmTHV1mpIW3sHqj1Fvg==
+    hh26zhl+CmY/sZczLZCPwt6yXcRU6pO4Mo1qKfUsGmwwLyWckWKsChrwvNHqeqO/p8WJhSwJoQmJL/t8ZlwSWv7niuYZPzbvIVm0X+FvG5xdQfMBAAD//wMAUEsDBBQABgAIAA==
+    AAAhAEnz2nw8AQAAZQUAABwACAF3b3JkL19yZWxzL2RvY3VtZW50LnhtbC5yZWxzIKIEASigAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==
+    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==
+    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==
+    AAAAAAAAAAAAAAAAvJRLT4QwFIX3Jv4H0r0toI6PDMzGmMxWMXHbgQs00pa0d1T+vY3IYzIjcdG4vOe253y5faw3n7IJ3sFYoVVCIhqSAFSuC6GqhLxkjxe3JLDIVcEbrSAhHQ==
+    WLJJz8/WT9BwdJtsLVobOBdlE1IjtveM2bwGyS3VLSjXKbWRHF1pKtby/I1XwOIwXDEz9yDpgWewLRJitoXLz7oW/uKty1Lk8KDzvQSFJyJY1WhruemGNc6bmwowIUOHFT8t6g==
+    zAk7zXTpk8li17ihjiR9vRR/4zO+1AozvmtgIhilJYjYJ0S+t6jlq0sbISidVCYQZLxEE/03TbREs/JJI6R7LxOJhELwXoxoq6rfGK59MnzA7hkQ3acwu6gzcWkYV14fyxHFoA==
+    LCHc+URAt3d2Ht9lL453gh18jukXAAAA//8DAFBLAwQUAAYACAAAACEAqlIl3yMGAACLGgAAFQAAAHdvcmQvdGhlbWUvdGhlbWUxLnhtbOxZTYsbNxi+F/ofxNwdf834Y4k32A==
+    Yztps5uE7CYlR3lGnlGsGRlJ3l0TAiU5Fgqlaemhgd56KG0DCfSS/pptU9oU8heq0XhsyZZZ2mxgKVnDWh/P++rR+0qPNJ7LV04SAo4Q45imHad6qeIAlAY0xGnUce4cDkstBw==
+    cAHTEBKaoo4zR9y5svvhB5fhjohRgoC0T/kO7DixENOdcpkHshnyS3SKUtk3piyBQlZZVA4ZPJZ+E1KuVSqNcgJx6oAUJtLtzfEYBwgcZi6d3cL5gMh/qeBZQ0DYQeYaGRYKGw==
+    TqrZF59znzBwBEnHkeOE9PgQnQgHEMiF7Og4FfXnlHcvl5dGRGyx1eyG6m9htzAIJzVlx6LR0tB1PbfRXfpXACI2cYPmoDFoLP0pAAwCOdOci471eu1e31tgNVBetPjuN/v1qg==
+    gdf81zfwXS/7GHgFyovuBn449Fcx1EB50bPEpFnzXQOvQHmxsYFvVrp9t2ngFSgmOJ1soCteo+4Xs11CxpRcs8Lbnjts1hbwFaqsra7cPhXb1loC71M2lACVXChwCsR8isYwkA==
+    OB8SPGIY7OEolgtvClPKZXOlVhlW6vJ/9nFVSUUE7iCoWedNAd9oyvgAHjA8FR3nY+nV0SBvXv745uVzcProxemjX04fPz599LPF6hpMI93q9fdf/P30U/DX8+9eP/nKjuc6/g==
+    958+++3XL+1AoQNfff3sjxfPXn3z+Z8/PLHAuwyOdPghThAHN9AxuE0TOTHLAGjE/p3FYQyxbtFNIw5TmNlY0AMRG+gbc0igBddDZgTvMikTNuDV2X2D8EHMZgJbgNfjxADuUw==
+    SnqUWed0PRtLj8IsjeyDs5mOuw3hkW1sfy2/g9lUrndsc+nHyKB5i8iUwwilSICsj04Qspjdw9iI6z4OGOV0LMA9DHoQW0NyiEfGaloZXcOJzMvcRlDm24jN/l3Qo8Tmvo+OTA==
+    pNwVkNhcImKE8SqcCZhYGcOE6Mg9KGIbyYM5C4yAcyEzHSFCwSBEnNtsbrK5Qfe6lBd72vfJPDGRTOCJDbkHKdWRfTrxY5hMrZxxGuvYj/hELlEIblFhJUHNHZLVZR5gujXddw==
+    MTLSffbeviOV1b5Asp4Zs20JRM39OCdjiJTz8pqeJzg9U9zXZN17t7IuhfTVt0/tunshBb3LsHVHrcv4Nty6ePuUhfjia3cfztJbSG4XC/S9dL+X7v+9dG/bz+cv2CuNVpf44g==
+    qq7cJFvv7WNMyIGYE7THlbpzOb1wKBtVRRktHxOmsSwuhjNwEYOqDBgVn2ARH8RwKoepqhEivnAdcTClXJ4PqtnqO+sgs2SfhnlrtVo8mUoDKFbt8nwp2uVpJPLWRnP1CLZ0rw==
+    apF6VC4IZLb/hoQ2mEmibiHRLBrPIKFmdi4s2hYWrcz9Vhbqa5EVuf8AzH7U8NyckVxvkKAwy1NuX2T33DO9LZjmtGuW6bUzrueTaYOEttxMEtoyjGGI1pvPOdftVUoNelkoNg==
+    aTRb7yLXmYisaQNJzRo4lnuu7kk3AZx2nLG8GcpiMpX+eKabkERpxwnEItD/RVmmjIs+5HEOU135/BMsEAMEJ3Kt62kg6YpbtdbM5nhBybUrFy9y6ktPMhqPUSC2tKyqsi93Yg==
+    7X1LcFahM0n6IA6PwYjM2G0oA+U1q1kAQ8zFMpohZtriXkVxTa4WW9H4xWy1RSGZxnBxouhinsNVeUlHm4diuj4rs76YzCjKkvTWp+7ZRlmHJppbDpDs1LTrx7s75DVWK903WA==
+    5dK9rnXtQuu2nRJvfyBo1FaDGdQyxhZqq1aT2jleCLThlktz2xlx3qfB+qrNDojiXqlqG68m6Oi+XPl9eV2dEcEVVXQinxH84kflXAlUa6EuJwLMGO44Dype1/Vrnl+qtLxByQ==
+    rbuVUsvr1ktdz6tXB1610u/VHsqgiDipevnYQ/k8Q+aLNy+qfePtS1Jcsy8FNClTdQ8uK2P19qVa2/72BWAZmQeN2rBdb/capXa9Oyy5/V6r1PYbvVK/4Tf7w77vtdrDhw44Ug==
+    YLdb993GoFVqVH2/5DYqGf1Wu9R0a7Wu2+y2Bm734SLWcubFdxFexWv3HwAAAP//AwBQSwMECgAAAAAAAAAhAFQBBrnyAwAA8gMAABUAAAB3b3JkL21lZGlhL2ltYWdlMS5wbg==
+    Z4lQTkcNChoKAAAADUlIRFIAAADIAAAAyAgCAAAAIjo5yQAAAAFzUkdCAK7OHOkAAAAJcEhZcwAADsQAAA7EAZUrDhsAAAOXSURBVHhe7dKxFYJAAERBuAYI6b87ybAAPQ0ogQ==
+    HzFbwAb/zTrnPN7fxRS4r8C+jfV1fu479KTAVWAooUBRAKyiqs8FLAiSAmAlWZ2CxUBSAKwkq1OwGEgKgJVkdQoWA0kBsJKsTsFiICkAVpLVKVgMJAXASrI6BYuBpABYSVanYA==
+    MZAUACvJ6hQsBpICYCVZnYLFQFIArCSrU7AYSAqAlWR1ChYDSQGwkqxOwWIgKQBWktUpWAwkBcBKsjoFi4GkAFhJVqdgMZAUACvJ6hQsBpICYCVZnYLFQFIArCSrU7AYSAqAlQ==
+    ZHUKFgNJAbCSrE7BYiApAFaS1SlYDCQFwEqyOgWLgaQAWElWp2AxkBQAK8nqFCwGkgJgJVmdgsVAUgCsJKtTsBhICoCVZHUKFgNJAbCSrE7BYiApAFaS1SlYDCQFwEqyOgWLgQ==
+    pABYSVanYDGQFAAryeoULAaSAmAlWZ2CxUBSAKwkq1OwGEgKgJVkdQoWA0kBsJKsTsFiICkAVpLVKVgMJAXASrI6BYuBpABYSVanYDGQFAAryeoULAaSAmAlWZ2CxUBSAKwkqw==
+    U7AYSAqAlWR1ChYDSQGwkqxOwWIgKQBWktUpWAwkBcBKsjoFi4GkAFhJVqdgMZAUACvJ6hQsBpICYCVZnYLFQFIArCSrU7AYSAqAlWR1ChYDSQGwkqxOwWIgKQBWktUpWAwkBQ==
+    wEqyOgWLgaQAWElWp2AxkBQAK8nqFCwGkgJgJVmdgsVAUgCsJKtTsBhICoCVZHUKFgNJAbCSrE7BYiApAFaS1SlYDCQFwEqyOgWLgaQAWElWp2AxkBQAK8nqFCwGkgJgJVmdgg==
+    xUBSAKwkq1OwGEgKgJVkdQoWA0kBsJKsTsFiICkAVpLVKVgMJAXASrI6BYuBpABYSVanYDGQFAAryeoULAaSAmAlWZ2CxUBSAKwkq1OwGEgKgJVkdQoWA0kBsJKsTsFiICkAVg==
+    ktUpWAwkBcBKsjoFi4GkAFhJVqdgMZAUACvJ6hQsBpICYCVZnYLFQFIArCSrU7AYSAqAlWR1ChYDSQGwkqxOwWIgKQBWktUpWAwkBcBKsjoFi4GkAFhJVqdgMZAUACvJ6hQsBg==
+    kgJgJVmdgsVAUgCsJKtTsBhICoCVZHUKFgNJAbCSrE7BYiApAFaS1SlYDCQFwEqyOgWLgaQAWElWp2AxkBQAK8nqFCwGkgJgJVmdgsVAUmDsG1tJ2Sef/lH9AIZvCrHX5u+tAA==
+    AAAASUVORK5CYIJQSwMEFAAGAAgAAAAhAJ7seq5zBQAAkx8AABoAAAB3b3JkL2dsb3NzYXJ5L2RvY3VtZW50LnhtbOxZS2/jNhC+F+h/EHyuYr4fwSYLkiK3ewu620NPhSIrtg==
+    sbIoSHIco+h/L2VbfmSThZ0ADWLsyaI483E0882D8IePD7Mius/rZurLqwG8AIMoLzM/mpbjq8GfX10sBlHTpuUoLXyZXw2WeTP4eP3rLx8Wl+PCN01aLxOfzWd52UYBqmwuFw==
+    VXY1mLRtdTkcNtkkn6XNxWya1b7xd+1F5mdDf3c3zfLhwtejIQIQrJ6q2md504RzTVrep81gA5c9HIc2qtNFUO4AyTCbpHWbP+ww4MkgdCiH4nsg9AKg8IUIPoaafe8lX+Vl2A==
+    vPP1LG3Dsh4PZ2n9bV7FAblK2+nttJi2ywAKWA/jrwbzurzcQMRbYzqVy7Uxm59eoz7m3LVKH9nVicM6L4INvmwm02obntlL0cLmpAe5/9FH3M+KXm5RQfI6biXruOwAjzF/Ew==
+    zFmxtvzHiBAcEZEOYqtxjAmHZ/aWzNJpuTv4Ra7Zcy6kpwGg7wBYk58GQTcQw2Y526XGohq/Lsqfaj+vdmjT16F9Lr9tsboSeALWhi37DG5eZ8yXSVqFVJ5ll5/Hpa/T2yJYFA==
+    Yh+F8EWrCERdlgyuQ4Ee+ewm1Jxm73nv8abuFmU6CxqX92lxNRAAEEwxJxQjgpHRRCdaJNw6hJAzeDDsNLK0zce+Xj7W/pSXeZ0Wa6FxWhR5vez3qiLN8okvRnnd7Q8PUdpllQ==
+    r4zsHnqV29ubIvt91MtvZW7zSXo/9fXBolfKfNmGCrPRORAdz6ejXuwfQpklGsKYa4NjgoGKteUkBpZQwY1QFJl/NygH7tostB+tLK8CYmidoz+uBgBwxhyQg/5Vkt+l86Ltdg==
+    rMaKkn7nZu/VCmQNXX1pl8VJsRhudTsHrA69qTtwKblL+Aq83ggcgN/swvE1f+jdtRFtr00xzb5Fk7zOo9aHcaDN6yh0rvZiFYi17Pr0fQetfbJbH8u6jZ/2bPobAgEFE5SL8w==
+    oZwM9KAMkVjZJFDOUB4r52jMkJZYwRBty06mHAZUuC2x9iknKBMYrSlwSA5tIVbmxeSwKzqk5TLafHnUTtI2Wvp5tEi7lY/qvMrT9rdoWmbFvJskI98GNm0Vut/aF81F9FfQyg==
+    0jJKi8YH8SavO7hp04tEaajk5ShquzoX1X7RBKkoFMSOkf1BUdUVucjfRela8P/nKTkfnjJOpKAExU4hERPuWCyIgrGRLAmjNeMMkJN5Si1A9snSKBMEoXuKp9ZQp/A7KWJAyQ==
+    UJkJdAhoAiUSgGOMrFBC8+A4eT78UIpTnNAkRqGHxkQAG2unbQwkV0xDxhOjT+aHxoQq9hQ/mMOGbXdWrXPzagXyVOs8JhbPts6f1fFlCYCJ5JgRxrBzHSkEU8RaA5FWIiH4jA==
+    ZkdDhQDG6Vg6RkOBDI1cJ9CFVAhjGmRGWsjfNgGOicWzCfCuyi6TRhuHKMBUEEap1NhYIolTIGR6os6HdQlBQIZrSQzC18ZECRgrolAcrgVMguAHyt+YdcfE4lnWvasbC1UGWg==
+    DQxWVhNioMRW0ZD1kIYJn6IzurQYQhEyxMaIy8A6qUkYBk0SbsyUcshYwrF7W9YdE4vzYB0S1CisnKWaEyyoFOE2KR0M440EYWY/H9bZMEPicCuImV2xDiexsCi0WSl0mOwAlA==
+    Gp3MOgcA0vYp1oUN6dAB6zavnmXdMbF4lnXvqsMiYLFGwiYWGIKgkioMEjzBSHBupUXnw7rQqHACsYwR7jqsAC5WFMAYcJsQCgyz9K1Zd0QszqPWOWqVEDwBYbohiBgJlQaEmg==
+    xFJLCGLnwzrgjHXYysA1TMJcp2islCEx14pZjqkRGr4t646JxbOs+3mdfpwAu+dmtXj8L/r1fwAAAP//AwBQSwMEFAAGAAgAAAAhANX6VI8uBQAAnxEAABoAAAB3b3JkL2dsbw==
+    c3Nhcnkvc2V0dGluZ3MueG1stFjbcts2EH3vTP9Bo+c6AogLSTVOh6SIJhm76UTOB1AkJGNMEhyQsqJ+fZekGKnOOuM0kyeDe7AXnN2FFn79x+eqnD1q1xpbX8/pKzKf6Tq3hQ==
+    qXfX80936iqYz9ouq4ustLW+nh91O//jza+/vD4sW911sK2dgYm6XVb59fy+65rlYtHm97rK2le20TWAW+uqrINPt1tUmXvYN1e5rZqsMxtTmu648AiR85MZez3fu3p5MnFVmQ==
+    3NnWbrteZWm3W5Pr059Jw73E76iysvm+0nU3eFw4XUIMtm7vTdNO1qr/aw3A+8nI47cO8ViV074DJS847sG64ovGS8LrFRpnc922kKCqnAI09dkx/8rQF9+vwPfpiIMpUKdkWA==
+    XUYuvs+A95UB2ervMyFOJhbtsdKfJ0Nt+RJKRujGbFzmxoI78VHly3e72rpsU0I4wMsMjjYbopu/gSp/NPowgz8ZuKl7g+V80csLvc32ZXeXbdadbaYdvkdGOL/PXJZ32q2bLA==
+    hyQktu6cLad9hf3Ldgk0gYMcnTSGluhX+1ar9CY72n13gazHdgMLdVZBqP9poVtbQD+AqjMv57RXGKKh4jKEp44sXA/OFPqup2jdHUut4DBr84+O6uL9vu0MWBwa6Qci+FYAug==
+    7j1/gKTeHRutdNbtgbaf5GzIjCpNc2ucs+5dXUCH/zRnZrvVDhyYrNO3UE7G2cPA81udFXAr/6DfxWVZwR1ftNPio7XdtJWQNGaR4GOkPXpGCPFC5aGIL8LwdLoniKKMrTCEeg==
+    VHg+inC6ihWOsCBC/VAueIIjwiMyxBAvlGp16tEnSOz5VKKIYlShfhgRgUJ5Y4z7BLXGhBeHMY74PD214hMkIaGKcESogKFIKnmCcsCZJwMc4VQRNAvc9xleITwgJEQZBYRJ3A==
+    2or4FI1AeFBv6HkEEwFDrQnOfYnWm4CgV2gWRExiida1SBgNEhRJiZfiUStf4LFJypVEI5AUKEhRxIOywnWgekM0Nhn6SYxWiEz9QKDVKxVL8NjgNCRB+9SXUhGUA98XKgxQJA==
+    FCzC/YQiTNAs+KEfeig7vvIIftKAUs9HswAEKB+t0UDIgKERBNILVigHQcCSFLcW+Cl+hwSRSAO0f4KEcolWfLBigqCxAaES1wl9knCUtzAR0F0osvIoRXmLoINWaGdFHqMxeg==
+    V0WeTBl6v0X8ufsgCgh/xlogQh9FYuqleFXFzAtXaI3GjDH1jA4Xz1gT4pn7Og54StFKjGMp8FssTkhCUEbjlNMIrapEMp+jHCQx/ACgEawin+H1ljIW4tlOhWAc5eD5+SBdyQ==
+    FM+c6n9S0UpUjHOGWlNckAjtOQU/jRJlR8V+lKKMqpQmyXBbLkYIpp9q2b/T/nbTqh9lZ9WokWTVxplsdtu/5Bb9jo17iE094RsNLwp9iaz3mwm8uhqBFl4IpYLZfwKGoKtlYQ==
+    2malt8O6vM3c7mz3tMOhUnhnvP9iK4dRUbs/nd03I3pwWTOOqNMWyvlJ09TdjakmebvfrCetGt5AF9C+Lj48uoGnMz2HZQej5jDq32TDyDrs1fXVp/VIdl66dT+O6tusacapdg==
+    s6PX89Ls7jvaD6IdfBXw4B8+NjvvhHkD5o3Y8JHl/clg92lxlnmT7GIfm2TsLOOTjJ9lYpKJs0xOMtnL7uE94UpTP8CAPS17+daWpT3o4u0Z/0o0klDo3EDG18dqc37d/TZipQ==
+    aWHib+Ah2Fk3Yb8PGBXDC7G7g0J5AO4+6m2ctboYa3X6z8qbfwEAAP//AwBQSwMEFAAGAAgAAAAhAOXQJmG0BQAA4BIAABEAAAB3b3JkL3NldHRpbmdzLnhtbLRY23LbNhB97w==
+    TP9Bo+cqIkAQINU4Gd7QJGM3ncr5AIiEZE5IggNSlp1O/73LW2Q7m4zTTF4ScA92sZezENYvX99V5eJW27Yw9cWSvHCWC11nJi/qw8Xyw7Vc+ctF26k6V6Wp9cXyXrfL169+/Q==
+    5eVp0+qug23tAkzU7abKLpY3Xdds1us2u9GVal+YRtcA7o2tVAef9rCulP14bFaZqRrVFbuiLLr7NXUcvpzMmIvl0dabycSqKjJrWrPvepWN2e+LTE//zRr2OeeOKonJjpWuuw==
+    4cS11SX4YOr2pmja2Vr1f60BeDMbuf1WELdVOe87EecZ4Z6MzT9rPMe9XqGxJtNtCwWqytnBoj4fzL4w9PnsF3D2FOJgCtSJM6weeu59nwH6hQHe6u8z4U0m1u19pe9mQ235nA==
+    lIzQZbGzyo6Em/JRZZu3h9pYtSvBHcjLAkJbDN4tXwHLPxlTLU6bRtsMSg0t4jjLdQ9Ags1+26lOA9w2uiyHnslKrcDsaXOwqgK2z5JBJ9d7dSy7a7XbdqaBTbcKvBd0MpndKA==
+    q7JO222jMrAWm7qzppz35eZP08XQORYKO2kMfdSvjq2W6aW6N8fuAbIdexQs1KqC+B713ZXJde/p0RbPL0SvMHhDvIcuPD3IwJ1ii1xf93nddvellhDMtvikwzp/d2y7AiwO3Q==
+    9wMefMsBXfcnvwcmXN83WmrVHSFtP+mwoTKyLJqrwlpj39Y5cOWnHVbs99rCAQVw7wroVFhzGvL8RqscrvIfPHf9kFbww5C38+JvY7p5q+P4nInIHT3t0TPiUJbKGEVcEicMRQ==
+    GHFEiCKCpsJHkYi6UYQiscvTBEWkJ5jEEZH4KEJiHkQT3Z8gCZMxrpN6qUtRRJLARyOlgeCOQJFQUDGx4gkS0yRGfXMhpxLNm8tYynFECMFQr91QyADNtZtS4ePWUi/0UhSRzA==
+    wzPKOOcpmgMmgHAo31joER+tNpPUxxGPUCbRygESE44iLo/weDyP0fQriCcpfo7grkB7AbLGCO51REgYYAjnhHC05zj3CEOtcai1g1sTIvbRavPEDWJcJ2EuRXktOPVCtHIidg==
+    PYbyQKQ0IWh2/J7AKN984kUO2iVfv6v82OMump1AeCFDdYLUSQjaJYHkNEW9DvuqohkNiePj3AkJJz6OuNTDey6ExnLRKgCpqJxeGk8RIUOUO6HvEfxGCiMu8Q4OY8FiNDuARA==
+    LtoLYeIkDhoPEN6lqLXIpSTEEY9IB40n4tyP0RxEgRMKNJ4oJGGEsiqKhIzQ+kTQJQ56h0QJj3D2RilPPZQ7kaSc4h5IGuJ5i4nDce7Ewk1TlNex7wYczUEcuy5euYSQGK92Ag==
+    dPNQrxPhCZw7CdSAol4nqaAhiqQOC/BIU9L/nKEI99IE7cY0gPsfvQ9SSVIXjUfCb22AskpKlrChG9cjBG+patOPin/ZedU/jBfVqBGramcLtbjqh8l1v2NnP0ZFPeM7DUONfg==
+    iGyPuxlcrUagrVRZSpgkZmBwrdrkRdskej+syytlD2e70w6LSmFqeffZVj8FafuHNcdmRE9WNeODd95CGJs0i7q7LKpZ3h5321mrhjHsAXSs8/e3dsjTOT2nTQcP12FwuFTDAw==
+    eNir69WH7ZjsrLTb/nGrr1TTjG/k3YFcLMvicNOR/lnbwVeu7MfhY3egE0YHjI7Y8KGyPjLYPS3OMjrLHuxzZ5l7lrFZxs4yb5Z5ZxmfZbyX3cB0YmF0/AjP9XnZy/emLM1J5w==
+    b874F6IxCe2NanQyTpZALzMKplGzXdxu9B3MrTovuuWibYq8Unf9GEuH62naXQ6D46O9PdZvbh5byFWn5kHhkfJA8Se+9BNvVgAdt/fV7jzI/jY6XhYtDDcNzLydsTP2+4ARbw==
+    k5vsbd4P46P8HxbAreUTtoqhdVfMp2IV8Qj+iWQSwA0tZRD+O3Xa/KepV/8BAAD//wMAUEsDBBQABgAIAAAAIQCD0LXl5gAAAK0CAAAlAAAAd29yZC9nbG9zc2FyeS9fcmVscw==
+    L2RvY3VtZW50LnhtbC5yZWxzrJJNS8QwEIbvgv8hzN2mu4qIbLoXEfaq9Qdk0+kHppOQGT/67w3CaheXxUOP8w7zvE8gm+3n6NU7Jh4CGVgVJSgkF5qBOgMv9ePVHSgWS431gQ==
+    0MCEDNvq8mLzhN5KPuJ+iKwyhdhALxLvtWbX42i5CBEpb9qQRit5TJ2O1r3aDvW6LG91mjOgOmKqXWMg7ZprUPUU8T/s0LaDw4fg3kYkOVGhP3D/jCL5cZyxNnUoBmZhkYmgTw==
+    i6yXFOE/FofknMJqUQWZPM4Fvudz9TdL1reBpLZ7j78GP9FBQh99suoLAAD//wMAUEsDBBQABgAIAAAAIQDYSGY/4QAAAFUBAAAYACgAY3VzdG9tWG1sL2l0ZW1Qcm9wczIueA==
+    bWwgoiQAKKAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAnJBNa8MwDIbvg/4Ho7vrpKT5KHEKITX0OjbY1XWcxBDbwXZKx9h/n8NO3XEn8UhIz4vq80PP6C6dVw==
+    1lBI9wkgaYTtlRkpvL8xXALygZuez9ZICsbCudm91L0/9TxwH6yT1yA1ig0V67Wj8HVos6JijOGsbUucXQqGqyotcZfn1fGS5uWxKL4BRbWJZzyFKYTlRIgXk9Tc7+0iTRwO1g==
+    aR4iupHYYVBCdlasWppADkmSE7FGvf7QMzRbnt/tVzn4Z9yirU7913JTt1nZ0fFl+gTS1OSPauOnVzQ/AAAA//8DAFBLAwQUAAYACAAAACEAeqhydMUAAAAyAQAAEwAoAGN1cw==
+    dG9tWG1sL2l0ZW0yLnhtbCCiJAAooCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACsj0FqwzAQRa8iZl/LzSIUYzsEkiyTgtusupHlsS2QZow0Kc7tK0KbE3Q5/A==
+    x/t/6t0avPrGmBxTA69FCQrJ8uBoauDz4/TyBiqJocF4JmyAGHZt3Vcd36LFpDr0aAWHTu4+x1/7933nVpmPg5OsvIyjs3gh7wiLNXlQD/BsQoYzC+r6170FlbdQqvoGZpGl0g==
+    OtkZg0kFL0g5GzkGI/mMk+aH+MD2FpBEb8pyq3vXe8dTNMt8/5X9i6qt9fPh9gcAAP//AwBQSwMEFAAGAAgANYKhTtQXNWLXAQAASwQAABAACAFkb2NQcm9wcy9hcHAueG1sIA==
+    ogQBKKAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==
+    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==
+    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAnVRNb9swDP0rhu6NnaDohiBRUbSHHba1QLL2zMl0LEyWBIkxmg==
+    /frpw3GVBbssJ/Lx6elRZLy5fx9UNaLz0ugtWy4aVqEWppX6sGVH6m4+s8oT6BaU0bhlJ/Tsnm/Arl+csehIoq+ChvbrkbasJ7LruvaixwH8IjB0KHbGDUAhdYfadJ0U+GTEcQ==
+    QE31qmnu6taIqOZf9ycb9Cc9sP+rh++EusX2xs4eWfK8x8EqIOTfo4JatIaGTV0WEssQqL0ckDe5OOepbzignyo5juibca3nq+ZTwnMW8cceHAgKDzwdKYBYf7BWSQEUnp9/kw==
+    whlvOqqeU1NVlEmHSlY8FdrdoTg6SadJtkQi46vUs8scZ+8ODg5sH6xODcxArO8EKHwMj8Y7UB4T5QOLjC8IcTdeQMYGRlqPKMi46id4jNPbshGcBE1hbeTvkK5YpmU0xcp6cg==
+    fC9JhRvmPIUlrYzlLV8mQgguifXsgSe7lwbj9OI9/rkLrdI/LCcDZ8NLVpi88lfc9JdwnK0ZLOhTLs9JnsAv/8PuzVPcsY+3vcQv9+VNUr+zIPB6c4pSmlooYBs2oJzajKWphQ==
+    Np2KlwURfcC2YF7Xpr18zV8FvrxbNOF3XsQznPdn/oPxP1BLAwQUAAYACAAAACEAdD85esIAAAAoAQAAHgAIAWN1c3RvbVhtbC9fcmVscy9pdGVtMS54bWwucmVscyCiBAEooA==
+    AAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==
+    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==
+    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIzPsYrDMAwG4P3g3sFob5zcUMoRp0spdDtKDroaR0lMY8tYamnfvuamKw==
+    dOgoif/7Ubu9hUVdMbOnaKCpalAYHQ0+TgZ++/1qA4rFxsEuFNHAHRm23edHe8TFSgnx7BOrokQ2MIukb63ZzRgsV5QwlstIOVgpY550su5sJ9Rfdb3W+b8B3ZOpDoOBfBgaUA==
+    /T3hOzaNo3e4I3cJGOVFhXYXFgqnsPxkKo2qt3lCMeAFw9+qqYoJumv103/dAwAA//8DAFBLAwQUAAYACAAAACEAXJYnIsIAAAAoAQAAHgAIAWN1c3RvbVhtbC9fcmVscy9pdA==
+    ZW0yLnhtbC5yZWxzIKIEASigAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==
+    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==
+    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIzPwYrCMBAG4PuC7xDmblM9iCxNvSyCNw==
+    kS54Dem0DdtkQmYUfXuDpxU8eJwZ/u9nmt0tzOqKmT1FA6uqBoXRUe/jaOC32y+3oFhs7O1MEQ3ckWHXLr6aE85WSognn1gVJbKBSSR9a81uwmC5ooSxXAbKwUoZ86iTdX92RA==
+    va7rjc7/DWhfTHXoDeRDvwLV3RN+YtMweIc/5C4Bo7yp0O7CQuEc5mOm0qg6m0cUA14wPFfrqpig20a//Nc+AAAA//8DAFBLAwQUAAYACAAAACEAfO2/FgEBAABUAQAAGAAoAA==
+    Y3VzdG9tWG1sL2l0ZW1Qcm9wczEueG1sIKIkACigIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFyQy2rDMBBF94X+g9FekR/xE8uhrR3IrpSUdleEJCcCS2MkOQ==
+    JJT+e2W6SlfDmWHmXKbdXfUUXaR1CgxFySZGkTQchDInit6Pe1yhyHlmBJvASIoMoF33+NAK1wjmmfNg5cFLHYWGCvXQU/RdP+VVnRYF7vdxgrfp8wuu07LEVV4kWb7NqqEofw==
+    UBTUJpxxFJ29nxtCHD9LzdwGZmnCcASrmQ9oTwTGUXHZA1+0NJ6kcVwQvgS9/tQT6tY8f9tvcnT3uEZbrKJosabRiltwMHosboYFctiwC7FyBusdGa5rHSbJX9ltNbmvD7CCJA==
+    SVZlBJGuJf9MK999ovsFAAD//wMAUEsDBBQABgAIAAAAIQCTdtZJGAEAAEACAAAdAAAAd29yZC9nbG9zc2FyeS93ZWJTZXR0aW5ncy54bWyU0cFKAzEQBuC74DuE3Ntsiy2ydA==
+    WxCpeBFBfYA0nW2DmUzIpG7r0zuuVREv7S2TZD7mZ2aLPQb1Bpk9xUaPhpVWEB2tfdw0+uV5ObjWiouNaxsoQqMPwHoxv7yYdXUHqycoRX6yEiVyja7R21JSbQy7LaDlISWI8g==
+    2FJGW6TMG4M2v+7SwBEmW/zKB18OZlxVU31k8ikKta13cEtuhxBL328yBBEp8tYn/ta6U7SO8jplcsAseTB8eWh9/GFGV/8g9C4TU1uGEuY4UU9J+6jqTxh+gcl5wPgfMGU4jw==
+    mBwJwweEvVbo6vtNpGxXQSSJpGQq1cN6LiulVDz6d1hSvsnUMWTzeW1DoO7x4U4K82fv8w8AAAD//wMAUEsDBBQABgAIAAAAIQCHONIr1wEAAEcGAAAbAAAAd29yZC9nbG9zcw==
+    YXJ5L2ZvbnRUYWJsZS54bWzck11v2yAUhu8n7T8g7htjx046q061tolUadpFP34AIdhG48PikLj59wPspNKySM1FdzFbRvAeeDi8+NzcvimJdtyCMLrC6YRgxDUzG6GbCr++rA==
+    rq4xAkf1hkqjeYX3HPDt4uuXm76sjXaA/HoNpWIVbp3ryiQB1nJFYWI6rn2wNlZR54e2SRS1v7bdFTOqo06shRRun2SEzPCIsR+hmLoWjD8YtlVcu7g+sVx6otHQig4OtP4jtA==
+    3thNZw3jAP7MSg48RYU+YtL8BKQEswZM7Sb+MGNGEeWXpyT2lHwHFJcBshPADPhliGJEJLBX/A0jxcrHRhtL19KT/JGQzwpFMF6Ml4n6UlPlw/dUirUVMdBRbYCnPrajssIkIw==
+    K1L4Nrw5mYYWJ2Eia6kFHiDDRDLINVVC7g8q9AJgCHTCsfag76gVIbUhBKLxgS2sSYWXhJDs+2qFByX12QUln9+NShb2is+3UZkeFRIUFjlxmA4cFjnHOX7PZHDgxIkXoTignw==
+    vEdPRlF9xpGMzLwThfcjODO9yBEbuRc7svzTkfl18U8ceeaN4ej18YwVd9GCfPy8GZ/7c+R/s2KZzw/Kp1oxlgn6IZrWnS2WUCL/abGMHVj8BgAA//8DAFBLAwQUAAYACAAAAA==
+    IQB6j/j/ygwAAHd5AAAPAAAAd29yZC9zdHlsZXMueG1szJ1Lc9s4EsfvW7XfgaXT7sHxS5aT1HimbMdeuyZOPJGTnCESsrAmCS1JxXY+/QLNhyA3QbFBxLuVQyxK/SOA7n8DzQ==
+    529/PCVx8INnuZDpyWj/zd4o4GkoI5Hen4y+3l3uvB0FecHSiMUy5SejZ56P/vj973/77fF9XjzHPA8UIM3fJ+HJaFEUy/e7u3m44AnL38glT9WXc5klrFAfs/vdhGUPq+VOKA==
+    kyUrxEzEonjePdjbm4wqTNaHIudzEfIPMlwlPC3AfjfjsSLKNF+IZV7THvvQHmUWLTMZ8jxXnU7ikpcwkTaY/TECJSLMZC7nxRvVmapFgFLm+3vwVxKvAUc0wAECTHJOQxxViA==
+    3fw54U+jIAnfX9+nMmOzWJFUlwLVqgDAo9+VNyMZfuBztoqLXH/MbrPqY/UJ/ruUaZEHj+9ZHgpxp1qhUIlQ1KvTNBcj9Q1neXGaC2Z+eVFt098v9A9bLcO8MDafiUiMdvVO8w==
+    n+rLHyw+GR0c1FvOdSM2tsUsva+38XTn69RsjLFpprgnI5btTE+14W7Vt/J/o8fLl59gx0sWCtgPmxdcxer+ZE9DY6GlcXD0rv7wZaUHma0KWe0EAOX/DXYXDboKYRXQ01JX6g==
+    Wz7/KMMHHk0L9cXJCPalNn69vs2EzJR2TkbvYJ9q45Qn4kpEEU+NH6YLEfHvC55+zXm03v7XJcR/tSGUq1T9fXh8AIEQ59HFU8iXWk3q25Rpn3zSBrH+9Uqsdw7m/6lh+5Un2g==
+    7Bec6ZQS7L9EQPNJiANtkRu9bWeuXvQdfkXa0eFr7Wj8Wjs6eq0dTV5rR8evtaO3r7UjwPzKHYk04k+lEPFuEHUbx6JGMsciNjLHoiUyxyIVMseiBDLHEuhkjiWOyRxLmBI4hQ==
+    DG1RaAT7oSXau7nb5wg37vYpwY27fQZw425P+G7c7fndjbs9nbtxt2dvN+72ZE3nlkut4FrJLC0Gq2wuZZHKggcFfxpOY6liQZ3lh6cnPZ556aQHTJnZqol4MC1k8Hl7hIBI3Q==
+    5/NCV3SBnAdzcb/KVHk+tOE8/cFjVSgHLIoUzyMw48Uqs4yIS0xnfM4znobcZ2D7g+pKMEhXycxDbC7ZvTcWTyPPw1cTvSSFJqBV/bzQIhEegjphYSaHN00yb/nho8iHj5WGBA==
+    Z6s45p5Yn/yEGLCG1waAGV4aAGZ4ZQCY4YWB4TNfQ1TRPI1URfM0YBXN07iV8elr3Cqap3GraJ7GraINH7c7UcSQ4s1Vx37/Y3fnsdRHxge3YyruU6YWAMOnm+qYaXDLMnafsQ==
+    5SLQB6bbsWafqfs5k9FzcOdjTmtIvtb1ECLnqtciXQ0f0A2aL3E1PE/yanieBNbwhkvsRi2T9QLtyk89M13NilbRAqmXaKcsXpUL2uFqY8XwCFsL4FJkuTcZtGM9RPAnvZzV7g==
+    9JH51q0c3rA1a7isXmYlr82rkB5aGcvwwU8avnpe8kyVZQ+DSZcyjuUjj/wRp0Umy1gzJX8ALukl+YtkuWC5gFppA9F/qq/PqQc3bDm4Q7cxE6kfv13sJEzEgb8VxNXdzcfgTg==
+    LnWZqQfGD/BMFoVMvDGrI4H/+M5n//TTwFNVBKfPnnp76unwEMDOhYdJpiTJyBNJLTNFKrzMocD7kz/PJMsiP7TbjJeXsRTcE3HKkmW56PCgLZUXH1X+8bAaAt43lgl9XGgwzQ==
+    ONKXr2b/5uHw7PRJBl4O5nxeFXDIEFanYO0PN3xm38ANn9Xv4CjfVOiQ89DZDdzwzm7gfHX2PGZ5LqxnPZ15vrpb83z3d3i9VvFkLLP5KvY3gDXQ2wjWQG9DKONVkuY+eww8jw==
+    HQae7/56DBngeTiKBrx/ZSLy5gyA+fIEwHy5AWC+fAAwrw4YflGNARt+ZY0BG355TQnztAQwYL7izOv07+nEjAHzFWcA8xVnAPMVZwDzFWeHHwI+n6tFsL8pxkD6ijkD6W+iSQ==
+    C54sZcayZ0/Ii5jfMw/HNEvabSbn+pYEmZbXXXtA6sPKscfFdonz5eTvfOataZrl4Vgmi2MpPR3CWk8SYLl5iZjd7DZmIV/IOOKZpR12W1WXTss7Fl7uElrf64jgR3G/KILpog==
+    ORBuYiZ7Wy3rwnjDbPsO28ZpUt/q0WZ2wyOxSuqG4vsMJof9jSFyNozH243XM/aG5VFPS7zPyXbL9Wp0w/K4pyXe59uelpCFNyy7YvgDyx5aA+G4K36aWsoSfMddUdQYt+62Kw==
+    kBrLthA87oqiDakEp2GoD6Rj7/TTjN2+n3js9hQV2SkUOdkpvXVlR3QJ7Av/IfQMSkmasL/mwgKUq2Gx2itz/rWS5SHtjXMx/e93ulYLlDTnQSvnsP85nY0sYx/H3unGjuiddw==
+    7IjeCciO6JWJrOaklGSn9M5NdkTvJGVHkLMVnhFo2Qrb07IVtnfJVpjikq0GrALsiN7LATuCLFSMIAt1wErBjiAJFZk7CRVTyELFCLJQMYIsVLwAowkV29OEiu1dhIopLkLFFA==
+    slAxgixUjCALFSPIQsUIslAd1/ZWcyehYgpZqBhBFipGkIUK68UBQsX2NKFiexehYoqLUDGFLFSMIAsVI8hCxQiyUDGCLFSMIAkVmTsJFVPIQsUIslAxgizU8i48d6Fie5pQsQ==
+    vYtQMcVFqJhCFipGkIWKEWShYgRZqBhBFipGkISKzJ2EiilkoWIEWagYQRYqnJQbIFRsTxMqtncRKqa4CBVTyELFCLJQMYIsVIwgCxUjyELFCJJQkbmTUDGFLFSMIAsVI7risw==
+    OhVouwJ9n37U03oxe/9TV1Wjvph3OZuow/6oulV2Vv/L9M+kfAha78k7hHqjH0TMYiHhELXl9LXJhUsPSCcrP5933/xi0gc+j6i6TQBOjyL4uK8lOqYy7gp50xIVeeOuSDct0Q==
+    qnPclX1NSzQNjruSLuiyvvhDTUfIuCvNGMb7FvOubG2Y4yHuytGGIR7hrsxsGOIB7srHhuFRoJPzS+ujnuM0aa7jRISucDQIx3ZCV1hiX9XpGAujr9PshL7esxP6utFOIPnTig==
+    oTvWjiJ72I5yczWWGdXV7kK1E6iuxgQnVyOMu6sxytnVGOXmapwYqa7GBKqr3ZOzneDkaoRxdzVGObsao9xcjacyqqsxgepqTKC6euCEbMW4uxqjnF2NUW6uxos7qqsxgepqTA==
+    oLoaE5xcjTDursYoZ1djlJurUZVMdjUmUF2NCVRXY4KTqxHG3dUY5exqjOpyNRxF2XA1ycOGOW0RZhjSJmTDkJacDUOHasmwdqyWDIJjtYR9VfucVi2ZTrMT+nrPTujrRjuB5A==
+    TyuG7lg7iuxhO8rN1bRqqc3V7kK1E6iuplVLVlfTqqVOV9OqpU5X06olu6tp1VKbq2nVUpur3ZOzneDkalq11OlqWrXU6WpatWR3Na1aanM1rVpqczWtWmpz9cAJ2YpxdzWtWg==
+    6nQ1rVqyu5pWLbW5mlYttbmaVi21uZpWLVldTauWOl1Nq5Y6XU2rluyuplVLba6mVUttrqZVS22uplVLVlfTqqVOV9OqpU5X06qlG2UiKE9H2n3ceMeRBsNbxNTvi+cl14+5Ng==
+    bryJysd8VkD44XXUvItIG+tmBNVbn6rN0NrqxCP8neWqOqx+s7f39vxocvihagsgcSPChWpFWD26yNKI6hGkzY1C8ADSl02yPKcUmrUe5PrXldPWI1n+bmMcO9tdaKd2tBmc3g==
+    OXplXNga+K4K9G0tVO2ZxeUbs9Qf16ke/sfqbVFlS6MnVqLU9+c8jm9Y+Wu5tP805vOi/HZ/D25/f/H9rHz4mtU+g1RkBexuNqb8WL21yzLe5ePYq3Pk1mDVemsZbrhgY+hI9w==
+    iIVN7+tDJagxZTKAr8qRZIr+Wct8/bWpLtze+hbmF1qbjI/PqpPptjeome9PGzcf2t+fthlXZzKLeAY5pIwb2Kt+UnHV8Z8qNcMfap+8edeZyndrchNVTrZNxDlZ1/HoZCxSNQ==
+    0vxqmPk3N/NSGs3w91EKjkYd/RBYk3oK2imnoCMUnluWOY4hW8+Rvzpkq1cnwhjW+zm4PBq/g6kWXnkIfVK2Vf/rzfq6MIU8u6yAFcnUAEyjX+TjGUujqfjZDFnVt/oXagf2Xw==
+    DNHReHx8cA5ftnXEWSRbsdYQXPf5Vo92GX1z/WhgNUoQWdUozsrGned4bMuBCastoTE+v6wv653Ap0pM665YOhYzP/0y/B7JVS3V/1GnwFuKuK1XfQfIE2qmBLT/jWflXI4HNA==
+    XzRpJIw5g7WjmTjVx7mI9aLw3cXBJRwogbG7hI0vta+33gl4LSdkI9IIQlOvZPbz/6qpPdfbzQxhPPkEHnyi7cxpAT0ZpW0iaF2mW2YEy6LLPkG0pfa3e/qfmbHX/a7/yn//Lw==
+    AAAA//8DAFBLAwQUAAYACAAAACEAV036QRQBAAA3AgAAFAAAAHdvcmQvd2ViU2V0dGluZ3MueG1slNFNSwMxEAbgu+B/CLm32RZbZOm2F1EEv8CPe5rOtsFMZsmkbvffO65VkQ==
+    XtpbXpJ5mMnMFjsM6gMSe4qVHg0LrSA6Wvm4rvTry/XgUivONq5soAiV7oD1Yn5+NmvLFpbPkLO8ZCVK5BJdpTc5N6Ux7DaAlofUQJTLmhLaLDGtDdr0vm0GjrCx2S998Lkz4w==
+    opjqPZOOUaiuvYMrcluEmPt6kyCISJE3vuEfrT1GaymtmkQOmGUeDN8eWh9/mdHFAYTeJWKq81CG2XfUU1I+KvoThj9gchowPgCmDKcRkz1huEPYaYWuvF1HSnYZRJKRlHSleg==
+    WM9lpfKB3WN8u78zX8mGQO3Tw40E82/d808AAAD//wMAUEsDBBQABgAIAAAAIQCHONIr1wEAAEcGAAASAAAAd29yZC9mb250VGFibGUueG1s3JNdb9sgFIbvJ+0/IO4bY8dOOg==
+    q061tolUadpFP34AIdhG48PikLj59wPspNKySM1FdzFbRvAeeDi8+NzcvimJdtyCMLrC6YRgxDUzG6GbCr++rK6uMQJH9YZKo3mF9xzw7eLrl5u+rI12gPx6DaViFW6d68okAQ==
+    1nJFYWI6rn2wNlZR54e2SRS1v7bdFTOqo06shRRun2SEzPCIsR+hmLoWjD8YtlVcu7g+sVx6otHQig4OtP4jtN7YTWcN4wD+zEoOPEWFPmLS/ASkBLMGTO0m/jBjRhHll6ck9g==
+    lHwHFJcBshPADPhliGJEJLBX/A0jxcrHRhtL19KT/JGQzwpFMF6Ml4n6UlPlw/dUirUVMdBRbYCnPrajssIkIytS+Da8OZmGFidhImupBR4gw0QyyDVVQu4PKvQCYAh0wrH2oA==
+    76gVIbUhBKLxgS2sSYWXhJDs+2qFByX12QUln9+NShb2is+3UZkeFRIUFjlxmA4cFjnHOX7PZHDgxIkXoTign7xHT0ZRfcaRjMy8E4X3IzgzvcgRG7kXO7L805H5dfFPHHnmjQ==
+    4ej18YwVd9GCfPy8GZ/7c+R/s2KZzw/Kp1oxlgn6IZrWnS2WUCL/abGMHVj8BgAA//8DAFBLAwQUAAYACAAAACEA7jOqfyMRAADOjwAAGAAAAHdvcmQvZ2xvc3Nhcnkvc3R5bA==
+    ZXMueG1svJ1bc5zIkoDfN2L/Q4eezj54BFRRUI7jOcF17TjjGZ+R58wz6kYWaxp6gR5b++s3qaYlWkk1FBS2HCH1Jb9KKi+VWUD33//xfZ9v/kqrOiuLdzfmT8bNJi225S4rvg==
+    vLv543P8xr3Z1E1S7JK8LNJ3N09pffOPn//zP/7+7W3dPOVpvQFAUb/db9/dPDbN4e3tbb19TPdJ/VN5SAt48aGs9kkDD6svt/uk+no8vNmW+0PSZPdZnjVPt5ZhsJsOU02hlA==
+    Dw/ZNg3L7XGfFo2Qv63SHIhlUT9mh/pM+zaF9q2sdoeq3KZ1DQe9z0+8fZIVzxiTItA+21ZlXT40P8HBdBoJFIibhvhrn78AbDWAhQCsTtUQdoe4rZ/26febzX779sOXoqyS+w==
+    HEhwSBvQaiPANz+DNXflNkwfkmPe1O3D6lPVPeweiV9xWTT15tvbpN5m2WfQAlD7DKjvvaLObuCVNKkbr86S/otR91z7+mP7xkHJbd30nvazXXZz2w5a/x+8+FeSv7uxrPMzQQ==
+    q8TFc3lSfDk/lxZv/rjrK9N76h64726S6s2d1wredsd2+t074sPrR2LgQ7LNxDjJQ5OCr5rMaKF51oaGZfPzg9+P7SQnx6bsBhGA0+9n7C2adHBhcOi7U1zBq+nDL+X2a7q7aw==
+    4IV3N2IsePKPD5+qrKwgdt7dcDEmPHmX7rP32W6XFr03Fo/ZLv3zMS3+qNPdy/P/ioX/d09sy2MBfxPHEo6Q17vo+zY9tNEErxZJa5NfW4G8ffcxexlciP/vGWZ2lhiSf0yTNg==
+    pWzM1wihvhLCaiXq3tEOM4+vjl28S2kg8qMGoj9qIPtHDcR+1EDOjxrI/VEDCcyaA2XFLv1+CkQ8DKKOcSTRqMyRBJsyRxJLyhxJqChzJJGgzJE4ujJH4sfKHImbKnCacivzwg==
+    nrMTibdf546vEfO440vCPO74CjCPO57w53HH8/s87ng6n8cdz97zuOPJWp17KrU2HyDMimZxlD2UZVOUTbpp0u/LaUkBLNFn6eG1i15aaTlIDZhTZusW4sW0bSIej3uICNL56w==
+    edN2dJvyYfOQfTlW0J4vVTwt/kpzaJQ3yW4HPI3AKm2OlWRG5vh0lT6kVVpsU52OrQ/adoKb4ri/1+Cbh+SLNlZa7DRP35moJSk8OzT0z49tkGQanHqfbKtyuWploi0//JLVyw==
+    56qFbPxjnqeaWL/qcTHBWt4bCMzy1kBglncGArO8MejZTNcUdTRNM9XRNE1YR9M0byf/1DVvHU3TvHU0TfPW0ZbP2+esyUWK71cd5vS9uyAv253xxXrcZV+KBAqA5ctNt2e6+Q==
+    lFTJlyo5PG7ajelhbP+YVcfxy93T5rOONe2ZpKuuFy4SwFFnxXH5hF7QdAXXM09TeD3zNAXYM295iH2EMrkt0N7r6WfujvfNYNAK0qSgvUvy46mgXR5tSbPcw14CIM6qWlsYDA==
+    YzV48K9tOduaU0fme9FyuWIvrOVh9ToraVWvQ2rQMi+3X/Wk4fdPh7SCtuzrYlJc5nn5Ld3pI941VXnytX7IW8Ikk0I+2h8ekzoTvdIFYvpSfz6nvvmYHBYf0Kc8yQo9dove7A==
+    kyzf6Ksg3n/++Mvmc3lo28x2YvQA/bJpyr02ZrcT+Lc/0/v/0qOgB01w8aTpaD1N20MCFmQaFpkTqdxpIkGZmRWZljVU8P6ZPt2XSbXTQ/tUpafLWJpUE/Eu2R9ORYeG2IK8+A==
+    DfKPhmpI8P6dVFm7L7SY1tvpq4/3/5Nul2enX8uNls2c346N2DIU1amQ1odbvrJf4Jav6p/FLt9d1rqchoO9wC0/2AucroMN8qSuM+lZz9k8XYd75uk+3uX9Wscr87J6OOb6Jg==
+    8AzUNoNnoLYpLPPjvqh1HrHgaTxgwdN9vBpdRvA07KIJ3n9X2U6bMQRMlyUETJcZBEyXDQRMqwGWX1TTgy2/sqYHW355zQmmqQTowXT5mdblX9OJmR5Ml58JmC4/EzBdfiZgug==
+    /IyEm/ThAYpgfUtMD6nL53pIfQtN0aT7Q1kl1ZMmZJSnXxINe5on2qeqfGhvSSiL03XXGpDttnKusdg+4XQZ+c/0XptqLUvDXmaS52WpaQvrZZEQkpeXiMnFPuXJNn0s811aSQ==
+    9JDLQl96d7pj4fWQQvtJO4K/ZF8em83d4/NGeB/DjFHJc2N8ITY+4NA8sfOtHkNiH9NddtyfFcX3GTAyXVh4zoUwHRd+WbEvJO2JknhMNi75Uo1eSDoTJfGY7kRJkYUvJK/5cA==
+    mFRfBx3BueY/z72UxPmca170LDw47DVHepYcckHnmhddhMrG227bjXRsnWkxI5efFjxyeZUoklNUwklOmRxXcsS1APs9/StrV1CVpCnGe76wAOVqUaxOypz/OpanLe2LczHT7w==
+    d/oABUpRp5tBDpl+Tuciy8jncXK6kSMm5x05YnICkiMmZSKpuFJKklMm5yY5YnKSkiOUsxVeEdSyFZZXy1ZYfk62wpQ52WpBFSBHTC4H5AjlQMUI5UBdUCnIEUqBisRnBSqmKA==
+    BypGKAcqRigHKi7A1AIVy6sFKpafE6iYMidQMUU5UDFCOVAxQjlQMUI5UDFCOVBn1vZS8VmBiinKgYoRyoGKEcqBKurFBYGK5dUCFcvPCVRMmROomKIcqBihHKgYoRyoGKEcqA==
+    GKEcqBihFKhIfFagYopyoGKEcqBihHKgnu7Cmx+oWF4tULH8nEDFlDmBiinKgYoRyoGKEcqBihHKgYoRyoGKEUqBisRnBSqmKAcqRigHKkYoB6o4KbcgULG8WqBi+TmBiilzAg==
+    FVOUAxUjlAMVI5QDFSOUAxUjlAMVI5QCFYnPClRMUQ5UjFAOVIy45p/dqUDZFeim+q6n9GL26aeuOqV+79/l3EeR6aizVnLW9Mv0/bL8uhm8J4+IfmMaJLvPs1JsUUtOX/e54g==
+    0gOlk5W/BddvfunTF34eUXebgDg9iuB0qiTaU6HXXL4viZo8es3T+5Ko6qTXsm9fEi2D9FrSFXF5vvgDliMkfC3N9IRNifi1bN0Tx1N8LUf3BPEMX8vMPUE8wdfycU/Q3rTJ+Q==
+    tbQ9cZ7Y83WciHDNHXsER0645pbYVud0jANjqtHkhKnWkxOmmlFOULKnFKNuWDlK2cJy1DxT4zBTNfX8QJUTVE2NCbNMjTDzTY1Rs02NUfNMjROjqqkxQdXU85OznDDL1Agz3w==
+    1Bg129QYNc/UeClTNTUmqJoaE1RNvXBBlmLmmxqjZpsao+aZGhd3qqbGBFVTY4KqqTFhlqkRZr6pMWq2qTFqnqlRl6xsakxQNTUmqJoaE2aZGmHmmxqjZpsao66ZWuyiXJhayQ==
+    wj1xtSKsJ6i2IPcE1ZJzT3BGt9STntkt9QgzuyVsq7PN1bqlvtHkhKnWkxOmmlFOULKnFKNuWDlK2cJy1DxTq3VLQ6aeH6hygqqp1bolqanVuqWrplbrlq6aWq1bkptarVsaMg==
+    tVq3NGTq+clZTphlarVu6aqp1bqlq6ZW65bkplbrloZMrdYtDZlarVsaMvXCBVmKmW9qtW7pqqnVuiW5qdW6pSFTq3VLQ6ZW65aGTK3WLUlNrdYtXTW1Wrd01dRq3ZLc1Grd0g==
+    kKnVuqUhU6t1S0OmVuuWpKZW65aumlqtW7pqarVu6SOIZCqfjnT77eI7jlqw+BYxeH/zdEjbj7nu3XizO33MZwcUb/ywe/4uola4VWPTfetT97TQtjvxeBpRCOKhto8w1rb7gA==
+    IslQ3QeNPt8OJD5m9PXAkk8jFYq8TOX53Z1pXubr9L6L2bqqd9Oa7orOwrRX5+hkfZmCvHPnMQ1Bn/v89L1Y8MeHYgeAb913Qp003X1PTih4PUjz/GNyend5kL81Tx+a06umIQ==
+    bnJ/9fr96SPWpPKVSDhSwO2lMqeH3XdzSeb79KHr3ZlwqUu2UTUw3eKyjKUzPdGHn7Xp3TMsbhl+rRa6p/g0swmM9lsb3H2vvnR9tQOp6qx1CvEWA/5ZPO6ySfd9cts2+5zf4Q==
+    Gu1PZ6Tzl7JJjvsiTWyPNbiEyCiv7eKZhFouC2I7NCnzDd+xmGd7NLRj3zQDH03NqMDAgUU+8Wxx5n+5wq5hUGITh9rEosQKfOqHvhs6UWxZVhwQpPCowMoKx4y6LvUsZlgBhQ==
+    iOOW7dDQNy0/YpZpO0jhUYGVFY6o58YBDGvwgLp+xKPAY0ZkmtRwDJO7SOFRgZUV9onPA4s4Xhz71OGRy5kdRdyPPUYCj2MfHhUYUNjhNsho8mFCPdO2iRtwj7LAcqPAiA3LcQ==
+    TMe0KEwL8uExgQGFA9b6vB6FueMZsRvY1LEjyinx4sAxmMu459Mohpz0WuFRgZUVNmPuB5bhhtTwqccgP1Hwxph4ZgypigVI4VGBlRUmhBuuF5OIxIRS7nPftnjg2kYUByH3Iw==
+    pPCowMoK244f25CYuOEH1DKoZ5iOQWwbkpYFUY+zxKjAygoHLDJiFts+dTmNPN917MALDTP0LVgQAhspPCqwssJRwMCSkEX9yIf8b3kmi8KAWRZjYF8e4zw8JrD2DHObcpdYxA==
+    9UMKqxVkzIj4seUbrm9GXohneExgZYVjOwhcSPqhRSJqhZDiQ992jJgbPDY9FwfdqMDKCoecea7JLct1KKUxFF808APToEEQEagecec1JrCywhDcAaQpyKxQfLkQ5W0JG4C9Yw==
+    O+Khg1e6UYEBhanjEF21hBGG3LEc5ph2TLkTthVBSL2YWrCYxQN5eFRgZYVjzw1heqhlM4uGJqwBPHCiEBTxQ5sSvNKNCqysMGOmS4KYEgcWW0Jcz/ACN4g4NyJCgxArPCqwsg==
+    wjalYewzP4LflEah6zLTYUbIgxCWBBuXl6MCaytsxJFp2JBZKXQ8duC7MY2d2PUg4gPu4pVuVGBlhYnpxi70Z6FtQlq1OeceCWPXd1hAbHOo+BkTGFLYNQgTa6CGPGy7thM6Fg==
+    5HzIqrCIWR6sYg53Lc+3Y4YVHhVYWWHumZw64H5+wGjAOTQSEEHMhnIm8MCSuIAfExhQmBAKRb6mPBxYIdQxMUwPoSaPfSh3I8MLwTtt37ZPX8R+kYfHBFZWmDAoBmBh5YbpgQ==
+    Z0IXAc9YduS0VbpBBnx4TGBlhUMHqi4oX1gYwUIFCYsbYRw7DqeBExregA+PCayssOUSE5YB6BviiLZVuQ9x75qQqHhk+ZaJFB4VWFlh14FGx4LIiaE0YDbx/CCOXM+BvOUT2w==
+    wC3SqMDKCpumbzHfianDIkpMhzsOjb3QZSyMLdP2cNc8JrCywpHrRsxnDmQmBkEPKYuzdvaIbziR4eN9iVGBlRWGOPeYFfI2T0FPCX0aM4hpelCO+1EU43p4VGBlhT0I8ohRgw==
+    UTegxCCe3baXbWHAfcfxcS0xKrD2DDtBACUA5CnOqeUZ3A95yEJoJ6PIhh5+YF9iRGBlhX1OLB6SkLmhS10Hii7Hjk1o21wOBU2M8/CowIDCLCbB6Z5jDS5h2px4oU2gMqSGxw==
+    PQrdJSHwn4aeS3DQjQqsrDAMF8a2GdDQgeXWcSGjho4dRJFlBSGJsQ+PCqyscGtOg1LfhSiiHvE84lueZQdGAGVkxAeyxJjAygqDUaPYomZsQRljcss1wLgWLF3gkJyFeF9iVA==
+    YGWFCZiVMMoYiWOosyOXeTSKAtPyPdFk4mptTGBlhRkPoBiwbIPYLpQGNvdJ0O6sx5CwWBjipXlUYG0f9gIz8o2AtGsWDUxOIs+OTMe0GfxYA/vDYwIrK2y5dgChE0PSdyhxoQ==
+    G2YW5bEJrskhC2CFRwUGFH45xatBYSOCMHejMDKgbDQhr4I/OiGB5Ar1TYRbpFGBlRWO7QgWKegV/JBRC7pK0/MNagfQT0SUWmxgu3VEYKLC57/qn/8fAAD//wMAUEsDBBQABg==
+    AAgAYXUySs8HxCJTBwAA2kYAABMAKABjdXN0b21YbWwvaXRlbTEueG1sIKIkACigIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAALVcbW/bNhDm5wH7D8G+d04sSw==
+    9oZMRV6MYkOXFp3XbZ+ELHayoK0dOG5R//ltx6MViRKPdyQVBEEk8e55nqPEtxOV//49VS/VV/VJfVRH6otaqa16VPdqo9bqJ/WdOlHfq2P4ewQla3UD15dQulZ3WPpZ7dSteg==
+    AVYFnL1UpfpWfaNO1ZW6Bqw/wHoL9u/A9wGPd+pPZHoL5frs6MC8Bk6Dt4XjH+HaPXBtwecRfm/B8gXg7KHs+lD2CFfWyDICuwb/Ec7ngFqfzwF9BfaacQ++OgptVT2pG4H6Ew==
+    lakZ/I5Ag4nhCH5O1Su0r9QvYGu0XQNepV5jHaxatrY97VGpM9D2ANfu4Uzr2IFlpX5Wl4CW5n8K+lMVhMfTLTmHvzuo8X/g+Arv10oYmQRJGqNMVXq0C7j6CWtT46+SY6bxYg==
+    I/cpDI+/ObrCp0YWZddLGkufzVb8Gsp2GNUW4/wKx7aNsTvHfmvfsule0Yr6Vn2kC1C4wR5S94GNpfu6RqU8XNgbvFPXYLmHVrqEny22Ud1KT5DFb2H4OJRQ5jHLPBYwjyOYMw==
+    ljkTMGcRzBOWeSJgnkQw5yxzLmDOI5gLlrkQMBcRzFOWeSpgnkYwz1jmmYB5JmDWfdUd9nBvYEZzi7OYVY/dbdVXQKH1VbxCnbqf7PZAVInpnSkvuwceCfpgUxMPqHqDRy6deg==
+    hnYH/rSNsTuDWtDjhZ7HaZ97uBOl86pW57aWI1eoXV/Rs9GP0KIzuHIN+naHWbKbm/ej1EkY4/Xn2EqkllKNubPt2fd+8TRSts/rJ7ttQeHoOcLWWk1UoOgMntU5zA/eIDZnYw==
+    +HgkWsMjWlf43C/xid3C2fxQG3ssuwTUG7Ct1xv1/KXq3cmhEev4hlXpr42ag0O/fJqBlgm+7QhjmIeJpa6p8Ehqz5g4GtZholhAyUPkHWl8YyJpM8fE8g5XNdc4OpkRqsKeyg==
+    PPX6ub9Qf4nukByJjzNElTvqy0OfpNcLO+TQK/O1o01KLbVqOSql6h58b57GgQV4fcB7WXrKDDPtGcrVHXV0zqZfK/Hefr0S9tSIcpxJhtmHqc6dc1Wjs503a4/6JVly2sm22Q==
+    XmEs3bqU2fkUyO6OJA9RKSprZnq2yuqbh0aUZkvCVKbVhm9sSscIiTh8lPwEvfU5YpWtY83ZLqF9r5Dtb5xTlb0rNY5tRaOZfrleZy0PM5XSU1YzUJ40Vz3qltZZjdeUuhHqFQ==
+    Wn/UoEo0Mu3lZ6nXgVWnJv3lbUYKgebd45q3nzOrDrx0ec3rQwjlHTO8Y5Z3HMWbMbwZy5tF8U4Y3gnLO4nizRnenOXNo3gLhrdgeYso3inDO2V5p1G8M4Z3xvLORLznmCP7AA==
+    3jetOZEeFUqRla3BhxavxNWDhvlIVcp7XRtpAfWuj8yagaq9vpVblwstXglfe5yPVGVo7XXrqV8jstibsbh/zcbjRm35mrS/wil68Q+JpuMYVp2vBvQd3eHdvVHmLfhSfTnkzQ==
+    7RlCf6aSitBEmqKCim6ufoXV/AJ+zgDhAs417qV6D1f1WT+aMA+jPpTFrfY3Zd4W6F0ZdVaudF7VrG5rHtmV+evqC7PvqpEwuHUucHXStXVd1Zxuazfye9S0jMqKxvtqlSnMww==
+    xNLOJ8b7xsTCZzL9iHN867FqrW99K9rhsPhYw5TFxB6SLx0KiY87PYtb42+wHw97B0P3J8+B2q6NYdUOXzNNSxuyZijU1Jqh1VJzvy0+bTvvXgO3t0Hgdv5Ugh1E9VsOHilWxw==
+    WKBjLNJBZzckOjKBjkykg852SHRMBDomIh109kOiIxfoyEU66GyIREch0FGIdNDZEYmOqUDHVKSDzpZIdMwEOmYiHXT2xKXjLa5Kdph5X0H5iOy5Rkl9V3tXBdXD+lTL9qcciw==
+    d70cB+x6OWbqM3YfhmunRApK2q4QbraeGm1/L0U8xjD7X54nTtduixSUtFi5dUtItL4vClIR5FFKv2uIibB9XO9Fj/WUR+RipSOR7wKYqB+C9hlo+7B9BoaB1hqyxgpb26Wv3g==
+    RtEjknR9kzqeTXBPu9QyZKfpMM9XFriPJQvex5KR+1hCny9XXjk1z52e2fbFNsx6fah8wnAZhOeK2ZUbTMMZLjcwTMxxOcRhccPqJD23GFZHvrlBOkZI7HGzFCm6a8YQ7xsSlw==
+    dK4ix+TWixt8Vra4k/VWUW9V/aOqjUSPqbadb0TtIkpmnnSvWIqs7DmLDy1OjXlnzVlwKug337yC5i23xIpT4n9n3lXjG8nNKF4GWdvqJOixc7Lusxhizc/HJE96O1ZZe7X7ug==
+    +LbdRqHadduGbtM2Uty9sDGkltw9kCqr7fx9g8Sq3XvH9jQ+/6ZlSqw4NZJ23vhL5yRlhI+tVM4k0S3pQUKsba2x/VN3nOda/e9YF83ciPpO09fm7XVUgV9BSy2lq+TC+W11ow==
+    rP4G9hh+Jrizo31u9nTYFjRWv066e5k5C83Ho1D3T3JPXDuu+18J018At/f6+//PiraU/meZUv0PUEsDBBQABgAIADWCoU4+/KJhNgEAADwCAAARAAgBZG9jUHJvcHMvY29yZQ==
+    LnhtbCCiBAEooAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==
+    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==
+    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAClUktOwzAQvUrkfeI4aSlETioBYkUlJCqB2Bl72pomdg==
+    ZE+b9mwsOBJXIEnTIBA7dp55H8178uf7B58fqjLYg/PampywKCYBGGmVNuuc7HAVXpJ5waV18OBsDQ41+KDVGJ8pmZMNYp1RWu9cGVm3pkpSKKECg56yiFEychFc5f8U9MjIPA==
+    eD2ymqaJmrTnJXHM6PPi/lFuoBKhNh6FkTCoRoXvYR+1p5oWWVlXCfS9Qy3kVqyhc7qgFaBQAgXtkoX1GI0UXMnM717fQGJA+0k6EGhdN23h2Fin/IAo8NLpGtvuuk0pPC7a6g==
+    VhrU9bHbONjrrtmCcTq++VDGyRhU0EbO8FhDTs7IU3pzu7wjRRKzqzCehjFbsknGZtkkiVKWTONZ+sLpL59v42o44t/OZ6OC059foPgCUEsDBBQAAAAIADWCoU5LIIkAfhcAAA==
+    ZpUBABEAAAB3b3JkL2RvY3VtZW50LnhtbO1dbXPiOLb+Kyn2w37KoFfLTk16y4Dp6XszXanubM9O3dqiHHASqsGmjPM2W/vf75HfsMGAARMMaKY62LItS+dIz3N0dCT/+o+38Q==
+    6OLF8adDz71u4F9Q48Jx+95g6D5eN56Dh0u9cTENbHdgjzzXuW68O9PGPz79+no18PrPY8cNLiADd3plXzeegmBy1WxO+0/O2J7+4k0cF649eP7YDuDUf2wOfPsVMh6PmgQhrQ==
+    ObaHbiN+fjLsb5EDPBU8+06SiY3ZQibjYd/3pt5D8EvfGze9h4dh30mygUwwyhXjdbJYjMIcXj1/ED0ujya+13emU8iybbsv9jTJrv+2cXlYs/9k+4HzNssDb5wJbxpNfTEjsg==
+    RUZQQ4LnsxqXUtbY9n8+Ty4h54kdDO+Ho2HwHuotycaDJua7V3EWl2lh5CNXUWHin+QJv8x7o0c6cQONWorvjKAMnjt9Gk5S9Yy3zQ0uPiWZvKyqxMt4NGtaZVvnsrbVifQyyw==
+    cIseszpHjEpoRGaRPlGmCPl3FvX+1+1EkxEu5ptlQBYy0KbOZlnwOIvm9H086xqvk8fdtPzZ954ns9yGu+X2xf2Z5uVuVsG4tWRb8HS3wnx/sifQlcf9qy+Prufb9yMoEej+Ag==
+    1HcRauBC9pKG5Jd7b/Auf6eDIP659eWBH/90PTeYXrxe2dP+EGT03Xn0nIt/fmlA0pPpTueS+tPseVPm0PdGng+XXuwREF+XWcKQdwZQL6ctr1037H4fujxOk6H8AyixjuIspg==
+    fyXPEz1Nak/nEptpoe3R0E6v/u2r/XJ10fzsuL3/8aDT2aPezdB14nwC+zF/o/U28fzAGjn9W/tdItG094cUM8ZUp/FDw0HyzCVGAiNKsE6ia5hfDezAbg1dSe1w28R3HoZvvw==
+    25MJnIN0IhW7U3T9d4kAs54/eHdtOJteuvYLwKgsxbS5sjTNv0uJvQHoP103mpDlFdRAXv4WPv2v8egW2OT/8L/Da4sCACkGnu98CZzxl8514z+GyXWDaNplp4vwJSOt9qVBhA==
+    uNS5hilnVLc08d+0mlBEB6AeWpvTl4gfqyBtQHBguYNcY8o1Bfs58Bb1i4r0i3L6bebzhuM2tFGQzak140wzI0hnjIEykgcnI7vvPHmjgePHVqLUdXJ/x3mwn0fB7eymHkY61g==
+    NZ2L9C35LAo0KhuG0uoetSq4QaCHYRw/N/L6P5OL/aj2N5DkDHZWOitW+tWjJEGl40MQULPtTd5vPG9SDRNhjXHCiI6MYyOiJH0mD0VM9W7emVbHEDKAl4imeOlklMow4AgHow==
+    VtESlAwe8qfDwbfrBkImZ6SLGnHSrUxqdaghPS3xXXFtwysgQZOEg6zJsTeP5qwOx10RyESOsq+mE2hw1w0gxanjvziN8I4gui+sWlbtWodRYjbOo+anhGkb2WHNW/vRCQ++WQ==
+    v3+5uzO/tq2e2fnxpW217Ykknqp8BhxpFJcbyekIMcqpYIDH0AjbLdbqtPSOsLqEkG6bLgHQIzX9kvNEE8n5MoXA9Z2sxavAeQuW8UzcvvJs4Hveg+XLZhy8T6BpTifOaPQ9gA==
+    OsY5psBx60vosEzSMnEjiya6xkSLHj+afFqmlTlAKZYZiLgxk3wq4mYKQDkEFhbpxA7Lo5bZ5txjIm7y1pnUXHFPmHL3FlRFNTrCBkGM7T4+W2arnxjVxPKvP7O025TSbo5ZqA==
+    BVhhHT9WfIqVUAWRyAYbZno/in/il9yDcN9HTlKKOzlL9tkfJoNauA4jHrg6ch6Cru+N70ChIAE9Gv4NH58WU18cPzDd/pMUitR/KGXP/ytJG9v+o5yMjXL/1/eJ079uhFklaQ==
+    f143KEKzIvwB6a+g2kZa58woF663oPk7/jQ88yZJXVwvmt7px/oJH5FCj3OKYTh5j6zhlo/ee0Hgjbd8OKz5ls8Ooe0OnN92evrHVk83FwR/PwIAST0kiJnhQw9Dfxp880B7YQ==
+    zxjZ8dnsInSf57GbuZ4khLe43m8t2x2kZz+iM5wpRNqSZbuN/CbDAWQSNRqOWLbEyT3BHI5oBPG2kcORvJvjzs+khTn0o7/x6/t/ZN+XtNPBm52+vH+7X3bfzN2zNTXf+kMXdA==
+    NJ7Y7rs5GIARM63Idy8MYGmDUn7svvtlrFoouo9x8xeRbW1a4qwNCK5RInAK/qsNNWQaVpcw3CWoxaDt6EhQSizd1FvC0DpGJb70QjNlOU6scYdmAKRqd+jG7t5J8lurxlAdLA==
+    NePT2yRus6rBBEKcM40ktXnyZFjb7aj/2yBuLaePW7NHsyLeebwQh9ieaV+sel7B9W7lYGG7fhiHcsLhBCzFETSXi8FwGtyFppg8aqVHN+nRt8hQm2B2ZYfm/hcw1rhod7SuZg==
+    xRecwTCQyaJL9ZZBcCN8BQwUZHy3jGEmgOKaACug/y6tAo1gEpsEcNvDA0C2Fd08Ct8WhH/BPDO4vO8+OYgekJThXwwjmxG6FxhlcWO9wMk9/a8vn3178jTsd324Q9bfBitylg==
+    Iif6pjvHnrte+8l2Hx0TRmz9YGbEri7Arq/NZNUBWLp49heDPMvHvn/6FY5kN60kkj7KzX0Bjcg6yxMQRawvVKyv5KboEVuWIFJPgXjTJN/3Xp8cezBNpZ7PprlQjvvRcNIdjg==
+    RvIV8vjCv3LG9w6UC9q0FkoVmuzNNIiPIrn+h+gmQgZpXbY5al8yJKxL02DiUiBLMMR03Mbt/8qnoSM8T2XDskedybCCJQWRRRRVLixR8huWsRnVQhZ26ve/gYDkjXAS+E7Qfw==
+    kocPUNvkQjNzpZkXhzybSqfA/evv3iAZi8sM3h78sfyFMl68hWV5T0oUiSjp3IKKTOfWeFLoJIMJDAs/OzCilgcgcChU+AL7BeoS35vcI9NdTxYtes/Izac0o6RmUuz4EP6F1w==
+    Mj0jex51ywj2QlBM0TByw0RW01Kv/QkbU/FpD/eqsac4J0RnBmGlLH7KDEE1pmm022U6snTNZJbVxqRl6h1Gz2QicL09NtPSx7twlT1WVe+VLuA5deacwQqFSEUohA2hUYp0Qg==
+    FAztAYaIgqFTgiGiYCgvEFoVDDGKCaU0XQuhYKhKGKIKhk4JhqiCobxAWEUwdIk1QA/GOS0XnqlwaDMcYgqHTgmHmMKhvEB4RTjEiEGx4CXD9hQKbYZCXKHQKaEQ3wiFdljQFQ==
+    XamPJlbWdL0ASsZ/HVv7TKUS9KMfPwmBC1tPDeJAJ4BcaRQoPIU0LRMAitPAWRUAejQBoPa79xykOgIidTINqJbhoYzQRBq5dI3rmTyWRY2abcHaZH3UqM4xElHUaAwL8mXmQw==
+    4MyCyuNSvCapSSHmQ0llHr852TaDsZjpJKGH4ujUqLorolNPiKGLELAeKszo6ehHA/a741Q9J4yJrhkG11E5w18z2q12l3BEuc40zo0WbVvMYF0TGVqnY56J4Z/XxIfb9jsjzg==
+    iRpir/NLluIaHnj0MNdciscOMXIuMawVoO4bUKua3qZCCIYRKxdko/B0AU8PMIGt8PR48XTZBPk2eFp2Zdqe8LQmzbB2XqcTY5qqIhguMTCNENTAXHHNdlxzgCiF0pBTJ5BdnA==
+    /l+zhUq9K1dia5ByHo3tCWPBsUR5aceSrhf6qiQHfZ/YblrveZ74aE904nVesSMBoJiBMq5oQbXZy5UrWrmi9+OKJiJd9pxLlwtOV/qir2dbQ+V6OOqKjt5tnIKt8s0ZD4PAdg==
+    +07PHLwM4efr8/je8XuV7kmHabjJD9fVPkFlt6Rbo5cdLZkdx8pRjyo725HvQsc3HjlEKSQOummfG9iXnf9dMNrWtZGNh8rHD2fyltw9vV4v+eZP76vXq2wwxmA4hli6HboCtA==
+    dYC2VjOHRbTIFjgbRMsPbDIlPOAYtKiF5CBsi13s6lGzTDsvVaFkz7maVqdXiRN22fA5Y1xXYn0ob+hhKdkce89ucGsPBz3ZLHxvxGilgwu5yJ0wjZZb2sXNNrZaqE1Nq8VYGw==
+    G9QyuYUF5hr8T5Z8JuLU2HiFUg7nI62Nx/DTCvFs6BqtT52uloP28YNM1KUitVXkshC6hoRGS356RsGKPM+qoS7z+ptZ9sc+hV/CQj4wDmXbyEbW8CnZmbVrOc14t8qTq1Jzpg==
+    3rOHh6JpzmY6U6gCS+pu5eRm6atak44NrnOsM1RuSbqKK1mIKznAqvMaji/mRFJunHRSPbKq1dnQITEncE11yO065AEWYNe9Qy4uYl7+NZO1BsL17DNj5WyBzDfJ6mELJObuug==
+    IKkbuTGzDJTSwo/RPDyPLs3wczRJEOYscAlDNQssyfCWL+4guonxZbccYVxNGj8zn66R4nTdKE5nbHV8znw6p6vjdpYasEXBPC1AKUJy4Xp99yHXCkC16X+bSR4VSt4bDH5kRA==
+    77w4bvYcLv82dzl7nry9u/Ci5MrN/AvjEi4+EV+Ye6CZC0w8do7+4bgDz+/dOINHx+9ZbuC/Z6ae76C7VRzspGkUMUOIcp5DovO2Sc2uxVsCOIgbukaY0YXGLwzI5kw8h+WVdA==
+    YL/iPDYghJdgA9oKlY8AG7bynpTE5DWGROZDnfUwJA7vTy3sOZvHTRy4FoVdvXL38PGTWft5GvSWwaQMo6qUyphhGFQ3cLkoN8Vk4fWSGqrN/FhorR8SwpW5XQceqz9HyJ61aQ==
+    /NyBi3yETLweuRQtbzjG7NhBxWPMS4w1rOmM83I7T6gA9DUjzKyKasPMurG3mPSW6LYsRcJ1I+FDg/+JDSazvVqxVtHiT3voAp73zDGMWXo37T/hbxzxSrVqGYtiTVA5FCw3lg==
+    RBZtEd3qWKjNCDYN02pj0aFEF8IyLHIenFVOQbXhK7bmC+1qJKlI7APgv1yvWR4Of7J43xlO+zLs9s7+CTcnAtErHpkwnRqGxlG5fYoU0Mvz1ZqpDcAffLZHAXwtAL5QzYc2+g==
+    V3ahM0T7vS+8vITUUPnpTu8K6o9r6eUynOc770GpcP4UcP7AkL7BMtwSeH7veT/Htv8z9FTBWwEeoHX3Pnstu/9Tlnk4mMk+udkKIzdnV5rJArO9scN9IpC0KDMZJUnh7m1JYg==
+    Zpu8DwxC8MaO/8V98KqhEkoY0zlLAg0wPzXUz4tsB4wH0UC1HDsAQXx3+rIvbIL4J9Fss6u0NaZxo+TeD6tmwZZEpxSIW2ptI5LdW1xyxId4i9jDHVkRH5AV5/dSZcyYIfOeIw==
+    lo8Mm6NosVxoXTVwjanQdLmoo9yaQTX7nMP/XKRYTjt7HQBkekKujZIuZ0b0hbgnZ+y0451hk2UucfL3J3sA5lKrO28rZrNXgdPrwGtbV5qp867V3n6IZVLCdb1WgdP1n0de7A==
+    oGoSeRPC+VrR6OASUwpWntBEuTkFxTcl+OarVxt30wdHIC9ioTKsFSFsTggb7uZ59nQgo7EqIwTMMAxBmFCEUBUhSPXUhhL2F/qq0F+hfxXoL7uLwv8S+J8Px7pp/1kRBxCCNA==
+    xKjY3fd77hSwoKHa0MAHR5QqblDcsAM3LPQjxQ+r+WEuZiu+VNUYQWBCOJCEWiK3A0EUq6g2BPHBEamKIBRBbEcQxf1IEcRqgshGgFXMDgbiBCOKiGKH7dmhQD+1oYYPDmJV1A==
+    oKhhO2oo6ESV80Ict7r86geTyX3aKWobSRWtha8uxtXAAkYjKNkW8vRiXLMCUxGuFUW4gqGiMw3sjJIL5489xlWFd5YEpfBwL8GdGmeEY8HK7T+vLOMM8GVTVGinCu1UoZ01tQ==
+    uRc7qHLFrCUb6y1wwvsrj/DUMBGYYYwU5exEOUUaqo1DpqZhntvw1I4OmUPylCKHcuRQ1JUUR5QfkFQZ7cm4RjjiQvnqKxqRqFhPRQGKAkqPD1SsZyns31ukp8GIgZmmVhvvBg==
+    /yrOU/GC4oXdeUHFeW7EDfnQp+hCNcwgNIzk9nFqpmJrYihSTm1ooabRnYoWFC2siu6MepEihVWkkAl6qpIRMDUMIQQhaqeIrSlhQTW14YOahnQqPlB8sDSkc09koAI6t1pZkA==
+    +7RRVdMTGsMMcZxsRnF6kZ0FklMBnpUFeHIYxAqkiXLrFLvcMnVddIC3NEZY28BmCzHe7ljcYoxoxVZLrWI81cKIX1Wg66ZgvfrT1+FnwysaQuiUwj/dKOdVUl+9LmSIUp/DDg==
+    taYiY1Vk7H4iYxe/K6GGLmuHLkf5le1T+WDpxoHIhy97Xtrn4cfc0DiR306vaKzJhKAY6Ua5fQ+VbbK9bSKVVhvH5weHTq//INNZDtmU9aCshxrKfNsA9cOXvKeMh7XGQ/gN+w==
+    qjzVgjKkadxQW6Lt1XYIdVYb42F/8fWtlui2LGUnKDtB2Qn1l/n2yxkOX3ZlKEhDIR943JOhx5V5FsA00JkgVHkWKrAOChVVG4Pgg1dbKG9CPa2EQ2P6rJMcHZVCrz42Ao1BSA==
+    8Sjw6NxmvPG3xY2KmBQjzA2CtJKjbEWlK6l0ia5qQ6YfvEZFkaki0xL7iyfdRME9wH12g91IMBxVg/VY45wZiOgK6iuA+iI91QbnP3jticJ5hfPrNgtP+sjGIK8Wj2y5dHEPyw==
+    R4ROEKKGERf+9BaPFEpOLR+paPkIoRrHjBrlvoJ4AotHSqybUDHYVcRgbz4bHF3JmCwHZ+tjH8sUYGdR2n4WwlxinQtBAH3LLaZXo5sldLfi0ocuhikCZr+gux8tLUb7My2IeA==
+    8+mF0xLKTssLTksUC/MfSwZAsyHUGZFI0ZbHVcUXEF3XNUH1cns4KirZhkqK9VcbD1rpRQx7c5apjVrOy1lWkTVw4FrsvBP94atwlnEHmw/eqoz1pxTpjGKulSJcFeq//cBNRQ==
+    +yuWVSx77CyrouOPn10Lw66TeVKqVcSsWBeMExI60tVYdnd2XaO12jBr6bB5NX5VzFpxhHxhz1Covzyam+oVoT0xKIC9QGo3uErAfomyagPy+5seVyCvQL505DbVFbgvid1Ovw==
+    S7+zHU8RwkwgtdFnNdBepKra4Hrp8G2F6wrX9xSpzaiK1N4/i/zTBXQdDZ1BVTSBdcwoRzgeUZxehHZGYiouu7Jt/ZnOJOBr5YInTyAyWy1Q+lWFp9c3PH2Pu4F/HMQk5k1kOw==
+    1FQcu1TpZKIuU1Jt3sEQBiFWkTkiuMCUUVxuwY8atOYMnCQhVkltRqeHD408M5o++9Fp3AO28DJ+fOCRasN1bMNzfF3fWXPVLGrYLA4/z6aahbLuK7DuF928qcdn582FkEENsA==
+    OdXy2x1M/SL91MbuP/yslELB87L7i7rDx8xKyYfuR2Ep0p+4VPejXMu8s+9Hzmd/mM7g3I/iDsMo4YsdJrzjizuI7tG4tuyeFqCN40/l2ch5SJHT9VwnFHD8FcjQOSclGben6Q==
+    BBAz04ay/t2Nnm3OlwLObux37zlIywvo62TqDdD2M+2wzJzrqHhNRy32CLtetuO53o+0W6ZFTPUitSAPH+EXMokkTJBIKCmXztJPGOeSMcNaUTrVslJJ3jQ/H0GE1uqSFOJkkg==
+    rjHRoklSNB9hYSFEhHdLwJZwZhS1C1mm7xPbTTtN6pPOKsqbpBofjhIvrxcE3ngxPd9A4uRmLsdlGJ+v2hqMj2/ehwv3vsBpjbvMEpEIF76ZitPk+Jup+k6jAyG0alWV6+5rFA==
+    qDS1oKkY8CvpnXHNpS7Nh8CZFTqu0GuSmkBEkX3kpzbXfoYRVUt164FGZFJHrN22J3KGt6LRBeGUGkIr+SlJGK8zyqlgnBJg4XaLtTotvSOsLiGk26bnMboo0EZdxhIRKZcZSw==
+    lOy5pwdpG239k5NSrav3Gu4RsNAwc1b9ujWMBw4wriXcVjRhqxma0HSsIYWzW+FsXQC2eIJrmVGqgPf8gLdyxJ35WWKXyVxT6nZZh5m5phTuR98t2ZRqt2NnKpTN/Ep7Sy4j8Q==
+    dptS2i0Sb3ylbuKFW50+4OCGNZPxpWELMznDnahWj9//isGRkGie90l6tfXouO/JTpMGKj3+bod9wZtcN0QU8BJ6StKzaDiensoxe3ry5EAPhIIKpIduLs8LMqePz0F4mgm2kw==
+    soidb+FNzZhspZ9JZg5sdDsM+k85P1QkmPDw3hu8hweDeGOIT/8PUEsBAi0AFAAGAAgAAAAhAL76NJGlAQAAIwkAABMAAAAAAAAAAAAAAAAAAAAAAFtDb250ZW50X1R5cGVzXQ==
+    LnhtbFBLAQItABQABgAIAAAAIQAekRq37wAAAE4CAAALAAAAAAAAAAAAAAAAAN4DAABfcmVscy8ucmVsc1BLAQItABQABgAIAAAAIQBJ89p8PAEAAGUFAAAcAAAAAAAAAAAAAA==
+    AAAA/gYAAHdvcmQvX3JlbHMvZG9jdW1lbnQueG1sLnJlbHNQSwECLQAUAAYACAAAACEAqlIl3yMGAACLGgAAFQAAAAAAAAAAAAAAAAB8CQAAd29yZC90aGVtZS90aGVtZTEueA==
+    bWxQSwECLQAKAAAAAAAAACEAVAEGufIDAADyAwAAFQAAAAAAAAAAAAAAAADSDwAAd29yZC9tZWRpYS9pbWFnZTEucG5nUEsBAi0AFAAGAAgAAAAhAJ7seq5zBQAAkx8AABoAAA==
+    AAAAAAAAAAAAAAD3EwAAd29yZC9nbG9zc2FyeS9kb2N1bWVudC54bWxQSwECLQAUAAYACAAAACEA1fpUjy4FAACfEQAAGgAAAAAAAAAAAAAAAACiGQAAd29yZC9nbG9zc2FyeQ==
+    L3NldHRpbmdzLnhtbFBLAQItABQABgAIAAAAIQDl0CZhtAUAAOASAAARAAAAAAAAAAAAAAAAAAgfAAB3b3JkL3NldHRpbmdzLnhtbFBLAQItABQABgAIAAAAIQCD0LXl5gAAAA==
+    rQIAACUAAAAAAAAAAAAAAAAA6yQAAHdvcmQvZ2xvc3NhcnkvX3JlbHMvZG9jdW1lbnQueG1sLnJlbHNQSwECLQAUAAYACAAAACEA2EhmP+EAAABVAQAAGAAAAAAAAAAAAAAAAA==
+    ABQmAABjdXN0b21YbWwvaXRlbVByb3BzMi54bWxQSwECLQAUAAYACAAAACEAeqhydMUAAAAyAQAAEwAAAAAAAAAAAAAAAABTJwAAY3VzdG9tWG1sL2l0ZW0yLnhtbFBLAQItAA==
+    FAAGAAgANYKhTtQXNWLXAQAASwQAABAAAAAAAAAAAAAAAAAAcSgAAGRvY1Byb3BzL2FwcC54bWxQSwECLQAUAAYACAAAACEAdD85esIAAAAoAQAAHgAAAAAAAAAAAAAAAAB+Kw==
+    AABjdXN0b21YbWwvX3JlbHMvaXRlbTEueG1sLnJlbHNQSwECLQAUAAYACAAAACEAXJYnIsIAAAAoAQAAHgAAAAAAAAAAAAAAAACELQAAY3VzdG9tWG1sL19yZWxzL2l0ZW0yLg==
+    eG1sLnJlbHNQSwECLQAUAAYACAAAACEAfO2/FgEBAABUAQAAGAAAAAAAAAAAAAAAAACKLwAAY3VzdG9tWG1sL2l0ZW1Qcm9wczEueG1sUEsBAi0AFAAGAAgAAAAhAJN21kkYAQ==
+    AABAAgAAHQAAAAAAAAAAAAAAAADpMAAAd29yZC9nbG9zc2FyeS93ZWJTZXR0aW5ncy54bWxQSwECLQAUAAYACAAAACEAhzjSK9cBAABHBgAAGwAAAAAAAAAAAAAAAAA8MgAAdw==
+    b3JkL2dsb3NzYXJ5L2ZvbnRUYWJsZS54bWxQSwECLQAUAAYACAAAACEAeo/4/8oMAAB3eQAADwAAAAAAAAAAAAAAAABMNAAAd29yZC9zdHlsZXMueG1sUEsBAi0AFAAGAAgAAA==
+    ACEAV036QRQBAAA3AgAAFAAAAAAAAAAAAAAAAABDQQAAd29yZC93ZWJTZXR0aW5ncy54bWxQSwECLQAUAAYACAAAACEAhzjSK9cBAABHBgAAEgAAAAAAAAAAAAAAAACJQgAAdw==
+    b3JkL2ZvbnRUYWJsZS54bWxQSwECLQAUAAYACAAAACEA7jOqfyMRAADOjwAAGAAAAAAAAAAAAAAAAACQRAAAd29yZC9nbG9zc2FyeS9zdHlsZXMueG1sUEsBAi0AFAAGAAgAYQ==
+    dTJKzwfEIlMHAADaRgAAEwAAAAAAAAAAAAAAAADpVQAAY3VzdG9tWG1sL2l0ZW0xLnhtbFBLAQItABQABgAIADWCoU4+/KJhNgEAADwCAAARAAAAAAAAAAAAAAAAAJVdAABkbw==
+    Y1Byb3BzL2NvcmUueG1sUEsBAhYAFAAAAAgANYKhTksgiQB+FwAAZpUBABEAAAAAAAAAAQAgAAAAAmAAAHdvcmQvZG9jdW1lbnQueG1sUEsFBgAAAAAYABgAZwYAAK93AAAAAA==
+    END_OF_WORDLAYOUT
+  }
+}
+

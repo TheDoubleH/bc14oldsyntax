@@ -1,0 +1,251 @@
+OBJECT Page 1263 Certificate
+{
+  OBJECT-PROPERTIES
+  {
+    Date=06/07/21;
+    Time=12:00:00 PM;
+    Version List=NAVW114.25;
+  }
+  PROPERTIES
+  {
+    CaptionML=ENU=Certificate;
+    SourceTable=Table1262;
+    PageType=Card;
+    OnOpenPage=BEGIN
+                 IF Code = '' THEN BEGIN
+                   IsNewRecord := TRUE;
+                   CheckEncryption;
+                   IF NOT CertificateManagement.UploadAndVerifyCert(Rec) THEN
+                     HandleRequirePassword
+                   ELSE BEGIN
+                     IsShowCertInfo := TRUE;
+                     IF IsCertificateExpired THEN
+                       HandleExpiredCert;
+                   END;
+
+                   IsolatedCertificate := Rec;
+                 END ELSE
+                   IF ThumbPrint <> '' THEN BEGIN
+                     IsShowCertInfo := TRUE;
+                     IF IsCertificateExpired THEN
+                       NotfiyExpiredCert(CertHasExpiredMsg);
+                   END;
+               END;
+
+    OnNewRecord=BEGIN
+                  Rec := IsolatedCertificate;
+                END;
+
+    OnQueryClosePage=BEGIN
+                       IF Code <> '' THEN
+                         TESTFIELD(Name);
+
+                       IF IsNewRecord THEN
+                         SetScope;
+
+                       IF (IsNewRecord OR IsUploadedCertValid) AND NOT IsExpired THEN
+                         SaveCertToIsolatedStorage;
+                     END;
+
+    ActionList=ACTIONS
+    {
+      { 10      ;    ;ActionContainer;
+                      ActionContainerType=ActionItems }
+      { 12      ;1   ;Action    ;
+                      Name=Upload Cerificate;
+                      CaptionML=ENU=Upload Certificate;
+                      ToolTipML=ENU=Upload a new certificate file for the certificate. Typically, you use this when a certificate will expire soon.;
+                      ApplicationArea=#Basic,#Suite;
+                      Promoted=Yes;
+                      PromotedIsBig=Yes;
+                      PromotedCategory=Process;
+                      PromotedOnly=Yes;
+                      OnAction=BEGIN
+                                 RecallNotifications;
+                                 IsolatedCertificate := Rec;
+                                 Password := '';
+
+                                 CheckEncryption;
+
+                                 IF NOT CertificateManagement.UploadAndVerifyCert(Rec) THEN BEGIN
+                                   IsShowCertInfo := FALSE;
+                                   HandleRequirePassword;
+                                 END ELSE BEGIN
+                                   IsPasswordRequired := FALSE;
+                                   IsShowCertInfo := TRUE;
+                                   IF IsCertificateExpired THEN BEGIN
+                                     HandleExpiredCert;
+
+                                     Rec := IsolatedCertificate;
+                                     IF ThumbPrint = '' THEN
+                                       IsShowCertInfo := FALSE;
+                                   END;
+                                 END;
+
+                                 CurrPage.UPDATE;
+                               END;
+                                }
+    }
+  }
+  CONTROLS
+  {
+    { 1   ;0   ;Container ;
+                ContainerType=ContentArea }
+
+    { 2   ;1   ;Group     ;
+                Name=General;
+                CaptionML=ENU=General;
+                GroupType=Group }
+
+    { 3   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the name of the certificate.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr=Name;
+                ShowMandatory=TRUE }
+
+    { 16  ;2   ;Group     ;
+                Visible=IsPasswordRequired;
+                GroupType=Group }
+
+    { 5   ;3   ;Field     ;
+                ToolTipML=ENU=Specifies the password for the certificate.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr=Password;
+                OnValidate=BEGIN
+                             PasswordNotification.RECALL;
+                             IF CertificateManagement.VerifyCert(Rec) THEN BEGIN
+                               IF IsCertificateExpired THEN
+                                 HandleExpiredCert
+                               ELSE BEGIN
+                                 IsShowCertInfo := TRUE;
+                                 IsUploadedCertValid := NOT IsNewRecord;
+                               END;
+
+                               CurrPage.UPDATE;
+                             END ELSE
+                               ERROR(CertWrongPasswordErr);
+                           END;
+
+                ShowMandatory=TRUE }
+
+    { 4   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the availability of the certificate. Company gives all users in this specific company access to the certificate. User gives access to a specific user in any company. Company and User gives access to a specific user in the specific company.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr=Scope;
+                Editable=IsNewRecord }
+
+    { 7   ;1   ;Group     ;
+                Name=Certificate Information;
+                CaptionML=ENU=Certificate Information;
+                Visible=IsShowCertInfo;
+                GroupType=Group }
+
+    { 11  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies whether the certificate has a private key.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Has Private Key" }
+
+    { 9   ;2   ;Field     ;
+                CaptionML=ENU=Thumbprint;
+                ToolTipML=ENU=Specifies the certificate thumbprint.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr=ThumbPrint }
+
+    { 8   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the date on which the certificate will expire.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Expiry Date" }
+
+    { 6   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the certificate authority that issued the certificate.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Issued By" }
+
+    { 13  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the person, organization, or domain that the certificate was issued to.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Issued To" }
+
+  }
+  CODE
+  {
+    VAR
+      IsolatedCertificate@1013 : Record 1262;
+      CertificateManagement@1004 : Codeunit 1259;
+      PasswordNotification@1023 : Notification;
+      ExpiredNotification@1006 : Notification;
+      IsNewRecord@1005 : Boolean;
+      CertWrongPasswordErr@1011 : TextConst 'ENU=The password is not correct.';
+      PasswordNotificationMsg@1021 : TextConst 'ENU=You must enter the password for this certificate.';
+      ExpiredNewCertMsg@1022 : TextConst '@@@="%1=file name, e.g. Certfile.pfx";ENU=You cannot upload the certificate%1 because it is past its expiration date.';
+      IsPasswordRequired@1003 : Boolean;
+      CertHasExpiredMsg@1007 : TextConst 'ENU=The certificate has expired. To use the certificate you must upload a new certificate file.';
+      IsExpired@1000 : Boolean;
+      IsUploadedCertValid@1001 : Boolean;
+      IsShowCertInfo@1008 : Boolean;
+
+    LOCAL PROCEDURE ClearCertInfoFields@9();
+    BEGIN
+      WITH Rec DO BEGIN
+        CLEAR("Expiry Date");
+        ThumbPrint := '';
+        "Issued By" := '';
+        "Issued To" := '';
+        "Has Private Key" := FALSE;
+      END;
+    END;
+
+    LOCAL PROCEDURE SaveCertToIsolatedStorage@24();
+    BEGIN
+      IF IsUploadedCertValid THEN
+        CertificateManagement.DeleteCertAndPasswordFromIsolatedStorage(Rec);
+      CertificateManagement.SaveCertToIsolatedStorage(Rec);
+      CertificateManagement.SavePasswordToIsolatedStorage(Rec);
+    END;
+
+    LOCAL PROCEDURE HandleRequirePassword@2();
+    BEGIN
+      IsPasswordRequired := TRUE;
+      PasswordNotification.MESSAGE(PasswordNotificationMsg);
+      PasswordNotification.SEND;
+    END;
+
+    LOCAL PROCEDURE HandleExpiredCert@5();
+    BEGIN
+      NotfiyExpiredCert(STRSUBSTNO(ExpiredNewCertMsg,' ' + CertificateManagement.GetUploadedCertFileName));
+      IF IsNewRecord THEN
+        ClearCertInfoFields
+      ELSE
+        Rec := IsolatedCertificate;
+
+      IsShowCertInfo := ThumbPrint <> '';
+      IsPasswordRequired := FALSE;
+    END;
+
+    LOCAL PROCEDURE NotfiyExpiredCert@29(Message@1000 : Text);
+    BEGIN
+      IsExpired := TRUE;
+      ExpiredNotification.MESSAGE(Message);
+      ExpiredNotification.SEND;
+    END;
+
+    LOCAL PROCEDURE RecallNotifications@8();
+    BEGIN
+      IF ExpiredNotification.RECALL THEN;
+      IF PasswordNotification.RECALL THEN;
+    END;
+
+    LOCAL PROCEDURE CheckEncryption@4();
+    VAR
+      EncryptionManagement@1000 : Codeunit 1266;
+    BEGIN
+      IF NOT EncryptionManagement.IsEncryptionEnabled THEN
+        IF CONFIRM(EncryptionManagement.GetEncryptionIsNotActivatedQst) THEN
+          PAGE.RUNMODAL(PAGE::"Data Encryption Management");
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

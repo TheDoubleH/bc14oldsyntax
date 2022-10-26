@@ -1,0 +1,168 @@
+OBJECT Page 738 VAT Return Period Card
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/24/19;
+    Time=12:00:00 PM;
+    Version List=NAVW114.00;
+  }
+  PROPERTIES
+  {
+    Editable=No;
+    CaptionML=ENU=Tax Return Period;
+    SourceTable=Table737;
+    OnOpenPage=VAR
+                 VATReportSetup@1000 : Record 743;
+               BEGIN
+                 VATReportSetup.GET;
+                 IsReceiveSubmittedEnabled := VATReportSetup."Receive Submitted Return CU ID" <> 0;
+               END;
+
+    OnAfterGetRecord=BEGIN
+                       InitPageControllers;
+                     END;
+
+    OnAfterGetCurrRecord=BEGIN
+                           InitPageControllers;
+                         END;
+
+    ActionList=ACTIONS
+    {
+      { 6       ;    ;ActionContainer;
+                      ActionContainerType=ActionItems }
+      { 7       ;1   ;Action    ;
+                      Name=Receive Submitted VAT Returns;
+                      CaptionML=ENU=Receive Submitted Tax Returns;
+                      ToolTipML=ENU=Receive the Tax returns that have been submitted.;
+                      ApplicationArea=#Basic,#Suite;
+                      Promoted=Yes;
+                      Visible=IsReceiveSubmittedEnabled;
+                      PromotedIsBig=Yes;
+                      Image=RefreshLines;
+                      PromotedCategory=Process;
+                      PromotedOnly=Yes;
+                      OnAction=VAR
+                                 VATReportMgt@1000 : Codeunit 737;
+                               BEGIN
+                                 VATReportMgt.GetSubmittedVATReturns(Rec);
+                               END;
+                                }
+      { 8       ;1   ;Action    ;
+                      Name=Create VAT Return;
+                      CaptionML=ENU=Create Tax Return;
+                      ToolTipML=ENU=Create a new Tax return from this Tax return period.;
+                      ApplicationArea=#Basic,#Suite;
+                      Promoted=Yes;
+                      Enabled=CreateVATReturnEnabled;
+                      PromotedIsBig=Yes;
+                      Image=RefreshLines;
+                      PromotedCategory=Process;
+                      PromotedOnly=Yes;
+                      OnAction=VAR
+                                 VATReportMgt@1000 : Codeunit 737;
+                               BEGIN
+                                 VATReportMgt.CreateVATReturnFromVATPeriod(Rec);
+                               END;
+                                }
+      { 9       ;0   ;ActionContainer;
+                      ActionContainerType=RelatedInformation }
+      { 10      ;1   ;Action    ;
+                      Name=Open VAT Return Card;
+                      CaptionML=ENU=Open Tax Return Card;
+                      ToolTipML=ENU=Open the Tax return card for this Tax return period.;
+                      ApplicationArea=#Basic,#Suite;
+                      Enabled=OpenVATReturnEnabled;
+                      Image=ShowList;
+                      OnAction=VAR
+                                 VATReportMgt@1000 : Codeunit 737;
+                               BEGIN
+                                 VATReportMgt.OpenVATReturnCardFromVATPeriod(Rec);
+                               END;
+                                }
+    }
+  }
+  CONTROLS
+  {
+    { 1   ;    ;Container ;
+                ContainerType=ContentArea }
+
+    { 2   ;1   ;Group     ;
+                Name=Period Info;
+                GroupType=Group }
+
+    { 3   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the start date of the Tax return period.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Start Date" }
+
+    { 4   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the end date of the Tax return period.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="End Date" }
+
+    { 5   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the due date for the Tax return period.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Due Date" }
+
+    { 11  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the status of the Tax return period.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr=Status }
+
+    { 12  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the Tax return period received date.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Received Date" }
+
+    { 13  ;1   ;Group     ;
+                Name=VAT Return Info;
+                GroupType=Group }
+
+    { 14  ;2   ;Field     ;
+                CaptionML=ENU=No.;
+                ToolTipML=ENU=Specifies the number of the associated Tax return.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="VAT Return No.";
+                OnDrillDown=BEGIN
+                              DrillDownVATReturn;
+                            END;
+                             }
+
+    { 15  ;2   ;Field     ;
+                Name=VATReturnStatus;
+                CaptionML=ENU=Status;
+                ToolTipML=ENU=Specifies the status of the associated Tax return.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr=VATReturnStatus;
+                Editable=FALSE;
+                OnDrillDown=BEGIN
+                              DrillDownVATReturn;
+                            END;
+                             }
+
+  }
+  CODE
+  {
+    VAR
+      CreateVATReturnEnabled@1002 : Boolean;
+      OpenVATReturnEnabled@1001 : Boolean;
+      IsReceiveSubmittedEnabled@1000 : Boolean;
+      VATReturnStatus@1003 : ' ,Open,Released,Submitted,Accepted,Closed,Rejected,Canceled';
+
+    LOCAL PROCEDURE InitPageControllers@2();
+    BEGIN
+      CreateVATReturnEnabled := (Status = Status::Open) AND ("VAT Return No." = '');
+      OpenVATReturnEnabled := (Status = Status::Open) OR ("VAT Return No." <> '');
+      CALCFIELDS("VAT Return Status");
+      IF "VAT Return No." <> '' THEN
+        VATReturnStatus := "VAT Return Status" + 1
+      ELSE
+        VATReturnStatus := VATReturnStatus::" ";
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

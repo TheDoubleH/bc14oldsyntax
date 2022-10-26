@@ -1,0 +1,45 @@
+OBJECT Table 5391 CRM Annotation Buffer
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/24/19;
+    Time=12:00:00 PM;
+    Version List=NAVW114.00;
+  }
+  PROPERTIES
+  {
+    CaptionML=ENU=CRM Annotation Buffer;
+  }
+  FIELDS
+  {
+    { 1   ;   ;ID                  ;Integer       ;AutoIncrement=Yes;
+                                                   DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=ID }
+    { 2   ;   ;Related Table ID    ;Integer       ;DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Related Table ID }
+    { 3   ;   ;Related Record ID   ;RecordID      ;DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Related Record ID }
+    { 4   ;   ;Record ID           ;RecordID      ;DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Record ID }
+    { 5   ;   ;Change Type         ;Option        ;DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Change Type;
+                                                   OptionCaptionML=ENU=,Created,Deleted;
+                                                   OptionString=,Created,Deleted }
+    { 6   ;   ;Change DateTime     ;DateTime      ;DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Change DateTime }
+  }
+  KEYS
+  {
+    {    ;ID                                      ;Clustered=Yes }
+  }
+  FIELDGROUPS
+  {
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

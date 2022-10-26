@@ -1,0 +1,163 @@
+OBJECT Page 5893 Phys. Invt. Item Track. List
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/24/19;
+    Time=12:00:00 PM;
+    Version List=NAVW114.00;
+  }
+  PROPERTIES
+  {
+    Editable=No;
+    CaptionML=ENU=Phys. Invt. Item Track. List;
+    SourceTable=Table337;
+    PageType=List;
+    PromotedActionCategoriesML=ENU=New,Process,Report,Item Tracking Information;
+    ActionList=ACTIONS
+    {
+      { 2       ;    ;ActionContainer;
+                      ActionContainerType=ActionItems }
+      { 8       ;1   ;ActionGroup;
+                      Name=ItemTracking;
+                      CaptionML=ENU=Item &Tracking Information;
+                      Image=Line }
+      { 6       ;2   ;Action    ;
+                      CaptionML=ENU=Serial No. Information Card;
+                      ToolTipML=ENU=Show Serial No. Information Card;
+                      ApplicationArea=#Warehouse;
+                      RunObject=Page 6509;
+                      RunPageLink=Item No.=FIELD(Item No.),
+                                  Variant Code=FIELD(Variant Code),
+                                  Serial No.=FIELD(Serial No.);
+                      Promoted=Yes;
+                      PromotedIsBig=Yes;
+                      Image=SNInfo;
+                      PromotedCategory=Category4 }
+      { 4       ;2   ;Action    ;
+                      CaptionML=ENU=Lot No. Information Card;
+                      ToolTipML=ENU=Show Lot No. Information Card;
+                      ApplicationArea=#Warehouse;
+                      RunObject=Page 6508;
+                      RunPageLink=Item No.=FIELD(Item No.),
+                                  Variant Code=FIELD(Variant Code),
+                                  Lot No.=FIELD(Lot No.);
+                      Promoted=Yes;
+                      PromotedIsBig=Yes;
+                      Image=LotInfo;
+                      PromotedCategory=Category4 }
+    }
+  }
+  CONTROLS
+  {
+    { 1900000001;0;Container;
+                ContainerType=ContentArea }
+
+    { 40  ;1   ;Group     ;
+                GroupType=Repeater }
+
+    { 1   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the value from the same field on the physical inventory tracking line.;
+                ApplicationArea=#ItemTracking;
+                SourceExpr="Item No." }
+
+    { 3   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the variant of the item on the line.;
+                ApplicationArea=#ItemTracking;
+                SourceExpr="Variant Code" }
+
+    { 5   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the location of the traced item.;
+                ApplicationArea=#ItemTracking;
+                SourceExpr="Location Code" }
+
+    { 7   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the serial number of the item that is being handled on the document line.;
+                ApplicationArea=#ItemTracking;
+                SourceExpr="Serial No." }
+
+    { 9   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the location of the traced item.;
+                ApplicationArea=#ItemTracking;
+                SourceExpr="Lot No." }
+
+    { 11  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies that the difference is positive.;
+                ApplicationArea=#ItemTracking;
+                SourceExpr=Positive }
+
+    { 13  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the quantity of the record.;
+                ApplicationArea=#ItemTracking;
+                SourceExpr=Quantity }
+
+    { 15  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies how many of the base unit of measure are contained in one unit of the item.;
+                ApplicationArea=#ItemTracking;
+                SourceExpr="Qty. per Unit of Measure";
+                Visible=FALSE }
+
+    { 17  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the quantity on the line, expressed in base units of measure.;
+                ApplicationArea=#ItemTracking;
+                SourceExpr="Quantity (Base)";
+                Visible=FALSE }
+
+    { 19  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the quantity of item, in the base unit of measure, to be handled in a warehouse activity.;
+                ApplicationArea=#ItemTracking;
+                SourceExpr="Qty. to Handle (Base)";
+                Visible=FALSE }
+
+    { 21  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the quantity, in the base unit of measure, that remains to be invoiced. It is calculated as Quantity - Qty. Invoiced.;
+                ApplicationArea=#ItemTracking;
+                SourceExpr="Qty. to Invoice (Base)";
+                Visible=FALSE }
+
+    { 23  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies when items on the document are shipped or were shipped. A shipment date is usually calculated from a requested delivery date plus lead time.;
+                ApplicationArea=#ItemTracking;
+                SourceExpr="Shipment Date" }
+
+    { 25  ;2   ;Field     ;
+                ToolTipML=ENU="Specifies the date you expect the items to be available in your warehouse. If you leave the field blank, it will be calculated as follows: Planned Receipt Date + Safety Lead Time + Inbound Warehouse Handling Time = Expected Receipt Date.";
+                ApplicationArea=#ItemTracking;
+                SourceExpr="Expected Receipt Date" }
+
+    { 27  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies a description of the record.;
+                ApplicationArea=#ItemTracking;
+                SourceExpr=Description }
+
+    { 29  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the status of the reservation.;
+                ApplicationArea=#ItemTracking;
+                SourceExpr="Reservation Status" }
+
+    { 31  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the user who created the traced record.;
+                ApplicationArea=#ItemTracking;
+                SourceExpr="Created By";
+                Visible=FALSE }
+
+    { 33  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies when the traced record was created.;
+                ApplicationArea=#ItemTracking;
+                SourceExpr="Creation Date";
+                Visible=FALSE }
+
+    { 35  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the number that is assigned to the entry.;
+                ApplicationArea=#ItemTracking;
+                SourceExpr="Entry No.";
+                Visible=FALSE }
+
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

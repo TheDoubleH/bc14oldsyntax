@@ -1,0 +1,209 @@
+OBJECT Report 5885 Calc. Phys. Invt. Order (Bins)
+{
+  OBJECT-PROPERTIES
+  {
+    Date=09/22/19;
+    Time=12:00:00 PM;
+    Version List=NAVW114.06;
+  }
+  PROPERTIES
+  {
+    CaptionML=ENU=Calc. Phys. Invt. Order (Bins);
+    ProcessingOnly=Yes;
+  }
+  DATASET
+  {
+    { 7020;    ;DataItem;                    ;
+               DataItemTable=Table7354;
+               DataItemTableView=SORTING(Location Code,Code);
+               OnPreDataItem=BEGIN
+                               PhysInvtOrderHeader.TESTFIELD("No.");
+                               PhysInvtOrderHeader.TESTFIELD(Status,PhysInvtOrderHeader.Status::Open);
+
+                               PhysInvtOrderHeader.LOCKTABLE;
+                               PhysInvtOrderLine.LOCKTABLE;
+
+                               PhysInvtOrderLine.RESET;
+                               PhysInvtOrderLine.SETRANGE("Document No.",PhysInvtOrderHeader."No.");
+                               IF PhysInvtOrderLine.FINDLAST THEN
+                                 NextLineNo := PhysInvtOrderLine."Line No." + 10000
+                               ELSE
+                                 NextLineNo := 10000;
+
+                               IF NOT HideValidationDialog THEN
+                                 Window.OPEN(CalculatingLinesMsg + LocationAndBinMsg);
+
+                               LineCount := 0;
+                               ItemsBlocked := FALSE;
+                             END;
+
+               OnAfterGetRecord=VAR
+                                  Item@1000 : Record 27;
+                                  IsHandled@1001 : Boolean;
+                                BEGIN
+                                  Location.GET("Location Code");
+                                  Location.TESTFIELD("Bin Mandatory");
+
+                                  IF NOT HideValidationDialog THEN BEGIN
+                                    Window.UPDATE(1,"Location Code");
+                                    Window.UPDATE(2,Code);
+                                  END;
+
+                                  LastLocationCode := '';
+                                  LastBinCode := '';
+                                  LastItemNo := '';
+                                  LastVariantCode := '';
+
+                                  WhseEntry.RESET;
+                                  WhseEntry.SETCURRENTKEY("Location Code","Bin Code","Item No.","Variant Code");
+                                  WhseEntry.SETRANGE("Location Code","Location Code");
+                                  WhseEntry.SETRANGE("Bin Code",Code);
+                                  IF WhseEntry.FIND('-') THEN
+                                    REPEAT
+                                      IF Item.GET(WhseEntry."Item No.") THEN
+                                        IF NOT Item.Blocked THEN
+                                          IF (LastLocationCode <> WhseEntry."Location Code") OR
+                                             (LastBinCode <> WhseEntry."Bin Code") OR
+                                             (LastItemNo <> WhseEntry."Item No.") OR
+                                             (LastVariantCode <> WhseEntry."Variant Code")
+                                          THEN BEGIN
+                                            LastLocationCode := WhseEntry."Location Code";
+                                            LastBinCode := WhseEntry."Bin Code";
+                                            LastItemNo := WhseEntry."Item No.";
+                                            LastVariantCode := WhseEntry."Variant Code";
+                                            IsHandled := FALSE;
+                                            OnBeforeCreateNewPhysInvtOrderLineForWhseEntry(
+                                              Item,WhseEntry,PhysInvtOrderHeader,PhysInvtOrderLine,ErrorText,NextLineNo,
+                                              CalcQtyExpected,LastItemLedgEntryNo,LineCount,IsHandled);
+                                            IF NOT IsHandled THEN
+                                              IF PhysInvtOrderHeader.GetSamePhysInvtOrderLine(
+                                                   WhseEntry."Item No.",WhseEntry."Variant Code",
+                                                   WhseEntry."Location Code",
+                                                   WhseEntry."Bin Code",
+                                                   ErrorText,
+                                                   PhysInvtOrderLine) = 0
+                                              THEN
+                                                CreateNewPhysInvtOrderLine;
+                                          END ELSE
+                                            ItemsBlocked := TRUE;
+                                    UNTIL WhseEntry.NEXT = 0;
+                                END;
+
+               OnPostDataItem=BEGIN
+                                IF NOT HideValidationDialog THEN BEGIN
+                                  Window.CLOSE;
+                                  IF ItemsBlocked THEN
+                                    MESSAGE(BlockedItemMsg);
+                                  MESSAGE(
+                                    STRSUBSTNO(LinesCreatedMsg,LineCount));
+                                END;
+                              END;
+
+               ReqFilterFields=Location Code,Code }
+
+  }
+  REQUESTPAGE
+  {
+    PROPERTIES
+    {
+    }
+    CONTROLS
+    {
+      { 1900000001;0;Container;
+                  ContainerType=ContentArea }
+
+      { 1900000002;1;Group  ;
+                  CaptionML=ENU=Options }
+
+      { 1   ;2   ;Field     ;
+                  CaptionML=ENU=Calculate Qty. Expected;
+                  ToolTipML=ENU=Specifies if you want the program to calculate and insert the contents of the field quantity expected for new created physical inventory order lines.;
+                  ApplicationArea=#Basic,#Suite;
+                  SourceExpr=CalcQtyExpected }
+
+      { 2   ;2   ;Field     ;
+                  CaptionML=ENU=Items Not on Inventory;
+                  ToolTipML=ENU=Specifies if journal lines should be created for items that are not on inventory, that is, items where the value in the Qty. (Calculated) field is 0.;
+                  ApplicationArea=#Basic,#Suite;
+                  SourceExpr=ZeroQty }
+
+    }
+  }
+  LABELS
+  {
+  }
+  CODE
+  {
+    VAR
+      CalculatingLinesMsg@1000 : TextConst 'ENU=Calculating the order lines...\\';
+      LocationAndBinMsg@1001 : TextConst '@@@="%1,%2 = counters";ENU=Location #1########   Bin #2############';
+      LinesCreatedMsg@1002 : TextConst '@@@="%1 = counter";ENU=%1 new lines have been created.';
+      BlockedItemMsg@1020 : TextConst 'ENU=There is at least one blocked item that was skipped.';
+      PhysInvtOrderHeader@1003 : Record 5875;
+      PhysInvtOrderLine@1004 : Record 5876;
+      Location@1005 : Record 14;
+      WhseEntry@1006 : Record 7312;
+      Window@1007 : Dialog;
+      ErrorText@1008 : Text[250];
+      LastItemNo@1009 : Code[20];
+      LastVariantCode@1010 : Code[10];
+      LastLocationCode@1011 : Code[10];
+      LastBinCode@1012 : Code[20];
+      QtyExp@1013 : Decimal;
+      LastItemLedgEntryNo@1014 : Integer;
+      NextLineNo@1015 : Integer;
+      LineCount@1016 : Integer;
+      HideValidationDialog@1017 : Boolean;
+      ZeroQty@1018 : Boolean;
+      CalcQtyExpected@1019 : Boolean;
+      ItemsBlocked@1021 : Boolean;
+
+    [External]
+    PROCEDURE SetPhysInvtOrderHeader@1(NewPhysInvtOrderHeader@1000 : Record 5875);
+    BEGIN
+      PhysInvtOrderHeader := NewPhysInvtOrderHeader;
+    END;
+
+    [External]
+    PROCEDURE SetHideValidationDialog@2(NewHideValidationDialog@1000 : Boolean);
+    BEGIN
+      HideValidationDialog := NewHideValidationDialog;
+    END;
+
+    [External]
+    PROCEDURE CreateNewPhysInvtOrderLine@3();
+    BEGIN
+      PhysInvtOrderLine.PrepareLine(
+        PhysInvtOrderHeader."No.",NextLineNo,
+        WhseEntry."Item No.",WhseEntry."Variant Code",WhseEntry."Location Code",WhseEntry."Bin Code",'',0);
+      PhysInvtOrderLine.CalcQtyAndLastItemLedgExpected(QtyExp,LastItemLedgEntryNo);
+      IF (QtyExp <> 0) OR ZeroQty THEN BEGIN
+        PhysInvtOrderLine.INSERT(TRUE);
+        PhysInvtOrderLine.CreateDim(DATABASE::Item,PhysInvtOrderLine."Item No.");
+        IF CalcQtyExpected THEN
+          PhysInvtOrderLine.CalcQtyAndTrackLinesExpected;
+        OnBeforePhysInvtOrderLineModify(PhysInvtOrderLine,CalcQtyExpected);
+        PhysInvtOrderLine.MODIFY;
+        NextLineNo := NextLineNo + 10000;
+        LineCount := LineCount + 1;
+      END;
+    END;
+
+    [Integration]
+    LOCAL PROCEDURE OnBeforeCreateNewPhysInvtOrderLineForWhseEntry@5(Item@1000 : Record 27;WarehouseEntry@1001 : Record 7312;PhysInvtOrderHeader@1002 : Record 5875;VAR PhysInvtOrderLine@1003 : Record 5876;VAR ErrorText@1004 : Text;VAR NextLineNo@1005 : Integer;CalcQtyExpected@1006 : Boolean;VAR LastItemLedgEntryNo@1007 : Integer;VAR LineCount@1008 : Integer;VAR IsHandled@1009 : Boolean);
+    BEGIN
+    END;
+
+    [Integration]
+    LOCAL PROCEDURE OnBeforePhysInvtOrderLineModify@4(VAR PhysInvtOrderLine@1000 : Record 5876;CalcQtyExpected@1001 : Boolean);
+    BEGIN
+    END;
+
+    BEGIN
+    END.
+  }
+  RDLDATA
+  {
+  }
+}
+

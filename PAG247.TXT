@@ -1,0 +1,170 @@
+OBJECT Page 247 VAT Registration Log Details
+{
+  OBJECT-PROPERTIES
+  {
+    Date=12/29/20;
+    Time=12:00:00 PM;
+    Version List=NAVW114.21;
+  }
+  PROPERTIES
+  {
+    Editable=No;
+    CaptionML=ENU=Validation Details;
+    SourceTable=Table227;
+    DataCaptionFields=Account Type,Account No.;
+    PageType=List;
+    OnOpenPage=BEGIN
+                 UpdateControls;
+               END;
+
+    OnAfterGetCurrRecord=BEGIN
+                           AcceptEnabled := (Status = Status::"Not Valid") AND (Response <> '');
+                           ResetEnabled := Status = Status::Accepted;
+                         END;
+
+    ActionList=ACTIONS
+    {
+      { 4       ;    ;ActionContainer;
+                      ActionContainerType=ActionItems }
+      { 9       ;1   ;Action    ;
+                      Name=Accept;
+                      CaptionML=ENU=Accept;
+                      ToolTipML=ENU=Apply the value that the service returned to the account.;
+                      ApplicationArea=#Basic,#Suite;
+                      Promoted=Yes;
+                      Enabled=AcceptEnabled;
+                      PromotedIsBig=Yes;
+                      Image=Approve;
+                      PromotedCategory=Process;
+                      PromotedOnly=Yes;
+                      OnAction=BEGIN
+                                 Status := Status::Accepted;
+                                 MODIFY;
+
+                                 UpdateControls;
+                               END;
+                                }
+      { 12      ;1   ;Action    ;
+                      Name=AcceptAll;
+                      CaptionML=ENU=Accept All;
+                      ToolTipML=ENU=Accept all returned values and update the account.;
+                      ApplicationArea=#Basic,#Suite;
+                      Promoted=Yes;
+                      Enabled=AcceptAllEnabled;
+                      PromotedIsBig=Yes;
+                      Image=Approve;
+                      PromotedCategory=Process;
+                      PromotedOnly=Yes;
+                      OnAction=BEGIN
+                                 UpdateAllDetailsStatus(Status::"Not Valid",Status::Accepted);
+                               END;
+                                }
+      { 10      ;1   ;Action    ;
+                      Name=Reset;
+                      CaptionML=ENU=Reset;
+                      ToolTipML=ENU=Reset the value that was applied to the account.;
+                      ApplicationArea=#Basic,#Suite;
+                      Promoted=Yes;
+                      Enabled=ResetEnabled;
+                      PromotedIsBig=Yes;
+                      Image=ResetStatus;
+                      PromotedCategory=Process;
+                      PromotedOnly=Yes;
+                      OnAction=BEGIN
+                                 Status := Status::"Not Valid";
+                                 MODIFY;
+
+                                 UpdateControls;
+                               END;
+                                }
+      { 13      ;1   ;Action    ;
+                      Name=ResetAll;
+                      CaptionML=ENU=Reset All;
+                      ToolTipML=ENU=Reset the values that were applied to the account.;
+                      ApplicationArea=#Basic,#Suite;
+                      Promoted=Yes;
+                      Enabled=ResetAllEnabled;
+                      PromotedIsBig=Yes;
+                      Image=ResetStatus;
+                      PromotedCategory=Process;
+                      PromotedOnly=Yes;
+                      OnAction=BEGIN
+                                 UpdateAllDetailsStatus(Status::Accepted,Status::"Not Valid");
+                               END;
+                                }
+    }
+  }
+  CONTROLS
+  {
+    { 1   ;0   ;Container ;
+                ContainerType=ContentArea }
+
+    { 2   ;1   ;Group     ;
+                Name=Group;
+                GroupType=Repeater }
+
+    { 5   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the name of the field that has been validated by the tax registration no. validation service.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Field Name" }
+
+    { 6   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the requested value.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr=Requested }
+
+    { 7   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the current value.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Current Value" }
+
+    { 3   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the value that was returned by the service.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr=Response }
+
+    { 14  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the status of the field validation.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr=Status }
+
+  }
+  CODE
+  {
+    VAR
+      AcceptEnabled@1000 : Boolean;
+      AcceptAllEnabled@1001 : Boolean;
+      ResetEnabled@1002 : Boolean;
+      ResetAllEnabled@1003 : Boolean;
+
+    LOCAL PROCEDURE UpdateAllDetailsStatus@1(Before@1001 : Option;After@1002 : Option);
+    VAR
+      VATRegistrationLogDetails@1000 : Record 227;
+    BEGIN
+      VATRegistrationLogDetails.COPY(Rec);
+      VATRegistrationLogDetails.SETFILTER(Response,'<>%1','');
+      VATRegistrationLogDetails.SETRANGE(Status,Before);
+      VATRegistrationLogDetails.MODIFYALL(Status,After);
+
+      UpdateControls;
+    END;
+
+    LOCAL PROCEDURE UpdateControls@2();
+    VAR
+      VATRegistrationLogDetails@1000 : Record 227;
+    BEGIN
+      VATRegistrationLogDetails.COPYFILTERS(Rec);
+      VATRegistrationLogDetails.SETFILTER(Response,'<>%1','');
+
+      VATRegistrationLogDetails.SETRANGE(Status,VATRegistrationLogDetails.Status::"Not Valid");
+      AcceptAllEnabled := NOT VATRegistrationLogDetails.ISEMPTY;
+
+      VATRegistrationLogDetails.SETRANGE(Status,VATRegistrationLogDetails.Status::Accepted);
+      ResetAllEnabled := NOT VATRegistrationLogDetails.ISEMPTY;
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

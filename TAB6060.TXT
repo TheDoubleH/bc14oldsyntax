@@ -1,0 +1,36 @@
+OBJECT Table 6060 Hybrid Deployment Setup
+{
+  OBJECT-PROPERTIES
+  {
+    Date=09/19/18;
+    Time=12:00:00 PM;
+    Version List=NAVW113.00;
+  }
+  PROPERTIES
+  {
+    ReplicateData=No;
+    CaptionML=ENU=Hybrid Deployment Setup;
+  }
+  FIELDS
+  {
+    { 1   ;   ;Primary Key         ;Code10        ;DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Primary Key }
+    { 2   ;   ;Handler Codeunit ID ;Integer       ;InitValue=6061;
+                                                   DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Handler Codeunit ID }
+  }
+  KEYS
+  {
+    {    ;Primary Key                             ;Clustered=Yes }
+  }
+  FIELDGROUPS
+  {
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

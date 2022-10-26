@@ -1,0 +1,47 @@
+OBJECT Page 27013 SAT Item Subform
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/24/19;
+    Time=12:00:00 PM;
+    Version List=NAVNA14.00;
+  }
+  PROPERTIES
+  {
+    CaptionML=ENU=SAT Item Subform;
+    SourceTable=Table27;
+    PageType=ListPart;
+  }
+  CONTROLS
+  {
+    { 1020000;0;Container ;
+                ContainerType=ContentArea }
+
+    { 1020001;1;Group     ;
+                Name=Group;
+                GroupType=Repeater }
+
+    { 1020002;2;Field     ;
+                ToolTipML=ENU=Specifies the number of the involved item.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="No." }
+
+    { 1020003;2;Field     ;
+                ToolTipML=ENU=Specifies a description of the involved item.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr=Description }
+
+    { 1020004;2;Field     ;
+                ToolTipML=ENU=Specifies the SAT classification of the involved item.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="SAT Item Classification" }
+
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

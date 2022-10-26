@@ -1,0 +1,80 @@
+OBJECT Page 8452 Advanced Intrastat Checklist
+{
+  OBJECT-PROPERTIES
+  {
+    Date=06/25/21;
+    Time=12:00:00 PM;
+    Version List=NAVW114.26;
+  }
+  PROPERTIES
+  {
+    CaptionML=ENU=Advanced Intrastat Checklist Setup;
+    SourceTable=Table8452;
+    DelayedInsert=Yes;
+    PageType=List;
+  }
+  CONTROLS
+  {
+    { 1   ;0   ;Container ;
+                ContainerType=ContentArea }
+
+    { 2   ;1   ;Group     ;
+                Name=Group;
+                GroupType=Repeater }
+
+    { 7   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the type of the object that this entry in the checklist uses.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Object Type" }
+
+    { 3   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the object that this entry in the checklist uses.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Object Id" }
+
+    { 4   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the name of the object that this entry in the checklist uses.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Object Name" }
+
+    { 5   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the number of the table field that this entry in the checklist uses.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Field No." }
+
+    { 6   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the name of the table field that this entry in the checklist uses.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Field Name";
+                OnLookup=BEGIN
+                           IF ClientTypeManagement.GetCurrentClientType = CLIENTTYPE::Windows THEN
+                             LookupFieldName;
+                         END;
+
+                OnAssistEdit=BEGIN
+                               IF ClientTypeManagement.GetCurrentClientType IN [CLIENTTYPE::Web,CLIENTTYPE::Tablet,CLIENTTYPE::Phone,CLIENTTYPE::Desktop] THEN
+                                 LookupFieldName;
+                             END;
+                              }
+
+    { 8   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the filter expression that must be applied to the Intrastat journal line. The check for fields is run only on those lines that are passes the filter expression.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Filter Expression" }
+
+    { 9   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies that the check for fields is run only on those lines that do not match the filter expression. If the line is not filtered, this field is ignored.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Reversed Filter Expression" }
+
+  }
+  CODE
+  {
+    VAR
+      ClientTypeManagement@1000 : Codeunit 4;
+
+    BEGIN
+    END.
+  }
+}
+

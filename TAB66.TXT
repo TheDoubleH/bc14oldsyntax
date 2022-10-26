@@ -1,0 +1,57 @@
+OBJECT Table 66 Merge Duplicates Conflict
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/24/19;
+    Time=12:00:00 PM;
+    Version List=NAVW114.00;
+  }
+  PROPERTIES
+  {
+    ReplicateData=No;
+    CaptionML=ENU=Merge Duplicates Conflict;
+  }
+  FIELDS
+  {
+    { 1   ;   ;Table ID            ;Integer       ;OnValidate=VAR
+                                                                AllObjWithCaption@1000 : Record 2000000058;
+                                                              BEGIN
+                                                                AllObjWithCaption.GET(AllObjWithCaption."Object Type"::Table,"Table ID");
+                                                                "Table Name" := AllObjWithCaption."Object Caption";
+                                                              END;
+
+                                                   DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Table ID }
+    { 2   ;   ;Duplicate           ;RecordID      ;DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Duplicate }
+    { 3   ;   ;Current             ;RecordID      ;DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Current }
+    { 4   ;   ;Field ID            ;Integer       ;DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Field ID }
+    { 5   ;   ;Table Name          ;Text249       ;DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Table Name }
+  }
+  KEYS
+  {
+    {    ;Table ID,Duplicate                      ;Clustered=Yes }
+  }
+  FIELDGROUPS
+  {
+  }
+  CODE
+  {
+
+    PROCEDURE Merge@1() : Boolean;
+    VAR
+      MergeDuplicate@1000 : Page 702;
+    BEGIN
+      MergeDuplicate.SetConflict(Rec);
+      MergeDuplicate.RUNMODAL;
+      EXIT(MergeDuplicate.IsConflictResolved);
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

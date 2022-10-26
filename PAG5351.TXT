@@ -1,0 +1,200 @@
+OBJECT Page 5351 CRM Quote List
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/24/19;
+    Time=12:00:00 PM;
+    Version List=NAVW114.00;
+  }
+  PROPERTIES
+  {
+    Editable=No;
+    CaptionML=ENU=Sales Quotes - Microsoft Dynamics 365 for Sales;
+    ApplicationArea=#Suite;
+    InsertAllowed=No;
+    SourceTable=Table5351;
+    SourceTableView=WHERE(StateCode=FILTER(Active|Won));
+    PageType=List;
+    UsageCategory=Lists;
+    PromotedActionCategoriesML=ENU=New,Process,Report,Dynamics 365 for Sales;
+    OnInit=BEGIN
+             CODEUNIT.RUN(CODEUNIT::"CRM Integration Management");
+           END;
+
+    OnOpenPage=VAR
+                 CRMIntegrationManagement@1000 : Codeunit 5330;
+                 LookupCRMTables@1001 : Codeunit 5332;
+               BEGIN
+                 CRMIntegrationEnabled := CRMIntegrationManagement.IsCRMIntegrationEnabled;
+                 FILTERGROUP(4);
+                 SETVIEW(LookupCRMTables.GetIntegrationTableMappingView(DATABASE::"CRM Quote"));
+                 FILTERGROUP(0);
+               END;
+
+    OnAfterGetRecord=VAR
+                       CRMIntegrationRecord@1001 : Record 5331;
+                       BlankGUID@1000 : GUID;
+                       Style@1002 : Integer;
+                     BEGIN
+                       CRMIntegrationRecord.SETRANGE("CRM ID",QuoteId);
+                       IF CRMIntegrationRecord.FINDFIRST THEN BEGIN
+                         IF CurrentlyCoupledCRMQuote.QuoteId = QuoteId THEN
+                           Style := 1
+                         ELSE
+                           IF StateCode = StateCode::Active THEN
+                             Style := 2
+                           ELSE
+                             IF StateCode = StateCode::Won THEN
+                               IF CRMIntegrationRecord."Integration ID" = BlankGUID THEN
+                                 Style := 2
+                               ELSE
+                                 Style := 3;
+                       END ELSE
+                         Style := 3;
+
+                       IF Style = 1 THEN BEGIN
+                         Coupled := 'Current';
+                         FirstColumnStyle := 'Strong';
+                       END ELSE
+                         IF Style = 2 THEN BEGIN
+                           Coupled := 'Yes';
+                           FirstColumnStyle := 'Subordinate';
+                         END ELSE
+                           IF Style = 3 THEN BEGIN
+                             Coupled := 'No';
+                             FirstColumnStyle := 'None';
+                           END;
+                     END;
+
+    OnAfterGetCurrRecord=BEGIN
+                           HasRecords := NOT ISNULLGUID(QuoteId);
+                         END;
+
+    ActionList=ACTIONS
+    {
+      { 11      ;    ;ActionContainer;
+                      ActionContainerType=RelatedInformation }
+      { 10      ;1   ;ActionGroup;
+                      Name=ActionGroupCRM;
+                      CaptionML=ENU=Dynamics 365 for Sales }
+      { 9       ;2   ;Action    ;
+                      Name=CRMGoToQuote;
+                      CaptionML=ENU=Quote;
+                      ToolTipML=ENU=Open the selected Dynamics 365 for Sales quote.;
+                      ApplicationArea=#Suite;
+                      Promoted=Yes;
+                      Image=CoupledQuote;
+                      PromotedCategory=Category4;
+                      OnAction=VAR
+                                 CRMIntegrationManagement@1000 : Codeunit 5330;
+                               BEGIN
+                                 HYPERLINK(CRMIntegrationManagement.GetCRMEntityUrlFromCRMID(DATABASE::"CRM Quote",QuoteId));
+                               END;
+                                }
+      { 13      ;1   ;ActionGroup;
+                      Name=ActionGroupNAV;
+                      CaptionML=ENU=Business Central;
+                      Visible=CRMIntegrationEnabled }
+      { 12      ;2   ;Action    ;
+                      Name=ProcesseInNAV;
+                      CaptionML=ENU=Process in Business Central;
+                      ToolTipML=ENU=Create a sales quote in Business Central for the quote entity in Dynamics 365 for Sales.;
+                      ApplicationArea=#Suite;
+                      Promoted=Yes;
+                      Enabled=HasRecords;
+                      Image=New;
+                      PromotedCategory=Process;
+                      OnAction=VAR
+                                 SalesHeader@1001 : Record 36;
+                                 CRMQuoteToSalesQuote@1000 : Codeunit 5348;
+                               BEGIN
+                                 IF ISEMPTY THEN
+                                   EXIT;
+
+                                 IF Coupled = 'Yes' THEN
+                                   ERROR(AlreadyProcessedErr);
+
+                                 IF CRMQuoteToSalesQuote.ProcessInNAV(Rec,SalesHeader) THEN BEGIN
+                                   COMMIT;
+                                   PAGE.RUNMODAL(PAGE::"Sales Quote",SalesHeader);
+                                 END;
+                               END;
+                                }
+    }
+  }
+  CONTROLS
+  {
+    { 1   ;0   ;Container ;
+                ContainerType=ContentArea }
+
+    { 2   ;1   ;Group     ;
+                Name=Group;
+                GroupType=Repeater }
+
+    { 3   ;2   ;Field     ;
+                CaptionML=ENU=Name;
+                ToolTipML=ENU=Specifies the name of the record.;
+                ApplicationArea=#Suite;
+                SourceExpr=Name;
+                StyleExpr=FirstColumnStyle }
+
+    { 4   ;2   ;Field     ;
+                CaptionML=ENU=Status;
+                ToolTipML=ENU="Specifies information related to the Dynamics 365 for Sales connection. ";
+                OptionCaptionML=ENU=Draft,Active,Won,Closed;
+                ApplicationArea=#Suite;
+                SourceExpr=StateCode }
+
+    { 5   ;2   ;Field     ;
+                CaptionML=ENU=Total Amount;
+                ToolTipML=ENU="Specifies information related to the Dynamics 365 for Sales connection. ";
+                ApplicationArea=#Suite;
+                SourceExpr=TotalAmount }
+
+    { 6   ;2   ;Field     ;
+                CaptionML=ENU=Effective From;
+                ToolTipML=ENU=Specifies which date the sales quote is valid from.;
+                ApplicationArea=#Suite;
+                SourceExpr=EffectiveFrom }
+
+    { 7   ;2   ;Field     ;
+                CaptionML=ENU=Effective To;
+                ToolTipML=ENU=Specifies which date the sales quote is valid to.;
+                ApplicationArea=#Suite;
+                SourceExpr=EffectiveTo }
+
+    { 8   ;2   ;Field     ;
+                CaptionML=ENU=Closed On;
+                ToolTipML=ENU=Specifies the date when quote was closed.;
+                ApplicationArea=#Suite;
+                SourceExpr=ClosedOn }
+
+    { 14  ;2   ;Field     ;
+                Name=Coupled;
+                CaptionML=ENU=Coupled;
+                ToolTipML=ENU=Specifies if the Dynamics 365 for Sales record is coupled to Business Central.;
+                ApplicationArea=#Suite;
+                SourceExpr=Coupled }
+
+  }
+  CODE
+  {
+    VAR
+      CurrentlyCoupledCRMQuote@1004 : Record 5351;
+      CRMIntegrationEnabled@1000 : Boolean;
+      HasRecords@1001 : Boolean;
+      Coupled@1003 : Text;
+      FirstColumnStyle@1002 : Text;
+      AlreadyProcessedErr@1005 : TextConst 'ENU=The current record has already been processed in BC.';
+
+    [External]
+    PROCEDURE SetCurrentlyCoupledCRMQuote@2(CRMQuote@1000 : Record 5351);
+    BEGIN
+      CurrentlyCoupledCRMQuote := CRMQuote;
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

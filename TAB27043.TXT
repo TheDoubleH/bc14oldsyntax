@@ -1,0 +1,43 @@
+OBJECT Table 27043 DIOT-Report Vendor Buffer
+{
+  OBJECT-PROPERTIES
+  {
+    Date=10/26/19;
+    Time=12:00:00 PM;
+    Version List=NAVNA14.07;
+  }
+  PROPERTIES
+  {
+    ObsoleteState=Pending;
+    ObsoleteReason=Moved to extension;
+    CaptionML=ENU=DIOT Report Vendor Buffer;
+  }
+  FIELDS
+  {
+    { 1   ;   ;Vendor No.          ;Code20        ;CaptionML=ENU=Vendor No. }
+    { 2   ;   ;Type of Operation   ;Option        ;CaptionML=ENU=Type of Operation;
+                                                   OptionCaptionML=ENU=Prof. Services,Lease and Rent,Others;
+                                                   OptionString=Prof. Services,Lease and Rent,Others }
+    { 3   ;   ;Type of Vendor Text ;Text2         ;CaptionML=ENU=Type of Vendor Text }
+    { 4   ;   ;Type of Operation Text;Text2       ;CaptionML=ENU=Type of Operation Text }
+    { 5   ;   ;RFC Number          ;Text13        ;CaptionML=ENU=RFC Number }
+    { 6   ;   ;TAX Registration ID ;Text40        ;CaptionML=ENU=TAX Registration ID }
+    { 7   ;   ;Vendor Name         ;Text250       ;CaptionML=ENU=Vendor Name }
+    { 8   ;   ;Country/Region Code ;Text2         ;CaptionML=ENU=Country/Region Code }
+    { 9   ;   ;Nationality         ;Text250       ;CaptionML=ENU=Nationality }
+  }
+  KEYS
+  {
+    {    ;Vendor No.,Type of Operation            ;Clustered=Yes }
+  }
+  FIELDGROUPS
+  {
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

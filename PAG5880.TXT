@@ -1,0 +1,88 @@
+OBJECT Page 5880 Phys. Inventory Recording List
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/24/19;
+    Time=12:00:00 PM;
+    Version List=NAVW114.00;
+  }
+  PROPERTIES
+  {
+    Editable=No;
+    CaptionML=ENU=Phys. Inventory Recording List;
+    ApplicationArea=#Warehouse;
+    SourceTable=Table5877;
+    PageType=List;
+    UsageCategory=Lists;
+    CardPageID=Phys. Inventory Recording;
+    ActionList=ACTIONS
+    {
+      { 1900000006;0 ;ActionContainer;
+                      ActionContainerType=Reports }
+      { 1902275906;1 ;Action    ;
+                      CaptionML=ENU=Physical Inventory Recording;
+                      ToolTipML=ENU=Prepare to count inventory by creating a recording document to capture the quantities.;
+                      ApplicationArea=#Warehouse;
+                      RunObject=Report 5878;
+                      Promoted=No;
+                      Image=Report;
+                      PromotedCategory=Report }
+    }
+  }
+  CONTROLS
+  {
+    { 1900000001;0;Container;
+                ContainerType=ContentArea }
+
+    { 2   ;1   ;Group     ;
+                GroupType=Repeater }
+
+    { 1   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the physical inventory header number that is linked to the physical inventory recording.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Order No." }
+
+    { 3   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies a number that is assigned to the physical inventory recording, when you link a physical inventory recording to a physical inventory order.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Recording No." }
+
+    { 5   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the description of the inventory recording.;
+                ApplicationArea=#Warehouse;
+                SourceExpr=Description }
+
+    { 7   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies if the physical inventory recording is open or finished.;
+                ApplicationArea=#Warehouse;
+                SourceExpr=Status }
+
+    { 9   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the code of the person responsible for performing this physical inventory recording.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Person Responsible" }
+
+    { 11  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the date when the physical inventory was taken.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Date Recorded" }
+
+    { 13  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the time when physical inventory was taken.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Time Recorded" }
+
+    { 15  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the User ID of the person who performed the physical inventory.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Person Recorded" }
+
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

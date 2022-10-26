@@ -1,0 +1,458 @@
+OBJECT Codeunit 452 Report Distribution Management
+{
+  OBJECT-PROPERTIES
+  {
+    Date=10/02/20;
+    Time=12:00:00 PM;
+    Version List=NAVW114.18;
+  }
+  PROPERTIES
+  {
+    EventSubscriberInstance=Manual;
+    OnRun=BEGIN
+          END;
+
+  }
+  CODE
+  {
+    VAR
+      HideDialog@1008 : Boolean;
+      SalesInvoiceDocTypeTxt@1000 : TextConst 'ENU=Sales Invoice';
+      SalesCrMemoDocTypeTxt@1009 : TextConst 'ENU=Sales Credit Memo';
+      SalesQuoteDocTypeTxt@1010 : TextConst 'ENU=Sales Quote';
+      SalesOrderDocTypeTxt@1012 : TextConst 'ENU=Sales Order';
+      SalesBlanketOrderDocTypeTxt@1016 : TextConst 'ENU=Sales Blanket Order';
+      SalesReturnOrderDocTypeTxt@1021 : TextConst 'ENU=Sales Return Order';
+      SalesShipmentDocTypeTxt@1003 : TextConst 'ENU=Sales Shipment';
+      SalesReturnRcptDocTypeTxt@1005 : TextConst 'ENU=Sales Receipt';
+      PurchaseInvoiceDocTypeTxt@1001 : TextConst 'ENU=Purchase Invoice';
+      PurchaseCrMemoDocTypeTxt@1011 : TextConst 'ENU=Purchase Credit Memo';
+      PurchaseQuoteDocTypeTxt@1017 : TextConst 'ENU=Purchase Quote';
+      PurchaseOrderDocTypeTxt@1018 : TextConst 'ENU=Purchase Order';
+      PurchaseBlanketOrderDocTypeTxt@1023 : TextConst 'ENU=Purchase Blanket Order';
+      PurchaseReturnOrderDocTypeTxt@1022 : TextConst 'ENU=Purchase Return Order';
+      ServiceInvoiceDocTypeTxt@1002 : TextConst 'ENU=Service Invoice';
+      ServiceCrMemoDocTypeTxt@1013 : TextConst 'ENU=Service Credit Memo';
+      ServiceQuoteDocTypeTxt@1019 : TextConst 'ENU=Service Quote';
+      ServiceOrderDocTypeTxt@1020 : TextConst 'ENU=Service Order';
+      JobQuoteDocTypeTxt@1004 : TextConst 'ENU=Job Quote';
+      IssuedReminderDocTypeTxt@1006 : TextConst 'ENU=Issued Reminder';
+      IssuedFinChargeMemoDocTypeTxt@1007 : TextConst 'ENU=Issued Finance Charge Memo';
+
+    [Internal]
+    PROCEDURE VANDocumentReport@5(HeaderDoc@1000 : Variant;TempDocumentSendingProfile@1002 : TEMPORARY Record 60);
+    VAR
+      ElectronicDocumentFormat@1003 : Record 61;
+      RecordExportBuffer@1008 : Record 62;
+      DocExchServiceMgt@1005 : Codeunit 1410;
+      RecordRef@1006 : RecordRef;
+      SpecificRecordRef@1007 : RecordRef;
+      XMLPath@1004 : Text[250];
+      ClientFileName@1001 : Text[250];
+    BEGIN
+      RecordRef.GETTABLE(HeaderDoc);
+      IF RecordRef.FINDSET THEN
+        REPEAT
+          SpecificRecordRef.GET(RecordRef.RECORDID);
+          SpecificRecordRef.SETRECFILTER;
+          ElectronicDocumentFormat.SendElectronically(
+            XMLPath,ClientFileName,SpecificRecordRef,TempDocumentSendingProfile."Electronic Format");
+          IF ElectronicDocumentFormat."Delivery Codeunit ID" = 0 THEN
+            DocExchServiceMgt.SendDocument(SpecificRecordRef,XMLPath)
+          ELSE BEGIN
+            RecordExportBuffer.RecordID := SpecificRecordRef.RECORDID;
+            RecordExportBuffer.ClientFileName := ClientFileName;
+            RecordExportBuffer.ServerFilePath := XMLPath;
+            RecordExportBuffer."Electronic Document Format" := TempDocumentSendingProfile."Electronic Format";
+            RecordExportBuffer."Document Sending Profile" := TempDocumentSendingProfile.Code;
+            CODEUNIT.RUN(ElectronicDocumentFormat."Delivery Codeunit ID",RecordExportBuffer);
+          END;
+        UNTIL RecordRef.NEXT = 0;
+    END;
+
+    [External]
+    PROCEDURE DownloadPdfOnClient@12(ServerPdfFilePath@1000 : Text) : Text;
+    VAR
+      FileManagement@1001 : Codeunit 419;
+      ClientPdfFilePath@1002 : Text;
+    BEGIN
+      ClientPdfFilePath := FileManagement.DownloadTempFile(ServerPdfFilePath);
+      ERASE(ServerPdfFilePath);
+      EXIT(ClientPdfFilePath);
+    END;
+
+    [External]
+    PROCEDURE InitializeFrom@10(NewHideDialog@1001 : Boolean);
+    BEGIN
+      HideDialog := NewHideDialog;
+    END;
+
+    PROCEDURE GetFullDocumentTypeText@7(DocumentVariant@1000 : Variant) DocumentTypeText : Text[50];
+    VAR
+      SalesHeader@1002 : Record 36;
+      PurchaseHeader@1001 : Record 38;
+      ServiceHeader@1003 : Record 5900;
+      LanguageMgt@1004 : Codeunit 43;
+      DocumentRecordRef@1005 : RecordRef;
+    BEGIN
+      IF DocumentVariant.ISRECORD THEN
+        DocumentRecordRef.GETTABLE(DocumentVariant)
+      ELSE
+        IF DocumentVariant.ISRECORDREF THEN
+          DocumentRecordRef := DocumentVariant;
+
+      LanguageMgt.SetGlobalLanguageByCode(GetDocumentLanguageCode(DocumentVariant));
+
+      CASE DocumentRecordRef.NUMBER OF
+        DATABASE::"Sales Invoice Header":
+          DocumentTypeText := SalesInvoiceDocTypeTxt;
+        DATABASE::"Sales Cr.Memo Header":
+          DocumentTypeText := SalesCrMemoDocTypeTxt;
+        DATABASE::"Sales Shipment Header":
+          DocumentTypeText := SalesShipmentDocTypeTxt;
+        DATABASE::"Service Invoice Header":
+          DocumentTypeText := ServiceInvoiceDocTypeTxt;
+        DATABASE::"Service Cr.Memo Header":
+          DocumentTypeText := ServiceCrMemoDocTypeTxt;
+        DATABASE::Job:
+          DocumentTypeText := JobQuoteDocTypeTxt;
+        DATABASE::"Return Receipt Header":
+          DocumentTypeText := SalesReturnRcptDocTypeTxt;
+        DATABASE::"Issued Reminder Header":
+          DocumentTypeText := IssuedReminderDocTypeTxt;
+        DATABASE::"Issued Fin. Charge Memo Header":
+          DocumentTypeText := IssuedFinChargeMemoDocTypeTxt;
+        DATABASE::"Sales Header":
+          BEGIN
+            DocumentRecordRef.SETTABLE(SalesHeader);
+            CASE SalesHeader."Document Type" OF
+              SalesHeader."Document Type"::Invoice:
+                DocumentTypeText := SalesInvoiceDocTypeTxt;
+              SalesHeader."Document Type"::"Credit Memo":
+                DocumentTypeText := SalesCrMemoDocTypeTxt;
+              SalesHeader."Document Type"::Quote:
+                DocumentTypeText := SalesQuoteDocTypeTxt;
+              SalesHeader."Document Type"::Order:
+                DocumentTypeText := SalesOrderDocTypeTxt;
+              SalesHeader."Document Type"::"Blanket Order":
+                DocumentTypeText := SalesBlanketOrderDocTypeTxt;
+              SalesHeader."Document Type"::"Return Order":
+                DocumentTypeText := SalesReturnOrderDocTypeTxt;
+            END;
+          END;
+        DATABASE::"Purchase Header":
+          BEGIN
+            DocumentRecordRef.SETTABLE(PurchaseHeader);
+            CASE PurchaseHeader."Document Type" OF
+              PurchaseHeader."Document Type"::Invoice:
+                DocumentTypeText := PurchaseInvoiceDocTypeTxt;
+              PurchaseHeader."Document Type"::"Credit Memo":
+                DocumentTypeText := PurchaseCrMemoDocTypeTxt;
+              PurchaseHeader."Document Type"::Quote:
+                DocumentTypeText := PurchaseQuoteDocTypeTxt;
+              PurchaseHeader."Document Type"::Order:
+                DocumentTypeText := PurchaseOrderDocTypeTxt;
+              PurchaseHeader."Document Type"::"Blanket Order":
+                DocumentTypeText := PurchaseBlanketOrderDocTypeTxt;
+              PurchaseHeader."Document Type"::"Return Order":
+                DocumentTypeText := PurchaseReturnOrderDocTypeTxt;
+            END;
+          END;
+        DATABASE::"Service Header":
+          BEGIN
+            DocumentRecordRef.SETTABLE(ServiceHeader);
+            CASE ServiceHeader."Document Type" OF
+              ServiceHeader."Document Type"::Invoice:
+                DocumentTypeText := ServiceInvoiceDocTypeTxt;
+              ServiceHeader."Document Type"::"Credit Memo":
+                DocumentTypeText := ServiceCrMemoDocTypeTxt;
+              ServiceHeader."Document Type"::Quote:
+                DocumentTypeText := ServiceQuoteDocTypeTxt;
+              ServiceHeader."Document Type"::Order:
+                DocumentTypeText := ServiceOrderDocTypeTxt;
+            END;
+          END;
+      END;
+
+      LanguageMgt.RestoreGlobalLanguage;
+    END;
+
+    PROCEDURE GetDocumentLanguageCode@13(DocumentVariant@1000 : Variant) : Code[10];
+    VAR
+      SalesInvoiceHeader@1001 : Record 112;
+      SalesCrMemoHeader@1002 : Record 114;
+      ServiceInvoiceHeader@1003 : Record 5992;
+      ServiceCrMemoHeader@1004 : Record 5994;
+      SalesHeader@1005 : Record 36;
+      PurchaseHeader@1006 : Record 38;
+      ServiceHeader@1007 : Record 5900;
+      Job@1008 : Record 167;
+      DocumentRecordRef@1009 : RecordRef;
+    BEGIN
+      IF DocumentVariant.ISRECORD THEN
+        DocumentRecordRef.GETTABLE(DocumentVariant)
+      ELSE
+        IF DocumentVariant.ISRECORDREF THEN
+          DocumentRecordRef := DocumentVariant;
+
+      CASE DocumentRecordRef.NUMBER OF
+        DATABASE::"Sales Invoice Header":
+          BEGIN
+            DocumentRecordRef.SETTABLE(SalesInvoiceHeader);
+            EXIT(SalesInvoiceHeader."Language Code");
+          END;
+        DATABASE::"Sales Cr.Memo Header":
+          BEGIN
+            DocumentRecordRef.SETTABLE(SalesCrMemoHeader);
+            EXIT(SalesCrMemoHeader."Language Code");
+          END;
+        DATABASE::"Service Invoice Header":
+          BEGIN
+            DocumentRecordRef.SETTABLE(ServiceInvoiceHeader);
+            EXIT(ServiceInvoiceHeader."Language Code");
+          END;
+        DATABASE::"Service Cr.Memo Header":
+          BEGIN
+            DocumentRecordRef.SETTABLE(ServiceCrMemoHeader);
+            EXIT(ServiceCrMemoHeader."Language Code");
+          END;
+        DATABASE::"Sales Header":
+          BEGIN
+            DocumentRecordRef.SETTABLE(SalesHeader);
+            EXIT(SalesHeader."Language Code");
+          END;
+        DATABASE::"Purchase Header":
+          BEGIN
+            DocumentRecordRef.SETTABLE(PurchaseHeader);
+            EXIT(PurchaseHeader."Language Code");
+          END;
+        DATABASE::"Service Header":
+          BEGIN
+            DocumentRecordRef.SETTABLE(ServiceHeader);
+            EXIT(ServiceHeader."Language Code");
+          END;
+        DATABASE::Job:
+          BEGIN
+            DocumentRecordRef.SETTABLE(Job);
+            EXIT(Job."Language Code");
+          END;
+      END;
+    END;
+
+    LOCAL PROCEDURE GetBillToCustomer@16(VAR Customer@1000 : Record 18;DocumentVariant@1001 : Variant);
+    VAR
+      SalesInvoiceHeader@1003 : Record 112;
+      SalesCrMemoHeader@1002 : Record 114;
+      SalesHeader@1006 : Record 36;
+      ServiceInvoiceHeader@1004 : Record 5992;
+      ServiceCrMemoHeader@1007 : Record 5994;
+      ServiceHeader@1008 : Record 5900;
+      Job@1009 : Record 167;
+      DocumentRecordRef@1005 : RecordRef;
+    BEGIN
+      DocumentRecordRef.GETTABLE(DocumentVariant);
+      CASE DocumentRecordRef.NUMBER OF
+        DATABASE::"Sales Invoice Header":
+          BEGIN
+            SalesInvoiceHeader := DocumentVariant;
+            Customer.GET(SalesInvoiceHeader."Bill-to Customer No.");
+          END;
+        DATABASE::"Sales Cr.Memo Header":
+          BEGIN
+            SalesCrMemoHeader := DocumentVariant;
+            Customer.GET(SalesCrMemoHeader."Bill-to Customer No.");
+          END;
+        DATABASE::"Service Invoice Header":
+          BEGIN
+            ServiceInvoiceHeader := DocumentVariant;
+            Customer.GET(ServiceInvoiceHeader."Bill-to Customer No.");
+          END;
+        DATABASE::"Service Cr.Memo Header":
+          BEGIN
+            ServiceCrMemoHeader := DocumentVariant;
+            Customer.GET(ServiceCrMemoHeader."Bill-to Customer No.");
+          END;
+        DATABASE::"Service Header":
+          BEGIN
+            ServiceHeader := DocumentVariant;
+            Customer.GET(ServiceHeader."Bill-to Customer No.");
+          END;
+        DATABASE::"Sales Header":
+          BEGIN
+            SalesHeader := DocumentVariant;
+            Customer.GET(SalesHeader."Bill-to Customer No.");
+          END;
+        DATABASE::Job:
+          BEGIN
+            Job := DocumentVariant;
+            Customer.GET(Job."Bill-to Customer No.");
+          END;
+      END;
+    END;
+
+    LOCAL PROCEDURE GetBuyFromVendor@2(VAR Vendor@1001 : Record 23;DocumentVariant@1000 : Variant);
+    VAR
+      PurchaseHeader@1009 : Record 38;
+      DocumentRecordRef@1002 : RecordRef;
+    BEGIN
+      DocumentRecordRef.GETTABLE(DocumentVariant);
+      CASE DocumentRecordRef.NUMBER OF
+        DATABASE::"Purchase Header":
+          BEGIN
+            PurchaseHeader := DocumentVariant;
+            Vendor.GET(PurchaseHeader."Buy-from Vendor No.");
+          END;
+      END;
+    END;
+
+    [Internal]
+    PROCEDURE SaveFileOnClient@14(ServerFilePath@1000 : Text;ClientFileName@1005 : Text);
+    VAR
+      FileManagement@1004 : Codeunit 419;
+    BEGIN
+      FileManagement.DownloadHandler(
+        ServerFilePath,
+        '',
+        '',
+        FileManagement.GetToFilterText('',ClientFileName),
+        ClientFileName);
+    END;
+
+    LOCAL PROCEDURE SendAttachment@6(PostedDocumentNo@1000 : Code[20];SendEmailAddress@1001 : Text[250];AttachmentFilePath@1002 : Text[250];AttachmentFileName@1004 : Text[250];DocumentType@1005 : Text[50];SendTo@1009 : Option;ServerEmailBodyFilePath@1003 : Text[250];ReportUsage@1006 : Integer);
+    VAR
+      DocumentSendingProfile@1007 : Record 60;
+      DocumentMailing@1008 : Codeunit 260;
+    BEGIN
+      IF SendTo = DocumentSendingProfile."Send To"::Disk THEN BEGIN
+        SaveFileOnClient(AttachmentFilePath,AttachmentFileName);
+        EXIT;
+      END;
+
+      DocumentMailing.EmailFile(
+        AttachmentFilePath,AttachmentFileName,ServerEmailBodyFilePath,PostedDocumentNo,
+        SendEmailAddress,DocumentType,HideDialog,ReportUsage);
+    END;
+
+    [Internal]
+    PROCEDURE SendXmlEmailAttachment@4(DocumentVariant@1000 : Variant;DocumentFormat@1008 : Code[20];ServerEmailBodyFilePath@1004 : Text[250];SendToEmailAddress@1009 : Text[250]);
+    VAR
+      ElectronicDocumentFormat@1001 : Record 61;
+      Customer@1002 : Record 18;
+      DocumentSendingProfile@1007 : Record 60;
+      ReportSelections@1011 : Record 77;
+      DocumentMailing@1005 : Codeunit 260;
+      XMLPath@1006 : Text[250];
+      ClientFileName@1003 : Text[250];
+      ReportUsage@1010 : Integer;
+    BEGIN
+      GetBillToCustomer(Customer,DocumentVariant);
+
+      IF SendToEmailAddress = '' THEN
+        SendToEmailAddress := DocumentMailing.GetToAddressFromCustomer(Customer."No.");
+
+      DocumentSendingProfile.GET(Customer."Document Sending Profile");
+      IF DocumentSendingProfile.Usage = DocumentSendingProfile.Usage::"Job Quote" THEN
+        ReportUsage := ReportSelections.Usage::JQ;
+
+      ElectronicDocumentFormat.SendElectronically(XMLPath,ClientFileName,DocumentVariant,DocumentFormat);
+      COMMIT;
+      SendAttachment(
+        ElectronicDocumentFormat.GetDocumentNo(DocumentVariant),
+        SendToEmailAddress,
+        XMLPath,
+        ClientFileName,
+        GetFullDocumentTypeText(DocumentVariant),
+        DocumentSendingProfile."Send To"::"Electronic Document",
+        ServerEmailBodyFilePath,ReportUsage);
+    END;
+
+    [Internal]
+    PROCEDURE SendXmlEmailAttachmentVendor@1(DocumentVariant@1003 : Variant;DocumentFormat@1002 : Code[20];ServerEmailBodyFilePath@1001 : Text[250];SendToEmailAddress@1000 : Text[250]);
+    VAR
+      ElectronicDocumentFormat@1011 : Record 61;
+      Vendor@1010 : Record 23;
+      DocumentSendingProfile@1009 : Record 60;
+      ReportSelections@1008 : Record 77;
+      DocumentMailing@1007 : Codeunit 260;
+      XMLPath@1006 : Text[250];
+      ClientFileName@1005 : Text[250];
+      ReportUsage@1004 : Integer;
+    BEGIN
+      GetBuyFromVendor(Vendor,DocumentVariant);
+
+      IF SendToEmailAddress = '' THEN
+        SendToEmailAddress := DocumentMailing.GetToAddressFromVendor(Vendor."No.");
+
+      DocumentSendingProfile.GET(Vendor."Document Sending Profile");
+
+      IF DocumentSendingProfile.Usage = DocumentSendingProfile.Usage::"Job Quote" THEN
+        ReportUsage := ReportSelections.Usage::JQ;
+
+      ElectronicDocumentFormat.SendElectronically(XMLPath,ClientFileName,DocumentVariant,DocumentFormat);
+      COMMIT;
+      SendAttachment(
+        ElectronicDocumentFormat.GetDocumentNo(DocumentVariant),
+        SendToEmailAddress,
+        XMLPath,
+        ClientFileName,
+        GetFullDocumentTypeText(DocumentVariant),
+        DocumentSendingProfile."Send To"::"Electronic Document",
+        ServerEmailBodyFilePath,ReportUsage);
+    END;
+
+    PROCEDURE RunDefaultCheckSalesElectronicDocument@3(SalesHeader@1000 : Record 36);
+    VAR
+      ElectronicDocumentFormat@1002 : Record 61;
+    BEGIN
+      GetElectronicDocumentFormat(ElectronicDocumentFormat,SalesHeader);
+
+      ElectronicDocumentFormat.ValidateElectronicSalesDocument(SalesHeader,ElectronicDocumentFormat.Code);
+    END;
+
+    PROCEDURE RunDefaultCheckServiceElectronicDocument@9(ServiceHeader@1000 : Record 5900);
+    VAR
+      ElectronicDocumentFormat@1002 : Record 61;
+    BEGIN
+      GetElectronicDocumentFormat(ElectronicDocumentFormat,ServiceHeader);
+
+      ElectronicDocumentFormat.ValidateElectronicServiceDocument(ServiceHeader,ElectronicDocumentFormat.Code);
+    END;
+
+    LOCAL PROCEDURE GetElectronicDocumentFormat@19(VAR ElectronicDocumentFormat@1001 : Record 61;DocumentVariant@1003 : Variant);
+    VAR
+      Customer@1002 : Record 18;
+      DocumentSendingProfile@1000 : Record 60;
+    BEGIN
+      GetBillToCustomer(Customer,DocumentVariant);
+
+      IF NOT DocumentSendingProfile.GET(Customer."Document Sending Profile") THEN
+        EXIT;
+
+      IF DocumentSendingProfile.Disk <> DocumentSendingProfile.Disk::No THEN
+        IF NOT ElectronicDocumentFormat.GET(DocumentSendingProfile."Disk Format") THEN
+          EXIT;
+
+      IF DocumentSendingProfile."Electronic Document" <> DocumentSendingProfile."Electronic Document"::No THEN
+        IF NOT ElectronicDocumentFormat.GET(DocumentSendingProfile."Electronic Format") THEN
+          EXIT;
+    END;
+
+    [Internal]
+    PROCEDURE CreateOrAppendZipFile@17(VAR FileManagement@1000 : Codeunit 419;ServerFilePath@1001 : Text[250];ClientFileName@1004 : Text[250];VAR ZipPath@1003 : Text[250];VAR ClientZipFileName@1002 : Text[250]);
+    BEGIN
+      IF FileManagement.IsGZip(ServerFilePath) THEN BEGIN
+        ZipPath := ServerFilePath;
+        FileManagement.OpenZipFile(ZipPath);
+        ClientZipFileName := ClientFileName;
+      END ELSE BEGIN
+        ZipPath := COPYSTR(FileManagement.CreateZipArchiveObject,1,250);
+        FileManagement.AddFileToZipArchive(ServerFilePath,ClientFileName);
+        ClientZipFileName := COPYSTR(FileManagement.GetFileNameWithoutExtension(ClientFileName) + '.zip',1,250);
+      END;
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

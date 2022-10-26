@@ -1,0 +1,63 @@
+OBJECT Page 1177 User Task Groups
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/24/19;
+    Time=12:00:00 PM;
+    Version List=NAVW114.00;
+  }
+  PROPERTIES
+  {
+    CaptionML=ENU=User Task Groups;
+    ApplicationArea=#Basic,#Suite;
+    SourceTable=Table1175;
+    PageType=List;
+    UsageCategory=Lists;
+    CardPageID=User Task Group;
+    RefreshOnActivate=Yes;
+    ActionList=ACTIONS
+    {
+      { 5       ;    ;ActionContainer;
+                      ActionContainerType=RelatedInformation }
+      { 7       ;1   ;Action    ;
+                      Name=UserTaskGroupMembers;
+                      CaptionML=ENU=User Task Group Members;
+                      ToolTipML=ENU=View or edit the members of the user task group.;
+                      ApplicationArea=#Basic,#Suite;
+                      RunObject=Page 1176;
+                      RunPageLink=User Task Group Code=FIELD(Code);
+                      Promoted=Yes;
+                      PromotedIsBig=Yes;
+                      Image=Users;
+                      PromotedCategory=Process;
+                      Scope=Repeater }
+    }
+  }
+  CONTROLS
+  {
+    { 1   ;0   ;Container ;
+                ContainerType=ContentArea }
+
+    { 2   ;1   ;Group     ;
+                Name=Group;
+                GroupType=Repeater }
+
+    { 3   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the unique ID for the group.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr=Code }
+
+    { 4   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies a description of the group.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr=Description }
+
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

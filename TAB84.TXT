@@ -1,0 +1,152 @@
+OBJECT Table 84 Acc. Schedule Name
+{
+  OBJECT-PROPERTIES
+  {
+    Date=06/07/21;
+    Time=12:00:00 PM;
+    Version List=NAVW114.25,NAVNA14.25;
+  }
+  PROPERTIES
+  {
+    DataCaptionFields=Name,Description;
+    OnDelete=BEGIN
+               AccSchedLine.SETRANGE("Schedule Name",Name);
+               AccSchedLine.DELETEALL;
+             END;
+
+    CaptionML=ENU=Acc. Schedule Name;
+    LookupPageID=Page103;
+  }
+  FIELDS
+  {
+    { 1   ;   ;Name                ;Code10        ;CaptionML=ENU=Name;
+                                                   NotBlank=Yes }
+    { 2   ;   ;Description         ;Text80        ;CaptionML=ENU=Description }
+    { 3   ;   ;Default Column Layout;Code10       ;TableRelation="Column Layout Name";
+                                                   CaptionML=ENU=Default Column Layout }
+    { 4   ;   ;Analysis View Name  ;Code10        ;TableRelation="Analysis View";
+                                                   OnValidate=VAR
+                                                                AnalysisView@1000 : Record 363;
+                                                                xAnalysisView@1001 : Record 363;
+                                                                ConfirmManagement@1002 : Codeunit 27;
+                                                                AskedUser@1003 : Boolean;
+                                                                ClearTotaling@1004 : Boolean;
+                                                                i@1005 : Integer;
+                                                              BEGIN
+                                                                IF xRec."Analysis View Name" <> "Analysis View Name" THEN BEGIN
+                                                                  AnalysisViewGet(xAnalysisView,xRec."Analysis View Name");
+                                                                  AnalysisViewGet(AnalysisView,"Analysis View Name");
+
+                                                                  ClearTotaling := TRUE;
+                                                                  AskedUser := FALSE;
+
+                                                                  FOR i := 1 TO 4 DO
+                                                                    IF (GetDimCodeByNum(xAnalysisView,i) <> GetDimCodeByNum(AnalysisView,i)) AND ClearTotaling THEN
+                                                                      IF NOT DimTotalingLinesAreEmpty(i) THEN BEGIN
+                                                                        IF NOT AskedUser THEN BEGIN
+                                                                          ClearTotaling := ConfirmManagement.ConfirmProcess(ClearDimensionTotalingConfirmTxt,TRUE);
+                                                                          AskedUser := TRUE;
+                                                                        END;
+
+                                                                        IF ClearTotaling THEN
+                                                                          ClearDimTotalingLines(i);
+                                                                      END;
+                                                                  IF NOT ClearTotaling THEN
+                                                                    "Analysis View Name" := xRec."Analysis View Name";
+                                                                END;
+                                                              END;
+
+                                                   CaptionML=ENU=Analysis View Name }
+    { 10000;  ;Financial Period Description;Text80;CaptionML=ENU=Financial Period Description }
+  }
+  KEYS
+  {
+    {    ;Name                                    ;Clustered=Yes }
+  }
+  FIELDGROUPS
+  {
+  }
+  CODE
+  {
+    VAR
+      AccSchedLine@1000 : Record 85;
+      ClearDimensionTotalingConfirmTxt@1001 : TextConst 'ENU=Changing Analysis View will clear differing dimension totaling columns of Account Schedule Lines. \Do you want to continue?';
+
+    LOCAL PROCEDURE AnalysisViewGet@4(VAR AnalysisView@1000 : Record 363;AnalysisViewName@1001 : Code[10]);
+    VAR
+      GLSetup@1002 : Record 98;
+    BEGIN
+      IF NOT AnalysisView.GET(AnalysisViewName) THEN
+        IF "Analysis View Name" = '' THEN BEGIN
+          GLSetup.GET;
+          AnalysisView."Dimension 1 Code" := GLSetup."Global Dimension 1 Code";
+          AnalysisView."Dimension 2 Code" := GLSetup."Global Dimension 2 Code";
+        END;
+    END;
+
+    PROCEDURE DimTotalingLinesAreEmpty@5(DimNumber@1000 : Integer) : Boolean;
+    VAR
+      RecRef@1002 : RecordRef;
+      FieldRef@1001 : FieldRef;
+    BEGIN
+      AccSchedLine.RESET;
+      AccSchedLine.SETRANGE("Schedule Name",Name);
+      RecRef.GETTABLE(AccSchedLine);
+      FieldRef := RecRef.FIELD(AccSchedLine.FIELDNO("Dimension 1 Totaling") + DimNumber - 1);
+      FieldRef.SETFILTER('<>%1','');
+      RecRef := FieldRef.RECORD;
+      EXIT(RecRef.ISEMPTY);
+    END;
+
+    PROCEDURE ClearDimTotalingLines@6(DimNumber@1000 : Integer);
+    VAR
+      RecRef@1002 : RecordRef;
+      FieldRef@1001 : FieldRef;
+    BEGIN
+      AccSchedLine.RESET;
+      AccSchedLine.SETRANGE("Schedule Name",Name);
+      RecRef.GETTABLE(AccSchedLine);
+      IF RecRef.FINDSET THEN
+        REPEAT
+          FieldRef := RecRef.FIELD(AccSchedLine.FIELDNO("Dimension 1 Totaling") + DimNumber - 1);
+          FieldRef.VALUE := '';
+          RecRef.MODIFY;
+        UNTIL RecRef.NEXT = 0;
+    END;
+
+    LOCAL PROCEDURE GetDimCodeByNum@7(AnalysisView@1000 : Record 363;DimNumber@1001 : Integer) DimensionCode : Code[20];
+    VAR
+      RecRef@1002 : RecordRef;
+      FieldRef@1003 : FieldRef;
+    BEGIN
+      RecRef.GETTABLE(AnalysisView);
+      FieldRef := RecRef.FIELD(AnalysisView.FIELDNO("Dimension 1 Code") + DimNumber - 1);
+      EVALUATE(DimensionCode,FORMAT(FieldRef.VALUE));
+    END;
+
+    [External]
+    PROCEDURE Print@1();
+    VAR
+      AccountSchedule@1000 : Report 25;
+      IsHandled@1001 : Boolean;
+    BEGIN
+      IsHandled := FALSE;
+      OnBeforePrint(Rec,IsHandled);
+      IF IsHandled THEN
+        EXIT;
+
+      AccountSchedule.SetAccSchedName(Name);
+      AccountSchedule.SetColumnLayoutName("Default Column Layout");
+      AccountSchedule.RUN;
+    END;
+
+    [Integration]
+    LOCAL PROCEDURE OnBeforePrint@3(VAR AccScheduleName@1000 : Record 84;VAR IsHandled@1001 : Boolean);
+    BEGIN
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

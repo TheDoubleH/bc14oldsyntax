@@ -1,0 +1,32 @@
+OBJECT Codeunit 1455 Headline RC Whse. Basic
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/24/19;
+    Time=12:00:00 PM;
+    Version List=NAVW114.00;
+  }
+  PROPERTIES
+  {
+    OnRun=VAR
+            HeadlineRCWhseBasic@1000 : Record 1455;
+          BEGIN
+            HeadlineRCWhseBasic.GET;
+            WORKDATE := HeadlineRCWhseBasic."Workdate for computations";
+            OnComputeHeadlines;
+          END;
+
+  }
+  CODE
+  {
+
+    [Integration]
+    LOCAL PROCEDURE OnComputeHeadlines@1();
+    BEGIN
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

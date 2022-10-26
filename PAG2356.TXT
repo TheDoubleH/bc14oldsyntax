@@ -1,0 +1,74 @@
+OBJECT Page 2356 O365 Discontinuation
+{
+  OBJECT-PROPERTIES
+  {
+    Date=12/02/19;
+    Time=12:00:00 PM;
+    Version List=NAVW114.08;
+  }
+  PROPERTIES
+  {
+    Editable=No;
+    CaptionML=ENU=Microsoft Invoicing will be retired soon;
+    PageType=NavigatePage;
+    ActionList=ACTIONS
+    {
+      { 5       ;    ;ActionContainer;
+                      ActionContainerType=ActionItems }
+      { 7       ;1   ;Action    ;
+                      Name=ExportData;
+                      CaptionML=ENU=Export;
+                      ApplicationArea=#Basic,#Suite,#Invoicing;
+                      InFooterBar=Yes;
+                      PromotedOnly=Yes;
+                      OnAction=BEGIN
+                                 SENDTRACETAG('0000ACD',DiscontinuationCategoryLbl,VERBOSITY::Normal,
+                                   ExportTelemetryTxt,DATACLASSIFICATION::SystemMetadata);
+                                 PAGE.RUN(PAGE::"O365 Export Data");
+                               END;
+                                }
+      { 3       ;1   ;Action    ;
+                      Name=LearnMore;
+                      CaptionML=ENU=Learn more;
+                      ApplicationArea=#Basic,#Suite,#Invoicing;
+                      InFooterBar=Yes;
+                      PromotedOnly=Yes;
+                      OnAction=BEGIN
+                                 SENDTRACETAG('0000ACE',DiscontinuationCategoryLbl,VERBOSITY::Normal,
+                                   LearnMoreDiscontinuationTelemetryTxt,DATACLASSIFICATION::SystemMetadata);
+                                 HYPERLINK(InvoicingDiscontinuationLearnMoreUrlTxt);
+                               END;
+                                }
+    }
+  }
+  CONTROLS
+  {
+    { 1   ;    ;Container ;
+                ContainerType=ContentArea }
+
+    { 6   ;1   ;Group     ;
+                GroupType=Group;
+                InstructionalTextML=ENU=Effective February 8th, 2020, the Invoicing app will no longer be available. You can export your data any time before that date. }
+
+    { 9   ;1   ;Group     ;
+                GroupType=Group;
+                InstructionalTextML=ENU=Click Export to start downloading your invoices, estimates, payments, price list and customer list data to an Excel file and send it to an email address. }
+
+    { 2   ;1   ;Group     ;
+                GroupType=Group;
+                InstructionalTextML=ENU=Click Learn More for additional information. }
+
+  }
+  CODE
+  {
+    VAR
+      DiscontinuationCategoryLbl@1000 : TextConst '@@@={Locked};ENU=Invoicing Discontinuation';
+      InvoicingDiscontinuationLearnMoreUrlTxt@1006 : TextConst '@@@={Locked};ENU="https://go.microsoft.com/fwlink/?linkid=2103517"';
+      LearnMoreDiscontinuationTelemetryTxt@1002 : TextConst '@@@={Locked};ENU=User clicked the Learn more about discontinuation action in the page.';
+      ExportTelemetryTxt@1004 : TextConst '@@@={Locked};ENU=User clicked the export action in the page.';
+
+    BEGIN
+    END.
+  }
+}
+

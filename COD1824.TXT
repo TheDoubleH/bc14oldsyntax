@@ -1,0 +1,32 @@
+OBJECT Codeunit 1824 Customer Consent Mgt.
+{
+  OBJECT-PROPERTIES
+  {
+    Date=12/01/21;
+    Time=12:00:00 PM;
+    Version List=NAVW114.31;
+  }
+  PROPERTIES
+  {
+    OnRun=BEGIN
+          END;
+
+  }
+  CODE
+  {
+
+    [External]
+    PROCEDURE ConfirmUserConsent@2() : Boolean;
+    VAR
+      CustConsentConfirmation@1000 : Page 1823;
+    BEGIN
+      CustConsentConfirmation.LOOKUPMODE(TRUE);
+      CustConsentConfirmation.RUNMODAL;
+      EXIT(CustConsentConfirmation.WasAgreed);
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

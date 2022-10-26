@@ -1,0 +1,47 @@
+OBJECT Table 27029 SAT Suburb
+{
+  OBJECT-PROPERTIES
+  {
+    Date=01/13/22;
+    Time=12:00:00 PM;
+    Version List=NAVNA14.32;
+  }
+  PROPERTIES
+  {
+    DataPerCompany=No;
+    OnInsert=VAR
+               SATSuburb@1310000 : Record 27029;
+             BEGIN
+               IF ID = 0 THEN BEGIN
+                 ID := 1;
+                 IF SATSuburb.FINDLAST THEN
+                   ID += SATSuburb.ID;
+               END;
+             END;
+
+    CaptionML=ENU=SAT Suburb;
+  }
+  FIELDS
+  {
+    { 1   ;   ;ID                  ;Integer       ;CaptionML=ENU=ID }
+    { 2   ;   ;Suburb Code         ;Code10        ;CaptionML=ENU=Suburb Code }
+    { 3   ;   ;Postal Code         ;Code20        ;TableRelation="Post Code";
+                                                   ValidateTableRelation=No;
+                                                   CaptionML=ENU=ZIP Code }
+    { 4   ;   ;Description         ;Text100       ;CaptionML=ENU=Description }
+  }
+  KEYS
+  {
+    {    ;ID                                      ;Clustered=Yes }
+  }
+  FIELDGROUPS
+  {
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

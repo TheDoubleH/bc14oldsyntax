@@ -1,0 +1,85 @@
+OBJECT Page 2355 O365 To D365 Trial
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/24/19;
+    Time=12:00:00 PM;
+    Version List=NAVW114.00;
+  }
+  PROPERTIES
+  {
+    Editable=No;
+    CaptionML=ENU=Try Dynamics 365 Business Central;
+    PageType=NavigatePage;
+    ActionList=ACTIONS
+    {
+      { 5       ;    ;ActionContainer;
+                      ActionContainerType=ActionItems }
+      { 7       ;1   ;Action    ;
+                      Name=TryBusinessCentral;
+                      CaptionML=ENU=Try Dynamics 365 Business Central for free today!;
+                      ApplicationArea=#Basic,#Suite,#Invoicing;
+                      InFooterBar=Yes;
+                      PromotedOnly=Yes;
+                      OnAction=BEGIN
+                                 CurrPage.CLOSE;
+                                 O365SetupMgmt.GotoBusinessCentralWithEvaluationCompany;
+                               END;
+                                }
+    }
+  }
+  CONTROLS
+  {
+    { 1   ;    ;Container ;
+                ContainerType=ContentArea }
+
+    { 4   ;1   ;Group     ;
+                GroupType=Group;
+                InstructionalTextML=ENU=Dynamics 365 Business Central is a business management solution for small and mid-sized organizations. As an all-in-one solution, Business Central has more functionality than Microsoft Invoicing, including inventory, purchasing, and projects. }
+
+    { 8   ;1   ;Group     ;
+                CaptionML=ENU=Get to Know;
+                Editable=FALSE;
+                GroupType=CueGroup;
+                ActionList=ACTIONS
+                {
+                  { 2       ;    ;Action    ;
+                                  Name=GetToKnowBC;
+                                  CaptionML=ENU=Get to know Business Central;
+                                  ToolTipML=ENU=Launches a video that introduces you to Business Central.;
+                                  ApplicationArea=#Basic,#Suite,#Invoicing;
+                                  Image=TileVideo;
+                                  RunPageMode=View;
+                                  OnAction=VAR
+                                             VideoLink@1000 : Page 1821;
+                                           BEGIN
+                                             SENDTRACETAG('000081W',InvToBusinessCentralCategoryLbl,
+                                               VERBOSITY::Normal,IntroTelemetryTxt,DATACLASSIFICATION::SystemMetadata);
+                                             VideoLink.SetURL('https://go.microsoft.com/fwlink/?linkid=867632');
+                                             VideoLink.RUNMODAL;
+                                           END;
+                                            }
+                }
+                 }
+
+    { 3   ;1   ;Field     ;
+                Name=EnablePopups;
+                ApplicationArea=#Basic,#Suite,#Invoicing;
+                SourceExpr=EnablePopupsLbl;
+                Editable=FALSE;
+                ShowCaption=No }
+
+  }
+  CODE
+  {
+    VAR
+      O365SetupMgmt@1008 : Codeunit 2315;
+      EnablePopupsLbl@1009 : TextConst 'ENU=To see the Business Central window, make sure your browser allows pop-ups.';
+      IntroTelemetryTxt@1002 : TextConst '@@@={LOCKED};ENU=Business Central introduction video was played from Invoicing.';
+      InvToBusinessCentralCategoryLbl@1000 : TextConst '@@@={Locked};ENU=AL Invoicing To Business Central';
+
+    BEGIN
+    END.
+  }
+}
+

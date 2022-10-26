@@ -1,0 +1,67 @@
+OBJECT Page 1613 Exchange Client Credentials
+{
+  OBJECT-PROPERTIES
+  {
+    Date=04/29/22;
+    Time=12:00:00 PM;
+    Version List=NAVW114.36;
+  }
+  PROPERTIES
+  {
+    CaptionML=ENU=Application Client ID and Secret;
+    SourceTable=Table823;
+    PageType=StandardDialog;
+    SourceTableTemporary=Yes;
+    OnQueryClosePage=BEGIN
+                       IF (CloseAction = ACTION::OK) OR (CloseAction = ACTION::LookupOK) THEN BEGIN
+                         IF Name = '' THEN
+                           ERROR(EmptyClientIdErr);
+                         IF Value = '' THEN
+                           ERROR(EmptyClientSecretErr);
+                       END;
+                     END;
+
+  }
+  CONTROLS
+  {
+    { 1   ;0   ;Container ;
+                ContainerType=ContentArea }
+
+    { 6   ;1   ;Group     ;
+                CaptionML=ENU="";
+                GroupType=Group;
+                InstructionalTextML=ENU=Specify the ID, application secret and redirect URL of the Azure Active Directory application that will be used to connect to Exchange. }
+
+    { 7   ;2   ;Field     ;
+                ExtendedDatatype=E-Mail;
+                CaptionML=ENU=Client ID;
+                ToolTipML=ENU=Specifies the ID of the Azure Active Directory application that will be used to connect to Exchange.;
+                ApplicationArea=#RelationshipMgmt;
+                SourceExpr=Name }
+
+    { 8   ;2   ;Field     ;
+                ExtendedDatatype=Masked;
+                CaptionML=ENU=Client Secret;
+                ToolTipML=ENU=Specifies the secret of the Azure Active Directory application that will be used to connect to Exchange.;
+                ApplicationArea=#RelationshipMgmt;
+                SourceExpr=Value }
+
+    { 9   ;2   ;Field     ;
+                ExtendedDatatype=URL;
+                CaptionML=ENU=Redirect URL;
+                ToolTipML=ENU=Specifies the redirect URL of the Azure Active Directory application that will be used to connect to Exchange.;
+                ApplicationArea=#RelationshipMgmt;
+                SourceExpr="Value Long" }
+
+  }
+  CODE
+  {
+    VAR
+      EmptyClientIdErr@1000 : TextConst 'ENU=You must specify the Azure Active Directory ID.';
+      EmptyClientSecretErr@1001 : TextConst 'ENU=You must specify the Azure Active Directory application secret.';
+
+    BEGIN
+    END.
+  }
+}
+

@@ -1,0 +1,35 @@
+OBJECT Table 283 Line Number Buffer
+{
+  OBJECT-PROPERTIES
+  {
+    Date=09/19/18;
+    Time=12:00:00 PM;
+    Version List=NAVW113.00;
+  }
+  PROPERTIES
+  {
+    ReplicateData=No;
+    CaptionML=ENU=Line Number Buffer;
+  }
+  FIELDS
+  {
+    { 1   ;   ;Old Line Number     ;Integer       ;DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Old Line Number }
+    { 2   ;   ;New Line Number     ;Integer       ;DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=New Line Number }
+  }
+  KEYS
+  {
+    {    ;Old Line Number                         ;Clustered=Yes }
+  }
+  FIELDGROUPS
+  {
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

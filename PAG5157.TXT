@@ -1,0 +1,201 @@
+OBJECT Page 5157 Customer Template Card
+{
+  OBJECT-PROPERTIES
+  {
+    Date=07/23/19;
+    Time=12:00:00 PM;
+    Version List=NAVW114.03,NAVNA14.03;
+  }
+  PROPERTIES
+  {
+    CaptionML=ENU=Customer Template Card;
+    SourceTable=Table5105;
+    PageType=Card;
+    ActionList=ACTIONS
+    {
+      { 1900000003;0 ;ActionContainer;
+                      ActionContainerType=RelatedInformation }
+      { 29      ;1   ;ActionGroup;
+                      CaptionML=ENU=&Contact Conversion Template;
+                      Image=Template }
+      { 31      ;2   ;Action    ;
+                      ShortCutKey=Shift+Ctrl+D;
+                      CaptionML=ENU=Dimensions;
+                      ToolTipML=ENU=View or edit dimensions, such as area, project, or department, that you can assign to sales and purchase documents to distribute costs and analyze transaction history.;
+                      ApplicationArea=#Dimensions;
+                      RunObject=Page 540;
+                      RunPageLink=Table ID=CONST(5105),
+                                  No.=FIELD(Code);
+                      Promoted=Yes;
+                      Image=Dimensions;
+                      PromotedCategory=Process }
+      { 7       ;2   ;Action    ;
+                      Name=CopyTemplate;
+                      CaptionML=ENU=Copy Template;
+                      ToolTipML=ENU=Copies all information to the current contact conversion template from the selected one.;
+                      ApplicationArea=#Basic,#Suite;
+                      Promoted=Yes;
+                      Image=Copy;
+                      PromotedCategory=Process;
+                      OnAction=VAR
+                                 CustomerTemplate@1000 : Record 5105;
+                                 CustomerTemplateList@1001 : Page 5156;
+                               BEGIN
+                                 TESTFIELD(Code);
+                                 CustomerTemplate.SETFILTER(Code,'<>%1',Code);
+                                 CustomerTemplateList.LOOKUPMODE(TRUE);
+                                 CustomerTemplateList.SETTABLEVIEW(CustomerTemplate);
+                                 IF CustomerTemplateList.RUNMODAL = ACTION::LookupOK THEN BEGIN
+                                   CustomerTemplateList.GETRECORD(CustomerTemplate);
+                                   CopyTemplate(CustomerTemplate);
+                                 END;
+                               END;
+                                }
+      { 27      ;1   ;ActionGroup;
+                      CaptionML=ENU=S&ales;
+                      Image=Sales }
+      { 28      ;2   ;Action    ;
+                      CaptionML=ENU=Invoice &Discounts;
+                      ToolTipML=ENU=Set up different discounts that are applied to invoices for the customer that will be created from the template. An invoice discount is automatically granted to the customer when the total on a sales invoice exceeds a certain amount.;
+                      ApplicationArea=#RelationshipMgmt;
+                      RunObject=Page 23;
+                      RunPageLink=Code=FIELD(Invoice Disc. Code);
+                      Image=CalculateInvoiceDiscount }
+    }
+  }
+  CONTROLS
+  {
+    { 1900000001;0;Container;
+                ContainerType=ContentArea }
+
+    { 1   ;1   ;Group     ;
+                CaptionML=ENU=General }
+
+    { 2   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the code for the contact conversion template. You can set up as many codes as you want. The code must be unique. You cannot have the same code twice in one table.;
+                ApplicationArea=#All;
+                SourceExpr=Code }
+
+    { 4   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the description of the contact conversion template.;
+                ApplicationArea=#All;
+                SourceExpr=Description }
+
+    { 3   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the type of contact that will be converted to a customer with the template.;
+                ApplicationArea=#All;
+                SourceExpr="Contact Type" }
+
+    { 6   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the country/region of the customer that will be created with the template.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Country/Region Code" }
+
+    { 8   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the territory code of the customer that will be created with the template.;
+                ApplicationArea=#RelationshipMgmt;
+                SourceExpr="Territory Code" }
+
+    { 10  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the currency code of the customer that will be created with the template.;
+                ApplicationArea=#Suite;
+                SourceExpr="Currency Code" }
+
+    { 1020000;2;Field     ;
+                ToolTipML=ENU=Specifies if the customer is liable for sales tax.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Tax Liable" }
+
+    { 1020002;2;Field     ;
+                ToolTipML=ENU=Specifies a tax area code for the company.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Tax Area Code" }
+
+    { 1480000;2;Field     ;
+                ToolTipML=ENU=Specifies the state/province of customers created from this template.;
+                SourceExpr=State }
+
+    { 1480002;2;Field     ;
+                ToolTipML=ENU=Specifies the maximum credit (in $) that can be extended to customer's created from a template.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Credit Limit (LCY)" }
+
+    { 12  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the customer's trade type to link transactions made for this business partner with the appropriate general ledger account according to the general posting setup.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Gen. Bus. Posting Group" }
+
+    { 14  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the Tax specification of the new customer to link transactions made for this record with the appropriate general ledger account according to the Tax posting setup.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="VAT Bus. Posting Group" }
+
+    { 16  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the new customer's market type to link business transactions to.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Customer Posting Group" }
+
+    { 18  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the new customer's price group, which you can use to set up special sales prices on the Sales Prices page.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Customer Price Group" }
+
+    { 20  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the new customer's discount group, which you can use to set up special sales discounts on the Sales Prices page.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Customer Disc. Group" }
+
+    { 22  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies that a line discount is calculated for the new customer when the sales price is offered.;
+                ApplicationArea=#RelationshipMgmt;
+                SourceExpr="Allow Line Disc." }
+
+    { 24  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the invoice discount code of the customer that will be created with the template.;
+                ApplicationArea=#RelationshipMgmt;
+                SourceExpr="Invoice Disc. Code" }
+
+    { 5   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies if the Unit Price and Line Amount fields on document lines should be shown with or without Tax for the new customer.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Prices Including VAT" }
+
+    { 32  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies a formula that calculates the payment due date, payment discount date, and payment discount amount for the new customer.;
+                ApplicationArea=#RelationshipMgmt;
+                SourceExpr="Payment Terms Code" }
+
+    { 34  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies how the new customer makes payment, such as with bank transfer, cash, or check.;
+                ApplicationArea=#RelationshipMgmt;
+                SourceExpr="Payment Method Code" }
+
+    { 36  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the delivery conditions of the related shipments to the new customer, such as free on board (FOB).;
+                ApplicationArea=#RelationshipMgmt;
+                SourceExpr="Shipment Method Code" }
+
+    { 1900000007;0;Container;
+                ContainerType=FactBoxArea }
+
+    { 1900383207;1;Part   ;
+                ApplicationArea=#RecordLinks;
+                Visible=FALSE;
+                PartType=System;
+                SystemPartID=RecordLinks }
+
+    { 1905767507;1;Part   ;
+                ApplicationArea=#Notes;
+                Visible=FALSE;
+                PartType=System;
+                SystemPartID=Notes }
+
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

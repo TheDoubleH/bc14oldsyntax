@@ -1,0 +1,66 @@
+OBJECT Page 9634 Page Inspection Filters
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/24/19;
+    Time=12:00:00 PM;
+    Version List=NAVW114.00;
+  }
+  PROPERTIES
+  {
+    CaptionML=ENU=Page Inspection Filters;
+    SourceTable=Table2000000204;
+    PageType=ListPart;
+  }
+  CONTROLS
+  {
+    { 1   ;    ;Container ;
+                Name=Control1;
+                ContainerType=ContentArea }
+
+    { 2   ;1   ;Group     ;
+                Visible=HasSourceTable;
+                GroupType=Repeater }
+
+    { 5   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the filter field's name, ID, data type, and if it is a primary key.;
+                ApplicationArea=#All;
+                SourceExpr="Field Info" }
+
+    { 4   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the filter expression.;
+                ApplicationArea=#All;
+                SourceExpr="Field Filter Expression" }
+
+    { 3   ;2   ;Field     ;
+                ToolTipML=[ENU="Specifies the filter's type, which indicates where it is defined. A UserFilters type is defined in code or by the user; TableViewFilter type is defined by the page's SourceTableView property; SubFormLinkFilters type is defined by the SubPageLink property; FormViewFilters type is defined by the RunPageView property."];
+                ApplicationArea=#All;
+                SourceExpr="Field Filter Type" }
+
+  }
+  CODE
+  {
+    VAR
+      HasSourceTable@1001 : Boolean;
+
+    PROCEDURE UpdatePage@2(FormServerHandleId@1000 : Text);
+    BEGIN
+      // that performs actual data retrival
+      RESET;
+      SETFILTER("Current Form ID",'%1',FormServerHandleId);
+      SETFILTER("Field Filter Expression",'<>%1','');
+
+      // this will actually update the content of the page
+      CurrPage.UPDATE(FALSE);
+    END;
+
+    PROCEDURE SetFilterListVisbility@11(IsFieldListVisible@1000 : Boolean);
+    BEGIN
+      HasSourceTable := IsFieldListVisible;
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

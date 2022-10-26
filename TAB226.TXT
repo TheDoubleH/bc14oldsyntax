@@ -1,0 +1,105 @@
+OBJECT Table 226 VAT Reg. No. Srv. Template
+{
+  OBJECT-PROPERTIES
+  {
+    Date=09/24/21;
+    Time=12:00:00 PM;
+    Version List=NAVW114.29;
+  }
+  PROPERTIES
+  {
+    CaptionML=ENU=Tax Reg. No. Srv. Template;
+    LookupPageID=Page246;
+  }
+  FIELDS
+  {
+    { 1   ;   ;Code                ;Code20        ;CaptionML=ENU=Code }
+    { 10  ;   ;Country/Region Code ;Code10        ;TableRelation=Country/Region;
+                                                   CaptionML=ENU=Country/Region Code }
+    { 11  ;   ;Account Type        ;Option        ;CaptionML=ENU=Account Type;
+                                                   OptionCaptionML=ENU=" ,Customer,Vendor,Contact";
+                                                   OptionString=[ ,Customer,Vendor,Contact] }
+    { 12  ;   ;Account No.         ;Code20        ;CaptionML=ENU=Account No. }
+    { 20  ;   ;Validate Name       ;Boolean       ;CaptionML=ENU=Validate Name }
+    { 21  ;   ;Validate Street     ;Boolean       ;CaptionML=ENU=Validate Street }
+    { 22  ;   ;Validate City       ;Boolean       ;CaptionML=ENU=Validate City }
+    { 23  ;   ;Validate Post Code  ;Boolean       ;CaptionML=ENU=Validate ZIP code }
+    { 24  ;   ;Ignore Details      ;Boolean       ;CaptionML=ENU=Ignore Details }
+  }
+  KEYS
+  {
+    {    ;Code                                    ;Clustered=Yes }
+  }
+  FIELDGROUPS
+  {
+  }
+  CODE
+  {
+    VAR
+      DefaultTxt@1000 : TextConst 'ENU=Default';
+
+    PROCEDURE FindTemplate@1(VATRegistrationLog@1000 : Record 249) : Code[20];
+    BEGIN
+      SETRANGE("Country/Region Code",VATRegistrationLog."Country/Region Code");
+      SETRANGE("Account Type",MapVATRegLogAccountType(VATRegistrationLog."Account Type"));
+      SETRANGE("Account No.",VATRegistrationLog."Account No.");
+      IF FINDFIRST THEN
+        EXIT(Code);
+
+      SETRANGE("Account No.",'');
+      IF FINDFIRST THEN
+        EXIT(Code);
+
+      SETRANGE("Account Type","Account Type"::" ");
+      IF FINDFIRST THEN
+        EXIT(Code);
+
+      EXIT(LoadDefaultTempalte);
+    END;
+
+    LOCAL PROCEDURE LoadDefaultTempalte@9() : Code[20];
+    VAR
+      VATRegNoSrvConfig@1001 : Record 248;
+    BEGIN
+      VATRegNoSrvConfig.GET;
+      CheckInitDefaultTemplate(VATRegNoSrvConfig);
+      VATRegNoSrvConfig.TESTFIELD("Default Template Code");
+      GET(VATRegNoSrvConfig."Default Template Code");
+      EXIT(Code);
+    END;
+
+    PROCEDURE CheckInitDefaultTemplate@6(VAR VATRegNoSrvConfig@1001 : Record 248);
+    VAR
+      VATRegNoSrvTemplate@1000 : Record 226;
+    BEGIN
+      IF (VATRegNoSrvConfig."Default Template Code" = '') AND (VATRegNoSrvTemplate.COUNT = 0) THEN BEGIN
+        VATRegNoSrvTemplate.INIT;
+        VATRegNoSrvTemplate.Code := DefaultTxt;
+        IF VATRegNoSrvTemplate.INSERT THEN;
+
+        VATRegNoSrvConfig."Default Template Code" := VATRegNoSrvTemplate.Code;
+        VATRegNoSrvConfig.MODIFY;
+      END;
+    END;
+
+    LOCAL PROCEDURE MapVATRegLogAccountType@2(VATRegLogAccountType@1001 : Option) : Integer;
+    VAR
+      DummyVATRegistrationLog@1000 : Record 249;
+    BEGIN
+      CASE VATRegLogAccountType OF
+        DummyVATRegistrationLog."Account Type"::Customer:
+          EXIT("Account Type"::Customer);
+        DummyVATRegistrationLog."Account Type"::Vendor:
+          EXIT("Account Type"::Vendor);
+        DummyVATRegistrationLog."Account Type"::Contact:
+          EXIT("Account Type"::Contact);
+        ELSE
+          EXIT("Account Type"::" ");
+      END;
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

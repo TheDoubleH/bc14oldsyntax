@@ -1,0 +1,603 @@
+OBJECT Page 5743 Posted Transfer Shipment
+{
+  OBJECT-PROPERTIES
+  {
+    Date=02/25/22;
+    Time=12:00:00 PM;
+    Version List=NAVW114.34,NAVNA14.34;
+  }
+  PROPERTIES
+  {
+    CaptionML=ENU=Posted Transfer Shipment;
+    InsertAllowed=No;
+    SourceTable=Table5744;
+    PageType=Document;
+    RefreshOnActivate=Yes;
+    PromotedActionCategoriesML=ENU=New,Process,Report,Shipment;
+    OnOpenPage=VAR
+                 EInvoiceMgt@1310000 : Codeunit 10145;
+               BEGIN
+                 IsFromCountyVisible := FormatAddress.UseCounty("Trsf.-from Country/Region Code");
+                 IsToCountyVisible := FormatAddress.UseCounty("Trsf.-to Country/Region Code");
+                 IsPACEnabled := EInvoiceMgt.IsPACEnvironmentEnabled;
+               END;
+
+    ActionList=ACTIONS
+    {
+      { 1900000003;0 ;ActionContainer;
+                      ActionContainerType=RelatedInformation }
+      { 50      ;1   ;ActionGroup;
+                      CaptionML=ENU=&Shipment;
+                      Image=Shipment }
+      { 56      ;2   ;Action    ;
+                      ShortCutKey=F7;
+                      CaptionML=ENU=Statistics;
+                      ToolTipML=ENU=View statistical information about the transfer order, such as the quantity and total weight transferred.;
+                      ApplicationArea=#Location;
+                      RunObject=Page 5756;
+                      RunPageLink=No.=FIELD(No.);
+                      Promoted=Yes;
+                      Image=Statistics;
+                      PromotedCategory=Category4;
+                      PromotedOnly=Yes }
+      { 57      ;2   ;Action    ;
+                      CaptionML=ENU=Co&mments;
+                      ToolTipML=ENU=View or add comments for the record.;
+                      ApplicationArea=#Comments;
+                      RunObject=Page 5750;
+                      RunPageLink=Document Type=CONST(Posted Transfer Shipment),
+                                  No.=FIELD(No.);
+                      Image=ViewComments }
+      { 58      ;2   ;Action    ;
+                      AccessByPermission=TableData 348=R;
+                      ShortCutKey=Shift+Ctrl+D;
+                      CaptionML=ENU=Dimensions;
+                      ToolTipML=ENU=View or edit dimensions, such as area, project, or department, that you can assign to sales and purchase documents to distribute costs and analyze transaction history.;
+                      ApplicationArea=#Dimensions;
+                      Promoted=Yes;
+                      Image=Dimensions;
+                      PromotedCategory=Category4;
+                      PromotedOnly=Yes;
+                      OnAction=BEGIN
+                                 ShowDimensions;
+                               END;
+                                }
+      { 1900000004;0 ;ActionContainer;
+                      ActionContainerType=ActionItems }
+      { 51      ;1   ;Action    ;
+                      Ellipsis=Yes;
+                      CaptionML=ENU=&Print;
+                      ToolTipML=ENU=Prepare to print the document. A report request window for the document opens where you can specify what to include on the print-out.;
+                      ApplicationArea=#Location;
+                      Promoted=Yes;
+                      Image=Print;
+                      PromotedCategory=Process;
+                      PromotedOnly=Yes;
+                      OnAction=VAR
+                                 TransShptHeader@1001 : Record 5744;
+                               BEGIN
+                                 CurrPage.SETSELECTIONFILTER(TransShptHeader);
+                                 TransShptHeader.PrintRecords(TRUE);
+                               END;
+                                }
+      { 52      ;1   ;Action    ;
+                      CaptionML=ENU=&Navigate;
+                      ToolTipML=ENU=Find all entries and documents that exist for the document number and posting date on the selected entry or document.;
+                      ApplicationArea=#Location;
+                      Promoted=Yes;
+                      Image=Navigate;
+                      PromotedCategory=Process;
+                      OnAction=BEGIN
+                                 Navigate;
+                               END;
+                                }
+      { 1310008 ;1   ;ActionGroup;
+                      CaptionML=ENU=&Electronic Document;
+                      Visible=IsPACEnabled }
+      { 1310007 ;2   ;Action    ;
+                      Ellipsis=Yes;
+                      CaptionML=ENU=S&end;
+                      ToolTipML=ENU=Send the electronic document to PAC web service with stamp request.;
+                      ApplicationArea=#Basic,#Suite;
+                      Image=SendTo;
+                      OnAction=BEGIN
+                                 RequestStampEDocument;
+                               END;
+                                }
+      { 1310006 ;2   ;Action    ;
+                      CaptionML=ENU=Export E-Document as &XML;
+                      ToolTipML=ENU=Export the posted sales invoice as an electronic invoice, and XML file, and save it to a specified location.;
+                      ApplicationArea=#Basic,#Suite;
+                      Image=ExportElectronicDocument;
+                      OnAction=BEGIN
+                                 ExportEDocument;
+                               END;
+                                }
+      { 1310022 ;2   ;Action    ;
+                      CaptionML=ENU=&Cancel;
+                      ToolTipML=ENU=Cancel the sending of the electronic sales invoice.;
+                      ApplicationArea=#Basic,#Suite;
+                      Image=Cancel;
+                      OnAction=BEGIN
+                                 CancelEDocument;
+                               END;
+                                }
+      { 1310001 ;2   ;Action    ;
+                      CaptionML=ENU=Print Carta Porte Document;
+                      ToolTipML=ENU=Prepare to print the Carta Porte document so that it can be shown upon request from inspectors or other authorities.;
+                      ApplicationArea=#Basic,#Suite;
+                      Image=PrintForm;
+                      OnAction=VAR
+                                 ElectronicCartaPorteMX@1310000 : Report 10480;
+                               BEGIN
+                                 ElectronicCartaPorteMX.SetRecord(Rec);
+                                 ElectronicCartaPorteMX.RUN;
+                               END;
+                                }
+    }
+  }
+  CONTROLS
+  {
+    { 1900000001;0;Container;
+                ContainerType=ContentArea }
+
+    { 1   ;1   ;Group     ;
+                CaptionML=ENU=General }
+
+    { 2   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the number of the involved entry or record, according to the specified number series.;
+                ApplicationArea=#Location;
+                SourceExpr="No.";
+                Importance=Promoted;
+                Editable=FALSE }
+
+    { 4   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the code of the location that items are transferred from.;
+                ApplicationArea=#Location;
+                SourceExpr="Transfer-from Code";
+                Importance=Promoted;
+                Editable=FALSE }
+
+    { 6   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the code of the location that the items are transferred to.;
+                ApplicationArea=#Location;
+                SourceExpr="Transfer-to Code";
+                Importance=Promoted;
+                Editable=FALSE }
+
+    { 3   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies that the transfer does not use an in-transit location.;
+                ApplicationArea=#Location;
+                SourceExpr="Direct Transfer";
+                Editable=FALSE }
+
+    { 31  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the in-transit code for the transfer order, such as a shipping agent.;
+                ApplicationArea=#Location;
+                SourceExpr="In-Transit Code";
+                Editable=FALSE }
+
+    { 53  ;2   ;Field     ;
+                Lookup=No;
+                ToolTipML=ENU=Specifies the number of the related transfer order.;
+                ApplicationArea=#Location;
+                SourceExpr="Transfer Order No.";
+                Importance=Promoted;
+                Editable=FALSE }
+
+    { 8   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the date when the transfer order was created.;
+                ApplicationArea=#Location;
+                SourceExpr="Transfer Order Date";
+                Editable=FALSE }
+
+    { 10  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the posting date for this document.;
+                ApplicationArea=#Location;
+                SourceExpr="Posting Date";
+                Editable=FALSE }
+
+    { 12  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the code for Shortcut Dimension 1, which is one of two global dimension codes that you set up in the General Ledger Setup window.;
+                ApplicationArea=#Dimensions;
+                SourceExpr="Shortcut Dimension 1 Code";
+                Importance=Additional;
+                Editable=FALSE }
+
+    { 14  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the code for Shortcut Dimension 2, which is one of two global dimension codes that you set up in the General Ledger Setup window.;
+                ApplicationArea=#Dimensions;
+                SourceExpr="Shortcut Dimension 2 Code";
+                Importance=Additional;
+                Editable=FALSE }
+
+    { 49  ;1   ;Part      ;
+                Name=TransferShipmentLines;
+                ApplicationArea=#Location;
+                SubPageLink=Document No.=FIELD(No.);
+                PagePartID=Page5744;
+                PartType=Page }
+
+    { 5   ;1   ;Group     ;
+                CaptionML=ENU=Shipment;
+                GroupType=Group }
+
+    { 27  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies when items on the document are shipped or were shipped. A shipment date is usually calculated from a requested delivery date plus lead time.;
+                ApplicationArea=#Location;
+                SourceExpr="Shipment Date";
+                Editable=FALSE }
+
+    { 67  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the delivery conditions of the related shipment, such as free on board (FOB).;
+                ApplicationArea=#Location;
+                SourceExpr="Shipment Method Code";
+                Editable=FALSE }
+
+    { 69  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the code for the shipping agent who is transporting the items.;
+                ApplicationArea=#Location;
+                SourceExpr="Shipping Agent Code";
+                Editable=FALSE }
+
+    { 71  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the code for the service, such as a one-day delivery, that is offered by the shipping agent.;
+                ApplicationArea=#Location;
+                SourceExpr="Shipping Agent Service Code";
+                Importance=Promoted;
+                Editable=FALSE }
+
+    { 29  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the receipt date of the transfer order.;
+                ApplicationArea=#Location;
+                SourceExpr="Receipt Date";
+                Importance=Promoted;
+                Editable=FALSE }
+
+    { 1904655901;1;Group  ;
+                CaptionML=ENU=Transfer-from }
+
+    { 16  ;2   ;Field     ;
+                CaptionML=ENU=Name;
+                ToolTipML=ENU=Specifies the name of the sender at the location that the items are transferred from.;
+                ApplicationArea=#Location;
+                SourceExpr="Transfer-from Name";
+                Editable=FALSE }
+
+    { 18  ;2   ;Field     ;
+                CaptionML=ENU=Name 2;
+                ToolTipML=ENU=Specifies an additional part of the name of the sender at the location that the items are transferred from.;
+                ApplicationArea=#Location;
+                SourceExpr="Transfer-from Name 2";
+                Importance=Additional;
+                Editable=FALSE }
+
+    { 20  ;2   ;Field     ;
+                CaptionML=ENU=Address;
+                ToolTipML=ENU=Specifies the address of the location that the items are transferred from.;
+                ApplicationArea=#Location;
+                SourceExpr="Transfer-from Address";
+                Importance=Additional;
+                Editable=FALSE }
+
+    { 22  ;2   ;Field     ;
+                CaptionML=ENU=Address 2;
+                ToolTipML=ENU=Specifies an additional part of the address of the location that items are transferred from.;
+                ApplicationArea=#Location;
+                SourceExpr="Transfer-from Address 2";
+                Importance=Additional;
+                Editable=FALSE }
+
+    { 26  ;2   ;Field     ;
+                CaptionML=ENU=City;
+                ToolTipML=ENU=Specifies the city of the location that the items are transferred from.;
+                ApplicationArea=#Location;
+                SourceExpr="Transfer-from City";
+                Importance=Additional;
+                Editable=FALSE }
+
+    { 13  ;2   ;Group     ;
+                Visible=IsFromCountyVisible;
+                GroupType=Group }
+
+    { 7   ;3   ;Field     ;
+                CaptionML=ENU=State;
+                ApplicationArea=#Location;
+                SourceExpr="Transfer-from County";
+                Importance=Additional;
+                Editable=FALSE }
+
+    { 11  ;2   ;Field     ;
+                CaptionML=ENU=ZIP Code;
+                ToolTipML=ENU=Specifies the ZIP Code of the location that the items are transferred from.;
+                ApplicationArea=#Location;
+                SourceExpr="Transfer-from Post Code";
+                Importance=Additional;
+                Editable=FALSE }
+
+    { 9   ;2   ;Field     ;
+                CaptionML=ENU=Country/Region;
+                ApplicationArea=#Location;
+                SourceExpr="Trsf.-from Country/Region Code";
+                Importance=Additional;
+                Editable=FALSE }
+
+    { 44  ;2   ;Field     ;
+                CaptionML=ENU=Contact;
+                ToolTipML=ENU=Specifies the name of the contact person at the location that the items are transferred from.;
+                ApplicationArea=#Location;
+                SourceExpr="Transfer-from Contact";
+                Importance=Additional;
+                Editable=FALSE }
+
+    { 1901454601;1;Group  ;
+                CaptionML=ENU=Transfer-to }
+
+    { 32  ;2   ;Field     ;
+                CaptionML=ENU=Name;
+                ToolTipML=ENU=Specifies the name of the recipient at the location that the items are transferred to.;
+                ApplicationArea=#Location;
+                SourceExpr="Transfer-to Name";
+                Editable=FALSE }
+
+    { 34  ;2   ;Field     ;
+                CaptionML=ENU=Name 2;
+                ToolTipML=ENU=Specifies an additional part of the name of the recipient at the location that the items are transferred to.;
+                ApplicationArea=#Location;
+                SourceExpr="Transfer-to Name 2";
+                Importance=Additional;
+                Editable=FALSE }
+
+    { 36  ;2   ;Field     ;
+                CaptionML=ENU=Address;
+                ToolTipML=ENU=Specifies the address of the location that the items are transferred to.;
+                ApplicationArea=#Location;
+                SourceExpr="Transfer-to Address";
+                Importance=Additional;
+                Editable=FALSE }
+
+    { 38  ;2   ;Field     ;
+                CaptionML=ENU=Address 2;
+                ToolTipML=ENU=Specifies an additional part of the address of the location that items are transferred to.;
+                ApplicationArea=#Location;
+                SourceExpr="Transfer-to Address 2";
+                Importance=Additional;
+                Editable=FALSE }
+
+    { 42  ;2   ;Field     ;
+                CaptionML=ENU=City;
+                ToolTipML=ENU=Specifies the city of the location that items are transferred to.;
+                ApplicationArea=#Location;
+                SourceExpr="Transfer-to City";
+                Importance=Additional;
+                Editable=FALSE }
+
+    { 21  ;2   ;Group     ;
+                Visible=IsToCountyVisible;
+                GroupType=Group }
+
+    { 17  ;3   ;Field     ;
+                CaptionML=ENU=State;
+                ApplicationArea=#Location;
+                SourceExpr="Transfer-to County";
+                Importance=Additional;
+                Editable=FALSE }
+
+    { 19  ;2   ;Field     ;
+                CaptionML=ENU=ZIP Code;
+                ApplicationArea=#Location;
+                SourceExpr="Transfer-to Post Code";
+                Importance=Additional;
+                Editable=FALSE }
+
+    { 15  ;2   ;Field     ;
+                CaptionML=ENU=Country/Region;
+                ApplicationArea=#Location;
+                SourceExpr="Trsf.-to Country/Region Code";
+                Importance=Additional;
+                Editable=FALSE }
+
+    { 46  ;2   ;Field     ;
+                CaptionML=ENU=Contact;
+                ToolTipML=ENU=Specifies the name of the contact person at the location that items are transferred to.;
+                ApplicationArea=#Location;
+                SourceExpr="Transfer-to Contact";
+                Importance=Additional;
+                Editable=FALSE }
+
+    { 1907468901;1;Group  ;
+                CaptionML=ENU=Foreign Trade }
+
+    { 63  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the type of transaction that the document represents, for the purpose of reporting to INTRASTAT.;
+                ApplicationArea=#Suite;
+                SourceExpr="Transaction Type";
+                Importance=Promoted;
+                Editable=FALSE }
+
+    { 65  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies a specification of the document's transaction, for the purpose of reporting to INTRASTAT.;
+                ApplicationArea=#Suite;
+                SourceExpr="Transaction Specification";
+                Editable=FALSE }
+
+    { 74  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the transport method, for the purpose of reporting to INTRASTAT.;
+                ApplicationArea=#Suite;
+                SourceExpr="Transport Method";
+                Importance=Promoted;
+                Editable=FALSE }
+
+    { 76  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the area of the customer or vendor, for the purpose of reporting to INTRASTAT.;
+                ApplicationArea=#Suite;
+                SourceExpr=Area;
+                Editable=FALSE }
+
+    { 78  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the code of either the port of entry at which the items passed into your country/region, or the port of exit.;
+                ApplicationArea=#Location;
+                SourceExpr="Entry/Exit Point";
+                Editable=FALSE }
+
+    { 23  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the counter party's Tax number.;
+                ApplicationArea=#Suite;
+                SourceExpr="Partner VAT ID";
+                Editable=FALSE }
+
+    { 1310000;1;Group     ;
+                Name=ElectronicDocument;
+                CaptionML=ENU=Electronic Document;
+                Visible=IsPACEnabled;
+                GroupType=Group }
+
+    { 1310031;2;Field     ;
+                ToolTipML=ENU=Specifies a code to indicate if the document is used for exports to other countries.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="CFDI Export Code" }
+
+    { 1310017;2;Field     ;
+                ToolTipML=ENU=Specifies the operator of the vehicle that transports the goods or merchandise.;
+                ApplicationArea=#Location;
+                SourceExpr="Transport Operators";
+                OnValidate=BEGIN
+                             CurrPage.UPDATE;
+                           END;
+                            }
+
+    { 1310015;2;Field     ;
+                ToolTipML=ENU=Specifies the estimated date and time at which the goods or merchandise leave the start address.;
+                ApplicationArea=#Location;
+                SourceExpr="Transit-from Date/Time" }
+
+    { 1310016;2;Field     ;
+                ToolTipML=ENU=Specifies the estimated time in hours that it will take to transit from the start address to the temporary or final destination.;
+                ApplicationArea=#Location;
+                SourceExpr="Transit Hours" }
+
+    { 1310014;2;Field     ;
+                ToolTipML=ENU=Specifies the distance travelled in kilometers from the start address to the temporary or final destination as a combination of the distances that are travelled by the different means of transport that move the goods or merchandise.;
+                ApplicationArea=#Location;
+                SourceExpr="Transit Distance" }
+
+    { 1310013;2;Field     ;
+                ToolTipML=ENU=Specifies the vehicle that transports the goods or merchandise.;
+                ApplicationArea=#Location;
+                SourceExpr="Vehicle Code" }
+
+    { 1310012;2;Field     ;
+                ToolTipML=ENU=Specifies the trailer or semi-trailer that is used with the vehicle for the transfer of goods or merchandise.;
+                ApplicationArea=#Location;
+                SourceExpr="Trailer 1" }
+
+    { 1310011;2;Field     ;
+                ToolTipML=ENU=Specifies the second trailer or semi-trailer that is used with the vehicle for the transfer of goods or merchandise.;
+                ApplicationArea=#Location;
+                SourceExpr="Trailer 2" }
+
+    { 1310010;2;Field     ;
+                ToolTipML=ENU=Specifies whether the goods or merchandise that are transported enter or leave the national territory.;
+                ApplicationArea=#Location;
+                SourceExpr="Foreign Trade" }
+
+    { 1310009;2;Field     ;
+                ToolTipML=ENU=Specifies the name of the insurer that covers the risks of the motor transport used for the transfer of goods or merchandise.;
+                ApplicationArea=#Location;
+                SourceExpr="Insurer Name" }
+
+    { 1310004;2;Field     ;
+                ToolTipML=ENU=Specifies the policy number assigned by the insurer, which covers the risks of the motor transport used for the transfer of goods or merchandise.;
+                ApplicationArea=#Location;
+                SourceExpr="Insurer Policy Number" }
+
+    { 1310028;2;Field     ;
+                ToolTipML=ENU=Specifies the insurer that covers potential damage to the environment if the transport includes materials, residues or remnants, or hazardous waste.;
+                ApplicationArea=#Location;
+                SourceExpr="Medical Insurer Name" }
+
+    { 1310003;2;Field     ;
+                ToolTipML=ENU=Specifies the insurance policy number if the transport includes materials, residues or remnants, or hazardous waste.;
+                ApplicationArea=#Location;
+                SourceExpr="Medical Ins. Policy Number" }
+
+    { 1310002;2;Field     ;
+                ToolTipML=ENU=Specifies the unit of measurement of the weight of the goods and / or merchandise that are moved in this transport.;
+                ApplicationArea=#Location;
+                SourceExpr="SAT Weight Unit Of Measure" }
+
+    { 1310027;2;Field     ;
+                ToolTipML=ENU=Specifies the status of the document.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Electronic Document Status" }
+
+    { 1310026;2;Field     ;
+                ToolTipML=ENU=Specifies the date and time that the document received a digital stamp from the authorized service provider.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Date/Time Stamped" }
+
+    { 1310025;2;Field     ;
+                ToolTipML=ENU=Specifies the date and time that the document was canceled.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Date/Time Canceled" }
+
+    { 1310024;2;Field     ;
+                ToolTipML=ENU=Specifies the error code that the authorized service provider, PAC, has returned to Business Central.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Error Code" }
+
+    { 1310023;2;Field     ;
+                ToolTipML=ENU=Specifies the error message that the authorized service provider, PAC, has returned to Business Central.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Error Description" }
+
+    { 1310021;2;Field     ;
+                ToolTipML=ENU=Specifies the name of the authorized service provider, PAC, which has processed the electronic document.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="PAC Web Service Name";
+                Importance=Additional }
+
+    { 1310005;2;Field     ;
+                ToolTipML=ENU=Specifies the official invoice number for the electronic document.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Fiscal Invoice Number PAC";
+                Importance=Additional }
+
+    { 1310030;2;Field     ;
+                ToolTipML=ENU=Specifies the reason for the cancelation as a code.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="CFDI Cancellation Reason Code" }
+
+    { 1310029;2;Field     ;
+                ToolTipML=ENU=Specifies the document number that replaces the canceled one. It is required when the cancelation reason is 01.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Substitution Document No." }
+
+    { 1900000007;0;Container;
+                ContainerType=FactBoxArea }
+
+    { 1900383207;1;Part   ;
+                ApplicationArea=#RecordLinks;
+                Visible=FALSE;
+                PartType=System;
+                SystemPartID=RecordLinks }
+
+    { 1905767507;1;Part   ;
+                ApplicationArea=#Notes;
+                PartType=System;
+                SystemPartID=Notes }
+
+  }
+  CODE
+  {
+    VAR
+      FormatAddress@1002 : Codeunit 365;
+      IsFromCountyVisible@1000 : Boolean;
+      IsToCountyVisible@1001 : Boolean;
+      IsPACEnabled@1310000 : Boolean;
+
+    BEGIN
+    END.
+  }
+}
+

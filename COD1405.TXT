@@ -1,0 +1,36 @@
+OBJECT Codeunit 1405 Purch. Inv. Header - Edit
+{
+  OBJECT-PROPERTIES
+  {
+    Date=06/25/21;
+    Time=12:00:00 PM;
+    Version List=NAVW114.26;
+  }
+  PROPERTIES
+  {
+    TableNo=122;
+    Permissions=TableData 122=rm;
+    OnRun=VAR
+            PurchInvHeader@1000 : Record 122;
+          BEGIN
+            PurchInvHeader := Rec;
+            PurchInvHeader.LOCKTABLE;
+            PurchInvHeader.FIND;
+            PurchInvHeader."Payment Reference" := "Payment Reference";
+            PurchInvHeader."Payment Method Code" := "Payment Method Code";
+            PurchInvHeader."Creditor No." := "Creditor No.";
+            PurchInvHeader."Ship-to Code" := "Ship-to Code";
+            PurchInvHeader.TESTFIELD("No.","No.");
+            PurchInvHeader.MODIFY;
+            Rec := PurchInvHeader;
+          END;
+
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

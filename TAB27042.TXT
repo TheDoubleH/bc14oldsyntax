@@ -1,0 +1,39 @@
+OBJECT Table 27042 DIOT-Report Buffer
+{
+  OBJECT-PROPERTIES
+  {
+    Date=10/26/19;
+    Time=12:00:00 PM;
+    Version List=NAVNA14.07;
+  }
+  PROPERTIES
+  {
+    ObsoleteState=Pending;
+    ObsoleteReason=Moved to extension;
+    CaptionML=ENU=DIOT Report Buffer;
+  }
+  FIELDS
+  {
+    { 1   ;   ;Vendor No.          ;Code20        ;CaptionML=ENU=Vendor No. }
+    { 2   ;   ;Type of Operation   ;Option        ;CaptionML=ENU=Type of Operation;
+                                                   OptionCaptionML=ENU=" ,Prof. Services,Lease and Rent,Others";
+                                                   OptionString=[ ,Prof. Services,Lease and Rent,Others] }
+    { 3   ;   ;DIOT Concept No.    ;Integer       ;CaptionML=ENU=DIOT Concept No. }
+    { 4   ;   ;Value               ;Decimal       ;CaptionML=ENU=Value }
+  }
+  KEYS
+  {
+    {    ;Vendor No.,Type of Operation,DIOT Concept No.;
+                                                   Clustered=Yes }
+  }
+  FIELDGROUPS
+  {
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

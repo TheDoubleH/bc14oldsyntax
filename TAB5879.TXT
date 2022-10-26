@@ -1,0 +1,126 @@
+OBJECT Table 5879 Pstd. Phys. Invt. Order Hdr
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/24/19;
+    Time=12:00:00 PM;
+    Version List=NAVW114.00;
+  }
+  PROPERTIES
+  {
+    DataCaptionFields=No.,Description;
+    OnDelete=VAR
+               PstdPhysInvtOrderLine@1001 : Record 5880;
+               PhysInvtCommentLine@1000 : Record 5883;
+               PstdPhysInvtRecordHdr@1002 : Record 5881;
+             BEGIN
+               LOCKTABLE;
+
+               PstdPhysInvtOrderLine.RESET;
+               PstdPhysInvtOrderLine.SETRANGE("Document No.","No.");
+               PstdPhysInvtOrderLine.DELETEALL(TRUE);
+
+               PhysInvtCommentLine.RESET;
+               PhysInvtCommentLine.SETRANGE("Document Type",PhysInvtCommentLine."Document Type"::"Posted Order");
+               PhysInvtCommentLine.SETRANGE("Order No.","No.");
+               PhysInvtCommentLine.SETRANGE("Recording No.",0);
+               PhysInvtCommentLine.DELETEALL;
+
+               PstdPhysInvtRecordHdr.RESET;
+               PstdPhysInvtRecordHdr.SETRANGE("Order No.","No.");
+               PstdPhysInvtRecordHdr.DELETEALL(TRUE);
+             END;
+
+    CaptionML=ENU=Pstd. Phys. Invt. Order Hdr;
+    LookupPageID=Page5884;
+    DrillDownPageID=Page5884;
+  }
+  FIELDS
+  {
+    { 1   ;   ;No.                 ;Code20        ;CaptionML=ENU=No. }
+    { 10  ;   ;Description         ;Text100       ;CaptionML=ENU=Description }
+    { 11  ;   ;Status              ;Option        ;CaptionML=ENU=Status;
+                                                   OptionCaptionML=ENU=Open,Finished;
+                                                   OptionString=Open,Finished }
+    { 20  ;   ;Order Date          ;Date          ;CaptionML=ENU=Order Date }
+    { 21  ;   ;Posting Date        ;Date          ;CaptionML=ENU=Posting Date }
+    { 30  ;   ;Comment             ;Boolean       ;FieldClass=FlowField;
+                                                   CalcFormula=Exist("Phys. Invt. Comment Line" WHERE (Document Type=CONST(Posted Order),
+                                                                                                       Order No.=FIELD(No.),
+                                                                                                       Recording No.=CONST(0)));
+                                                   CaptionML=ENU=Comment;
+                                                   Editable=No }
+    { 31  ;   ;Person Responsible  ;Code20        ;TableRelation=Employee;
+                                                   ValidateTableRelation=No;
+                                                   TestTableRelation=No;
+                                                   CaptionML=ENU=Person Responsible }
+    { 40  ;   ;Reason Code         ;Code10        ;TableRelation="Reason Code";
+                                                   CaptionML=ENU=Reason Code }
+    { 41  ;   ;Gen. Bus. Posting Group;Code20     ;TableRelation="Gen. Business Posting Group";
+                                                   CaptionML=ENU=Gen. Bus. Posting Group }
+    { 50  ;   ;Shortcut Dimension 1 Code;Code20   ;TableRelation="Dimension Value".Code WHERE (Global Dimension No.=CONST(1));
+                                                   CaptionML=ENU=Shortcut Dimension 1 Code;
+                                                   CaptionClass='1,2,1' }
+    { 51  ;   ;Shortcut Dimension 2 Code;Code20   ;TableRelation="Dimension Value".Code WHERE (Global Dimension No.=CONST(2));
+                                                   CaptionML=ENU=Shortcut Dimension 2 Code;
+                                                   CaptionClass='1,2,2' }
+    { 60  ;   ;Pre-Assigned No. Series;Code20     ;TableRelation="No. Series";
+                                                   CaptionML=ENU=Pre-Assigned No. Series;
+                                                   Editable=No }
+    { 61  ;   ;No. Series          ;Code20        ;TableRelation="No. Series";
+                                                   CaptionML=ENU=No. Series }
+    { 62  ;   ;Pre-Assigned No.    ;Code20        ;CaptionML=ENU=Pre-Assigned No. }
+    { 63  ;   ;User ID             ;Code50        ;DataClassification=EndUserIdentifiableInformation;
+                                                   CaptionML=ENU=User ID }
+    { 66  ;   ;Source Code         ;Code10        ;TableRelation="Source Code";
+                                                   CaptionML=ENU=Source Code }
+    { 71  ;   ;No. Finished Recordings;Integer    ;FieldClass=FlowField;
+                                                   CalcFormula=Count("Phys. Invt. Record Header" WHERE (Order No.=FIELD(No.),
+                                                                                                        Status=CONST(Finished)));
+                                                   CaptionML=ENU=No. Finished Recordings;
+                                                   Editable=No }
+    { 110 ;   ;Location Code       ;Code10        ;TableRelation=Location;
+                                                   CaptionML=ENU=Location Code }
+    { 111 ;   ;Bin Code            ;Code20        ;TableRelation=Bin.Code WHERE (Location Code=FIELD(Location Code));
+                                                   CaptionML=ENU=Bin Code }
+    { 480 ;   ;Dimension Set ID    ;Integer       ;TableRelation="Dimension Set Entry";
+                                                   OnLookup=BEGIN
+                                                              ShowDimensions;
+                                                            END;
+
+                                                   CaptionML=ENU=Dimension Set ID;
+                                                   Editable=No }
+  }
+  KEYS
+  {
+    {    ;No.                                     ;Clustered=Yes }
+    {    ;Posting Date                             }
+  }
+  FIELDGROUPS
+  {
+  }
+  CODE
+  {
+    VAR
+      DimManagement@1003 : Codeunit 408;
+
+    [External]
+    PROCEDURE Navigate@1();
+    VAR
+      NavigateForm@1000 : Page 344;
+    BEGIN
+      NavigateForm.SetDoc("Posting Date","No.");
+      NavigateForm.RUN;
+    END;
+
+    [External]
+    PROCEDURE ShowDimensions@2();
+    BEGIN
+      DimManagement.ShowDimensionSet("Dimension Set ID",STRSUBSTNO('%1 %2',TABLECAPTION,"No."));
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

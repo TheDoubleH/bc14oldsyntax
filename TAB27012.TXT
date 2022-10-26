@@ -1,0 +1,35 @@
+OBJECT Table 27012 SAT Use Code
+{
+  OBJECT-PROPERTIES
+  {
+    Date=01/28/22;
+    Time=12:00:00 PM;
+    Version List=NAVNA14.33;
+  }
+  PROPERTIES
+  {
+    DataPerCompany=No;
+    CaptionML=ENU=SAT Use Code;
+    LookupPageID=Page27042;
+    DrillDownPageID=Page27042;
+  }
+  FIELDS
+  {
+    { 1   ;   ;SAT Use Code        ;Code10        ;CaptionML=ENU=SAT Use Code }
+    { 2   ;   ;Description         ;Text100       ;CaptionML=ENU=Description }
+  }
+  KEYS
+  {
+    {    ;SAT Use Code                            ;Clustered=Yes }
+  }
+  FIELDGROUPS
+  {
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

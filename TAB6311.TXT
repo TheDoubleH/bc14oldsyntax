@@ -1,0 +1,38 @@
+OBJECT Table 6311 Power BI User License
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/24/19;
+    Time=12:00:00 PM;
+    Version List=NAVW114.00;
+  }
+  PROPERTIES
+  {
+    DataPerCompany=No;
+    ReplicateData=No;
+    CaptionML=ENU=Power BI User License;
+  }
+  FIELDS
+  {
+    { 1   ;   ;User Security ID    ;GUID          ;DataClassification=EndUserPseudonymousIdentifiers;
+                                                   CaptionML=ENU=User Security ID;
+                                                   Description=User security Id. }
+    { 2   ;   ;Has Power BI License;Boolean       ;DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Has Power BI License;
+                                                   Description=Value indicating whether user has power bi license or not. }
+  }
+  KEYS
+  {
+    {    ;User Security ID                        ;Clustered=Yes }
+  }
+  FIELDGROUPS
+  {
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

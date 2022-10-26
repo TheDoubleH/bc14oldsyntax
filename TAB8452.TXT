@@ -1,0 +1,151 @@
+OBJECT Table 8452 Advanced Intrastat Checklist
+{
+  OBJECT-PROPERTIES
+  {
+    Date=06/25/21;
+    Time=12:00:00 PM;
+    Version List=NAVW114.26;
+  }
+  PROPERTIES
+  {
+    CaptionML=ENU=Advanced Intrastat Checklist;
+  }
+  FIELDS
+  {
+    { 1   ;   ;Object Type         ;Option        ;CaptionML=ENU=Object Type;
+                                                   OptionCaptionML=ENU=,,,Report,,Codeunit;
+                                                   OptionString=,,,Report,,Codeunit }
+    { 2   ;   ;Object Id           ;Integer       ;TableRelation=IF (Object Type=CONST(Report)) "Report Metadata".ID
+                                                                 ELSE IF (Object Type=CONST(Codeunit)) "CodeUnit Metadata".ID;
+                                                   CaptionML=ENU=Object Id }
+    { 3   ;   ;Object Name         ;Text250       ;FieldClass=FlowField;
+                                                   CalcFormula=Lookup(AllObjWithCaption."Object Caption" WHERE (Object Type=FIELD(Object Type),
+                                                                                                                Object ID=FIELD(Object Id)));
+                                                   CaptionML=ENU=Object Name;
+                                                   Editable=No }
+    { 4   ;   ;Field No.           ;Integer       ;TableRelation=Field.No. WHERE (TableNo=CONST(263),
+                                                                                  No.=FILTER(<>1&<>2&<>3&<2000000000),
+                                                                                  Class=CONST(Normal),
+                                                                                  ObsoleteState=CONST(No));
+                                                   CaptionML=ENU=Field No.;
+                                                   NotBlank=Yes }
+    { 5   ;   ;Field Name          ;Text250       ;FieldClass=FlowField;
+                                                   CalcFormula=Lookup(Field."Field Caption" WHERE (TableNo=CONST(263),
+                                                                                                   No.=FIELD(Field No.)));
+                                                   CaptionML=ENU=Field Name;
+                                                   Editable=No }
+    { 6   ;   ;Filter Expression   ;Text1024      ;OnValidate=VAR
+                                                                IntrastatJnlLine@1000 : Record 263;
+                                                              BEGIN
+                                                                IF "Filter Expression" <> '' THEN BEGIN
+                                                                  IntrastatJnlLine.SETVIEW(ConvertFilterStringToView("Filter Expression"));
+                                                                  "Record View String" := COPYSTR(IntrastatJnlLine.GETVIEW(FALSE),1,MAXSTRLEN("Record View String"));
+                                                                  "Filter Expression" := COPYSTR(IntrastatJnlLine.GETFILTERS,1,MAXSTRLEN("Filter Expression"));
+                                                                END ELSE
+                                                                  "Record View String" := '';
+                                                              END;
+
+                                                   OnLookup=BEGIN
+                                                              LookupFilterExpression;
+                                                            END;
+
+                                                   CaptionML=ENU=Filter Expression }
+    { 7   ;   ;Record View String  ;Text1024      ;DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Record View String }
+    { 8   ;   ;Reversed Filter Expression;Boolean ;CaptionML=ENU=Reversed Filter Expression }
+  }
+  KEYS
+  {
+    {    ;Object Type,Object Id,Field No.         ;Clustered=Yes }
+  }
+  FIELDGROUPS
+  {
+  }
+  CODE
+  {
+    VAR
+      FilterStringParseErr@1000 : TextConst 'ENU=Could not parse the filter expression. Use the lookup action, or type a string in the following format: "Type: Shipment, Quantity: <>0".';
+      FilterTxt@1001 : TextConst '@@@={Locked};ENU="%1=FILTER(%2)"';
+      WhereTxt@1002 : TextConst '@@@={Locked};ENU=%1 WHERE(%2)';
+
+    PROCEDURE LookupFieldName@2();
+    VAR
+      Field@1001 : Record 2000000041;
+      FieldList@1000 : Page 6218;
+    BEGIN
+      CLEAR(FieldList);
+      Field.SETRANGE(TableNo,DATABASE::"Intrastat Jnl. Line");
+      Field.SETFILTER("No.",'<>1&<>2&<>3&<2000000000');
+      Field.SETRANGE(Class,Field.Class::Normal);
+      Field.SETRANGE(ObsoleteState,Field.ObsoleteState::No);
+      FieldList.SETTABLEVIEW(Field);
+      FieldList.LOOKUPMODE := TRUE;
+      IF FieldList.RUNMODAL = ACTION::LookupOK THEN BEGIN
+        FieldList.GETRECORD(Field);
+        VALIDATE("Field No.",Field."No.");
+      END;
+    END;
+
+    LOCAL PROCEDURE LookupFilterExpression@1();
+    VAR
+      IntrastatJnlLine@1001 : Record 263;
+      FilterPageBuilder@1000 : FilterPageBuilder;
+      TableCaptionValue@1002 : Text;
+    BEGIN
+      TableCaptionValue := IntrastatJnlLine.TABLECAPTION;
+      FilterPageBuilder.ADDTABLE(TableCaptionValue,DATABASE::"Intrastat Jnl. Line");
+      IF "Record View String" <> '' THEN
+        FilterPageBuilder.SETVIEW(TableCaptionValue,"Record View String");
+      IF FilterPageBuilder.RUNMODAL THEN BEGIN
+        IntrastatJnlLine.SETVIEW(FilterPageBuilder.GETVIEW(TableCaptionValue,FALSE));
+        "Record View String" := COPYSTR(IntrastatJnlLine.GETVIEW(FALSE),1,MAXSTRLEN("Record View String"));
+        "Filter Expression" := COPYSTR(IntrastatJnlLine.GETFILTERS,1,MAXSTRLEN("Filter Expression"));
+      END;
+    END;
+
+    LOCAL PROCEDURE ConvertFilterStringToView@16(FilterString@1001 : Text) : Text;
+    VAR
+      IntrastatJnlLine@1002 : Record 263;
+      ConvertedFilterString@1007 : Text;
+      MidPos@1005 : Integer;
+      FinishPos@1006 : Integer;
+    BEGIN
+      WHILE FilterString <> '' DO BEGIN
+        // Convert "Type: Receipt" to "Type=FILTER(Receipt)"
+        MidPos := STRPOS(FilterString,':');
+        IF MidPos < 2 THEN
+          ERROR(FilterStringParseErr);
+        FinishPos := STRPOS(FilterString,',');
+        IF FinishPos = 0 THEN
+          FinishPos := STRLEN(FilterString) + 1;
+        IF ConvertedFilterString <> '' THEN
+          ConvertedFilterString += ',';
+        ConvertedFilterString +=
+          STRSUBSTNO(FilterTxt,COPYSTR(FilterString,1,MidPos - 1),COPYSTR(FilterString,MidPos + 1,FinishPos - MidPos - 1));
+        FilterString := DELSTR(FilterString,1,FinishPos);
+      END;
+
+      IF ConvertedFilterString <> '' THEN
+        EXIT(STRSUBSTNO(WhereTxt,IntrastatJnlLine.GETVIEW,ConvertedFilterString));
+
+      EXIT('');
+    END;
+
+    PROCEDURE LinePassesFilterExpression@3(IntrastatJnlLine@1000 : Record 263) : Boolean;
+    VAR
+      TempIntrastatJnlLine@1001 : TEMPORARY Record 263;
+    BEGIN
+      IF "Record View String" = '' THEN
+        EXIT(TRUE);
+
+      TempIntrastatJnlLine := IntrastatJnlLine;
+      TempIntrastatJnlLine.INSERT;
+      TempIntrastatJnlLine.SETVIEW("Record View String");
+      EXIT(NOT TempIntrastatJnlLine.ISEMPTY XOR "Reversed Filter Expression");
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

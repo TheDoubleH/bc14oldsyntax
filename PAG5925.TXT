@@ -1,0 +1,70 @@
+OBJECT Page 5925 Fault Areas
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/24/19;
+    Time=12:00:00 PM;
+    Version List=NAVW114.00;
+  }
+  PROPERTIES
+  {
+    CaptionML=ENU=Fault Areas;
+    ApplicationArea=#Service;
+    SourceTable=Table5915;
+    PageType=List;
+    UsageCategory=Administration;
+    ActionList=ACTIONS
+    {
+      { 3       ;    ;ActionContainer;
+                      ActionContainerType=ActionItems }
+      { 5       ;1   ;Action    ;
+                      Name=Import IRIS to Area/Symptom Code;
+                      CaptionML=ENU=Import IRIS to Area/Symptom Code;
+                      ToolTipML=ENU=Import the International Repair Coding System to define area and symptom codes for service items.;
+                      ApplicationArea=#Service;
+                      RunObject=XMLport 5900;
+                      Image=Import }
+    }
+  }
+  CONTROLS
+  {
+    { 1900000001;0;Container;
+                ContainerType=ContentArea }
+
+    { 1   ;1   ;Group     ;
+                GroupType=Repeater }
+
+    { 2   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies a code for the fault area.;
+                ApplicationArea=#Service;
+                SourceExpr=Code }
+
+    { 4   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies a description of the fault area.;
+                ApplicationArea=#Service;
+                SourceExpr=Description }
+
+    { 1900000007;0;Container;
+                ContainerType=FactBoxArea }
+
+    { 1900383207;1;Part   ;
+                ApplicationArea=#RecordLinks;
+                Visible=FALSE;
+                PartType=System;
+                SystemPartID=RecordLinks }
+
+    { 1905767507;1;Part   ;
+                ApplicationArea=#Notes;
+                Visible=FALSE;
+                PartType=System;
+                SystemPartID=Notes }
+
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

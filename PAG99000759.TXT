@@ -1,0 +1,161 @@
+OBJECT Page 99000759 Calendar Entries
+{
+  OBJECT-PROPERTIES
+  {
+    Date=01/28/22;
+    Time=12:00:00 PM;
+    Version List=NAVW114.33;
+  }
+  PROPERTIES
+  {
+    CaptionML=ENU=Calendar Entries;
+    SourceTable=Table99000757;
+    DataCaptionExpr=Caption;
+    DelayedInsert=Yes;
+    PageType=List;
+    OnInit=BEGIN
+             DateAndTimeFieldVisible := FALSE;
+           END;
+
+    OnOpenPage=BEGIN
+                 DateAndTimeFieldVisible := FALSE;
+               END;
+
+    OnAfterGetRecord=BEGIN
+                       GetStartingEndingDateAndTime(StartingTime,EndingTime,CurrDate);
+                     END;
+
+  }
+  CONTROLS
+  {
+    { 1900000001;0;Container;
+                ContainerType=ContentArea }
+
+    { 1   ;1   ;Group     ;
+                GroupType=Repeater }
+
+    { 2   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the type of capacity for the calendar entry.;
+                ApplicationArea=#Manufacturing;
+                SourceExpr="Capacity Type" }
+
+    { 4   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the number of the involved entry or record, according to the specified number series.;
+                ApplicationArea=#Manufacturing;
+                SourceExpr="No." }
+
+    { 6   ;2   ;Field     ;
+                Name=Date;
+                CaptionML=ENU=Date;
+                ToolTipML=ENU=Specifies the date when this capacity refers to.;
+                ApplicationArea=#Manufacturing;
+                SourceExpr=CurrDate;
+                Visible=FALSE;
+                OnValidate=BEGIN
+                             VALIDATE(Date,CurrDate);
+                             CurrPage.UPDATE(TRUE);
+                           END;
+                            }
+
+    { 8   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies code for the work shift that the capacity refers to.;
+                ApplicationArea=#Manufacturing;
+                SourceExpr="Work Shift Code" }
+
+    { 25  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the date and the starting time, which are combined in a format called "starting date-time".;
+                ApplicationArea=#Manufacturing;
+                SourceExpr="Starting Date-Time";
+                OnValidate=BEGIN
+                             GetStartingEndingDateAndTime(StartingTime,EndingTime,CurrDate);
+                             VALIDATE("Starting Time",StartingTime);
+                             CurrPage.UPDATE(TRUE);
+                           END;
+                            }
+
+    { 10  ;2   ;Field     ;
+                Name=Starting Time;
+                CaptionML=ENU=Starting Time;
+                ToolTipML=ENU=Specifies the starting time of this calendar entry.;
+                ApplicationArea=#Manufacturing;
+                SourceExpr=StartingTime;
+                Visible=DateAndTimeFieldVisible;
+                OnValidate=BEGIN
+                             VALIDATE("Starting Time",StartingTime);
+                             CurrPage.UPDATE(TRUE);
+                           END;
+                            }
+
+    { 27  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the date and the ending time, which are combined in a format called "ending date-time".;
+                ApplicationArea=#Manufacturing;
+                SourceExpr="Ending Date-Time";
+                OnValidate=BEGIN
+                             GetStartingEndingDateAndTime(StartingTime,EndingTime,CurrDate);
+                             VALIDATE("Ending Time",EndingTime);
+                             CurrPage.UPDATE(TRUE);
+                           END;
+                            }
+
+    { 12  ;2   ;Field     ;
+                Name=Ending Time;
+                CaptionML=ENU=Ending Time;
+                ToolTipML=ENU=Specifies the ending time of this calendar entry.;
+                ApplicationArea=#Manufacturing;
+                SourceExpr=EndingTime;
+                Visible=DateAndTimeFieldVisible;
+                OnValidate=BEGIN
+                             VALIDATE("Ending Time",EndingTime);
+                             CurrPage.UPDATE(TRUE);
+                           END;
+                            }
+
+    { 14  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the efficiency of this calendar entry.;
+                ApplicationArea=#Manufacturing;
+                SourceExpr=Efficiency }
+
+    { 16  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the capacity of this calendar entry.;
+                ApplicationArea=#Manufacturing;
+                SourceExpr=Capacity }
+
+    { 18  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the total capacity of this calendar entry.;
+                ApplicationArea=#Manufacturing;
+                SourceExpr="Capacity (Total)" }
+
+    { 20  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the effective capacity of this calendar entry.;
+                ApplicationArea=#Manufacturing;
+                SourceExpr="Capacity (Effective)" }
+
+    { 1900000007;0;Container;
+                ContainerType=FactBoxArea }
+
+    { 1900383207;1;Part   ;
+                ApplicationArea=#RecordLinks;
+                Visible=FALSE;
+                PartType=System;
+                SystemPartID=RecordLinks }
+
+    { 1905767507;1;Part   ;
+                ApplicationArea=#Notes;
+                Visible=FALSE;
+                PartType=System;
+                SystemPartID=Notes }
+
+  }
+  CODE
+  {
+    VAR
+      StartingTime@1003 : Time;
+      EndingTime@1002 : Time;
+      CurrDate@1000 : Date;
+      DateAndTimeFieldVisible@1001 : Boolean;
+
+    BEGIN
+    END.
+  }
+}
+

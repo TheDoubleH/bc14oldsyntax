@@ -1,0 +1,89 @@
+OBJECT Page 1823 Cust. Consent Confirmation
+{
+  OBJECT-PROPERTIES
+  {
+    Date=12/01/21;
+    Time=12:00:00 PM;
+    Version List=NAVW114.31;
+  }
+  PROPERTIES
+  {
+    CaptionML=ENU=Cust. Consent Confirmation;
+    PageType=NavigatePage;
+    ActionList=ACTIONS
+    {
+      { 5       ;    ;ActionContainer;
+                      ActionContainerType=ActionItems }
+      { 4       ;1   ;ActionGroup;
+                      Name=Processing;
+                      CaptionML=ENU=Processing }
+      { 3       ;2   ;Action    ;
+                      Name=Accept;
+                      CaptionML=ENU=I accept;
+                      ToolTipML=ENU=Agree with the customer consent.;
+                      ApplicationArea=#Basic,#Suite;
+                      InFooterBar=Yes;
+                      Image=Confirm;
+                      OnAction=BEGIN
+                                 Agreed := TRUE;
+                                 CurrPage.CLOSE;
+                               END;
+                                }
+      { 6       ;2   ;Action    ;
+                      Name=Cancel;
+                      CaptionML=ENU=Cancel;
+                      ToolTipML=ENU=Disagree with the customer consent.;
+                      ApplicationArea=#Basic,#Suite;
+                      InFooterBar=Yes;
+                      Image=Cancel;
+                      OnAction=BEGIN
+                                 Agreed := FALSE;
+                                 CurrPage.CLOSE;
+                               END;
+                                }
+    }
+  }
+  CONTROLS
+  {
+    { 13  ;0   ;Container ;
+                ContainerType=ContentArea }
+
+    { 1   ;1   ;Field     ;
+                Name=ConsentText;
+                ApplicationArea=#All;
+                SourceExpr=ConsentLbl;
+                MultiLine=Yes;
+                ShowCaption=No }
+
+    { 2   ;1   ;Field     ;
+                Name=LearnMore;
+                ToolTipML=ENU=Specifies the information about the privacy;
+                ApplicationArea=#All;
+                SourceExpr=LearnMoreLbl;
+                Editable=FALSE;
+                OnDrillDown=BEGIN
+                              HYPERLINK(PrivacyLinkTxt);
+                            END;
+
+                ShowCaption=No }
+
+  }
+  CODE
+  {
+    VAR
+      PrivacyLinkTxt@1000 : TextConst '@@@={Locked};ENU="https://go.microsoft.com/fwlink/?linkid=521839"';
+      ConsentLbl@1001 : TextConst 'ENU=By enabling this feature, you consent to your data being shared with third party systems and flowing outside of your organization''''s selected geographic boundaries.  You control what data, if any, that you provide to the third-party. The third party may not meet the same compliance and security standards as Microsoft Dynamics 365 Business Central. Your privacy is important to us.  To learn more follow the link below.';
+      LearnMoreLbl@1002 : TextConst 'ENU=Privacy and Cookies';
+      Agreed@1003 : Boolean;
+
+    [External]
+    PROCEDURE WasAgreed@1() : Boolean;
+    BEGIN
+      EXIT(Agreed);
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

@@ -1,0 +1,154 @@
+OBJECT Page 5887 Posted Phys. Invt. Recording
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/24/19;
+    Time=12:00:00 PM;
+    Version List=NAVW114.00;
+  }
+  PROPERTIES
+  {
+    CaptionML=ENU=Posted Phys. Invt. Recording;
+    InsertAllowed=No;
+    SourceTable=Table5881;
+    PageType=Document;
+    ActionList=ACTIONS
+    {
+      { 1900000003;0 ;ActionContainer;
+                      ActionContainerType=RelatedInformation }
+      { 25      ;1   ;ActionGroup;
+                      CaptionML=ENU=&Recording;
+                      Image=Document }
+      { 27      ;2   ;Action    ;
+                      CaptionML=ENU=Co&mments;
+                      ToolTipML=ENU=Show comments.;
+                      ApplicationArea=#Warehouse;
+                      RunObject=Page 5891;
+                      RunPageLink=Document Type=CONST(Posted Recording),
+                                  Order No.=FIELD(Order No.),
+                                  Recording No.=FIELD(Recording No.);
+                      Image=ViewComments }
+      { 1900000004;0 ;ActionContainer;
+                      ActionContainerType=ActionItems }
+      { 28      ;1   ;Action    ;
+                      Name=Print;
+                      Ellipsis=Yes;
+                      CaptionML=ENU=&Print;
+                      ToolTipML=ENU=Print the posted physical inventory recording.;
+                      ApplicationArea=#Warehouse;
+                      Promoted=Yes;
+                      Image=Print;
+                      PromotedCategory=Process;
+                      OnAction=VAR
+                                 DocPrint@1000 : Codeunit 229;
+                               BEGIN
+                                 DocPrint.PrintPostedInvtRecording(Rec,TRUE);
+                               END;
+                                }
+      { 1900000006;0 ;ActionContainer;
+                      ActionContainerType=Reports }
+      { 1902051106;1 ;Action    ;
+                      CaptionML=ENU=Posted Phys. Invt. Recording;
+                      ToolTipML=ENU=Print Posted Phys. Invt. Recording.;
+                      ApplicationArea=#Warehouse;
+                      RunObject=Report 5879;
+                      Promoted=No;
+                      Image=Report;
+                      PromotedCategory=Report }
+    }
+  }
+  CONTROLS
+  {
+    { 1900000001;0;Container;
+                ContainerType=ContentArea }
+
+    { 40  ;1   ;Group     ;
+                CaptionML=ENU=General }
+
+    { 14  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the number of the related physical inventory order.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Order No.";
+                Editable=FALSE }
+
+    { 16  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the number of the related physical inventory recording.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Recording No.";
+                Editable=FALSE }
+
+    { 19  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies a description of the physical inventory recording.;
+                ApplicationArea=#Warehouse;
+                SourceExpr=Description;
+                Editable=FALSE }
+
+    { 12  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the location where the recording was performed.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Location Code";
+                Importance=Promoted;
+                Editable=FALSE }
+
+    { 2   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the person who was responsible for the recording.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Person Responsible";
+                Editable=FALSE }
+
+    { 10  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies if the recording is Open or Finished;
+                ApplicationArea=#Warehouse;
+                SourceExpr=Status;
+                Importance=Promoted;
+                Editable=FALSE }
+
+    { 8   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the person who performed the recording.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Person Recorded";
+                Editable=FALSE }
+
+    { 4   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the day when the recording was performed.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Date Recorded";
+                Editable=FALSE }
+
+    { 6   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the time when the recording was performed.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Time Recorded";
+                Editable=FALSE }
+
+    { 21  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies that recording lines were automatically created for items that did not exist on the physical inventory order. This can only happen if none of the values in these four fields exist for an item on the order: Item No., Variant Code, Location Code, and Bin Code.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Allow Recording Without Order";
+                Editable=FALSE }
+
+    { 24  ;1   ;Part      ;
+                ApplicationArea=#Warehouse;
+                SubPageView=SORTING(Order No.,Recording No.,Line No.);
+                SubPageLink=Order No.=FIELD(Order No.),
+                            Recording No.=FIELD(Recording No.);
+                PagePartID=Page5889 }
+
+    { 1900000007;0;Container;
+                ContainerType=FactBoxArea }
+
+    { 1905767507;1;Part   ;
+                ApplicationArea=#Notes;
+                Visible=TRUE;
+                PartType=System;
+                SystemPartID=Notes }
+
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

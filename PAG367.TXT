@@ -1,0 +1,76 @@
+OBJECT Page 367 Post Codes
+{
+  OBJECT-PROPERTIES
+  {
+    Date=10/26/19;
+    Time=12:00:00 PM;
+    Version List=NAVW114.07;
+  }
+  PROPERTIES
+  {
+    CaptionML=ENU=ZIP Codes;
+    ApplicationArea=#Basic,#Suite;
+    SourceTable=Table225;
+    PopulateAllFields=Yes;
+    PageType=List;
+    UsageCategory=Lists;
+  }
+  CONTROLS
+  {
+    { 1900000001;0;Container;
+                ContainerType=ContentArea }
+
+    { 1   ;1   ;Group     ;
+                GroupType=Repeater }
+
+    { 2   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the ZIP code that is associated with a city.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr=Code }
+
+    { 4   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the city linked to the ZIP code in the Code field.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr=City }
+
+    { 3   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the country/region of the address.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Country/Region Code" }
+
+    { 5   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies a county name.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr=County }
+
+    { 6   ;2   ;Field     ;
+                Name=TimeZone;
+                CaptionML=ENU=Time Zone;
+                ToolTipML=ENU=Specifies the time zone for the selected ZIP code.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Time Zone" }
+
+    { 1900000007;0;Container;
+                ContainerType=FactBoxArea }
+
+    { 1900383207;1;Part   ;
+                ApplicationArea=#RecordLinks;
+                Visible=FALSE;
+                PartType=System;
+                SystemPartID=RecordLinks }
+
+    { 1905767507;1;Part   ;
+                ApplicationArea=#Notes;
+                Visible=FALSE;
+                PartType=System;
+                SystemPartID=Notes }
+
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

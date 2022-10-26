@@ -1,0 +1,49 @@
+OBJECT Page 10459 MX Electroninc - GLSetup
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/24/19;
+    Time=12:00:00 PM;
+    Version List=NAVNA14.00;
+  }
+  PROPERTIES
+  {
+    CaptionML=ENU=General Ledger Setup;
+    SourceTable=Table98;
+    PageType=CardPart;
+  }
+  CONTROLS
+  {
+    { 1310000;0;Container ;
+                ContainerType=ContentArea }
+
+    { 1310001;1;Group     ;
+                GroupType=Group }
+
+    { 1310002;2;Field     ;
+                ToolTipML=ENU=Specifies the authorized service provider, PAC, that will certify your identity by applying digital stamps to your electronic invoices.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="PAC Code";
+                ShowMandatory=TRUE }
+
+    { 1310003;2;Field     ;
+                ToolTipML=ENU=Specifies whether your company issues electronic invoices in Mexico, and whether you use the web services of your authorized service provider, PAC, in a test or production environment.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="PAC Environment";
+                ShowMandatory=TRUE }
+
+    { 1310004;2;Field     ;
+                ToolTipML=ENU=Specifies the certificate from the tax authorities that you want to use for issuing electronic invoices.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="SAT Certificate";
+                ShowMandatory=TRUE }
+
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

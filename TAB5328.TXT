@@ -1,0 +1,40 @@
+OBJECT Table 5328 CRM Synch Status
+{
+  OBJECT-PROPERTIES
+  {
+    Date=07/31/20;
+    Time=12:00:00 PM;
+    Version List=NAVW114.16;
+  }
+  PROPERTIES
+  {
+    CaptionML=ENU=CRM Synch Status;
+  }
+  FIELDS
+  {
+    { 1   ;   ;Primary Key         ;Code10        ;DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Primary Key }
+    { 2   ;   ;Last Update Invoice Entry No.;Integer;
+                                                   DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Last Update Invoice Entry No.;
+                                                   Editable=No }
+    { 3   ;   ;Last Cust Contact Link Update;DateTime;
+                                                   DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Last Cust Contact Link Update;
+                                                   Editable=No }
+  }
+  KEYS
+  {
+    {    ;Primary Key                             ;Clustered=Yes }
+  }
+  FIELDGROUPS
+  {
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

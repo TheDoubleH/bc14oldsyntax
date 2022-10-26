@@ -1,0 +1,57 @@
+OBJECT Codeunit 10149 DotNet_ISignatureProvider
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/24/19;
+    Time=12:00:00 PM;
+    Version List=NAVNA14.00;
+  }
+  PROPERTIES
+  {
+    OnRun=BEGIN
+          END;
+
+  }
+  CODE
+  {
+    VAR
+      DotNetISignatureProvider@1310000 : DotNet "'Microsoft.Dynamics.Nav.MX, Version=14.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35'.Microsoft.Dynamics.Nav.MX.SignatureProviders.ISignatureProvider";
+
+    [External]
+    PROCEDURE SignDataWithCertificate@1310002(Data@1310001 : Text;Certificate@1310002 : Text;DotNet_SecureString@1310000 : Codeunit 3044) : Text;
+    VAR
+      EInvoiceObjectFactory@1310004 : Codeunit 10147;
+      SecureStringPassword@1310003 : DotNet "'mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Security.SecureString";
+    BEGIN
+      EInvoiceObjectFactory.GetSignatureProvider(DotNetISignatureProvider);
+      DotNet_SecureString.GetSecureString(SecureStringPassword);
+      EXIT(DotNetISignatureProvider.SignDataWithCertificate(Data,Certificate,SecureStringPassword));
+    END;
+
+    [External]
+    PROCEDURE LastUsedCertificate@1310003() : Text;
+    BEGIN
+      EXIT(DotNetISignatureProvider.LastUsedCertificate);
+    END;
+
+    [External]
+    PROCEDURE LastUsedCertificateSerialNo@1310004() : Text;
+    BEGIN
+      EXIT(DotNetISignatureProvider.LastUsedCertificateSerialNo);
+    END;
+
+    PROCEDURE GetISignatureProvider@1310007(VAR DotNetISignatureProvider2@1310000 : DotNet "'Microsoft.Dynamics.Nav.MX, Version=14.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35'.Microsoft.Dynamics.Nav.MX.SignatureProviders.ISignatureProvider");
+    BEGIN
+      DotNetISignatureProvider2 := DotNetISignatureProvider;
+    END;
+
+    PROCEDURE SetISignatureProvider@1310008(VAR DotNetISignatureProvider2@1310000 : DotNet "'Microsoft.Dynamics.Nav.MX, Version=14.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35'.Microsoft.Dynamics.Nav.MX.SignatureProviders.ISignatureProvider");
+    BEGIN
+      DotNetISignatureProvider := DotNetISignatureProvider2;
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

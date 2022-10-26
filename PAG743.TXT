@@ -1,0 +1,144 @@
+OBJECT Page 743 VAT Report Setup
+{
+  OBJECT-PROPERTIES
+  {
+    Date=05/27/22;
+    Time=12:00:00 PM;
+    Version List=NAVW114.37,NAVNA14.37;
+  }
+  PROPERTIES
+  {
+    CaptionML=ENU=Tax Report Setup;
+    InsertAllowed=No;
+    DeleteAllowed=No;
+    SourceTable=Table743;
+    PageType=Card;
+    OnOpenPage=BEGIN
+                 RESET;
+                 IF NOT GET THEN BEGIN
+                   INIT;
+                   INSERT;
+                 END;
+               END;
+
+  }
+  CONTROLS
+  {
+    { 1900000001;0;Container;
+                ContainerType=ContentArea }
+
+    { 1   ;1   ;Group     ;
+                CaptionML=ENU=General }
+
+    { 4   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies if users can modify tax reports that have been submitted to the tax authorities. If the field is left blank, users must create a corrective or supplementary tax report instead.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Modify Submitted Reports" }
+
+    { 12  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies if the tax base must be calculated and shown to the user in the tax reports.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Report VAT Base" }
+
+    { 18  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies if the Tax report must include the contents of the Note field on the relevant report statement lines.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Report VAT Note" }
+
+    { 1904569201;1;Group  ;
+                CaptionML=ENU=Numbering }
+
+    { 7   ;2   ;Field     ;
+                Name=EC Sales List No. Series;
+                ToolTipML=ENU=Specifies the number series from which entry or record numbers are assigned to new entries or records.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="No. Series" }
+
+    { 2   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the number series that is used for Tax return records.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="VAT Return No. Series" }
+
+    { 8   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the number series that is used for the Tax return period records.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="VAT Return Period No. Series" }
+
+    { 3   ;1   ;Group     ;
+                Name=Return Period;
+                GroupType=Group }
+
+    { 6   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the Tax report version that is used for the Tax reporting periods.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Report Version" }
+
+    { 5   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies a formula that is used to notify about an open Tax report period with an upcoming due date.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Period Reminder Calculation" }
+
+    { 16  ;2   ;Group     ;
+                GroupType=Group }
+
+    { 10  ;3   ;Field     ;
+                CaptionML=ENU=Manual Receive Codeunit ID;
+                ToolTipML=ENU=Specifies the codeunit ID associated with a manual receipt of the Tax return periods.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Manual Receive Period CU ID";
+                Importance=Additional }
+
+    { 13  ;3   ;Field     ;
+                CaptionML=ENU=Manual Receive Codeunit Caption;
+                ToolTipML=ENU=Specifies the codeunit caption associated with a manual receipt of the Tax return periods.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Manual Receive Period CU Cap";
+                Importance=Additional }
+
+    { 15  ;3   ;Field     ;
+                CaptionML=ENU=Receive Submitted Return Codeunit ID;
+                ToolTipML=ENU=Specifies the codeunit ID associated with a receipt of the submitted Tax returns.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Receive Submitted Return CU ID";
+                Importance=Additional }
+
+    { 9   ;3   ;Field     ;
+                CaptionML=ENU=Receive Submitted Return Codeunit Caption;
+                ToolTipML=ENU=Specifies the codeunit caption associated with a receipt of the submitted Tax returns.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Receive Submitted Return CUCap";
+                Importance=Additional }
+
+    { 17  ;2   ;Group     ;
+                Name=Auto Update Job;
+                GroupType=Group }
+
+    { 19  ;3   ;Field     ;
+                ToolTipML=ENU=Specifies the job frequency for an automatic update of the Tax return periods.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Update Period Job Frequency" }
+
+    { 11  ;3   ;Field     ;
+                CaptionML=ENU=Auto Receive Codeunit ID;
+                ToolTipML=ENU=Specifies the codeunit ID associated with an automatic receipt of the tax return periods. You can only edit this field if the Update Period Job Frequency field contains Never.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Auto Receive Period CU ID";
+                Importance=Additional;
+                Editable="Update Period Job Frequency" = "Update Period Job Frequency"::Never }
+
+    { 14  ;3   ;Field     ;
+                CaptionML=ENU=Auto Receive Codeunit Caption;
+                ToolTipML=ENU=Specifies the codeunit caption associated with an automatic receipt of the Tax return periods.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Auto Receive Period CU Cap";
+                Importance=Additional }
+
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

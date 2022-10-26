@@ -1,0 +1,51 @@
+OBJECT Report 155 Statement of Cashflows
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/24/19;
+    Time=12:00:00 PM;
+    Version List=NAVW114.00;
+  }
+  PROPERTIES
+  {
+    AccessByPermission=TableData 15=R;
+    CaptionML=ENU=Statement of Cashflows;
+    ApplicationArea=#Basic,#Suite;
+    ProcessingOnly=Yes;
+    OnInitReport=VAR
+                   GeneralLedgerSetup@1001 : Record 98;
+                   GLAccountCategoryMgt@1000 : Codeunit 570;
+                 BEGIN
+                   GLAccountCategoryMgt.GetGLSetup(GeneralLedgerSetup);
+                   GLAccountCategoryMgt.RunAccountScheduleReport(GeneralLedgerSetup."Acc. Sched. for Cash Flow Stmt");
+                 END;
+
+    UseRequestPage=No;
+    UsageCategory=ReportsAndAnalysis;
+  }
+  DATASET
+  {
+  }
+  REQUESTPAGE
+  {
+    PROPERTIES
+    {
+    }
+    CONTROLS
+    {
+    }
+  }
+  LABELS
+  {
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+  RDLDATA
+  {
+  }
+}
+

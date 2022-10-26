@@ -1,0 +1,49 @@
+OBJECT Table 5885 Phys. Invt. Tracking
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/25/22;
+    Time=12:00:00 PM;
+    Version List=NAVW114.35;
+  }
+  PROPERTIES
+  {
+    CaptionML=ENU=Phys. Invt. Tracking;
+  }
+  FIELDS
+  {
+    { 1   ;   ;Serial No.          ;Code50        ;DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Serial No. }
+    { 2   ;   ;Lot No              ;Code50        ;DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Lot No }
+    { 10  ;   ;Qty. Recorded (Base);Decimal       ;DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Qty. Recorded (Base);
+                                                   DecimalPlaces=0:5 }
+    { 11  ;   ;Qty. Expected (Base);Decimal       ;DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Qty. Expected (Base);
+                                                   DecimalPlaces=0:5 }
+    { 20  ;   ;Qty. To Transfer    ;Decimal       ;DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Qty. To Transfer }
+    { 21  ;   ;Outstanding Quantity;Decimal       ;DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Outstanding Quantity }
+    { 22  ;   ;Open                ;Boolean       ;DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Open }
+    { 23  ;   ;Line No.            ;Integer       ;DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Line No. }
+  }
+  KEYS
+  {
+    {    ;Serial No.,Lot No                       ;Clustered=Yes }
+    {    ;Open                                     }
+  }
+  FIELDGROUPS
+  {
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

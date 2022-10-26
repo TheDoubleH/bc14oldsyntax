@@ -1,0 +1,182 @@
+OBJECT Page 5881 Phys. Invt. Recording Subform
+{
+  OBJECT-PROPERTIES
+  {
+    Date=12/19/19;
+    Time=12:00:00 PM;
+    Version List=NAVW114.09;
+  }
+  PROPERTIES
+  {
+    CaptionML=ENU=Lines;
+    MultipleNewLines=Yes;
+    SourceTable=Table5878;
+    DelayedInsert=Yes;
+    PageType=ListPart;
+    AutoSplitKey=Yes;
+    ActionList=ACTIONS
+    {
+      { 1900000004;0 ;ActionContainer;
+                      ActionContainerType=ActionItems }
+      { 1906587504;1 ;ActionGroup;
+                      CaptionML=ENU=F&unctions;
+                      Image=Action }
+      { 1904489904;2 ;Action    ;
+                      Name=CopyLine;
+                      CaptionML=ENU=&Copy Line;
+                      ToolTipML=ENU=Copy Line.;
+                      ApplicationArea=#Warehouse;
+                      OnAction=BEGIN
+                                 CopyLine;
+                               END;
+                                }
+      { 2       ;1   ;ActionGroup;
+                      CaptionML=ENU=Line;
+                      Image=Line }
+      { 4       ;2   ;Action    ;
+                      CaptionML=ENU=Serial No. Information Card;
+                      ToolTipML=ENU=Show Serial No. Information Card.;
+                      ApplicationArea=#Warehouse;
+                      RunObject=Page 6509;
+                      RunPageLink=Item No.=FIELD(Item No.),
+                                  Variant Code=FIELD(Variant Code),
+                                  Serial No.=FIELD(Serial No.);
+                      Promoted=Yes;
+                      PromotedIsBig=Yes;
+                      Image=SNInfo;
+                      PromotedCategory=Category4 }
+      { 6       ;2   ;Action    ;
+                      CaptionML=ENU=Lot No. Information Card;
+                      ToolTipML=ENU=Show Lot No. Information Card.;
+                      ApplicationArea=#Warehouse;
+                      RunObject=Page 6508;
+                      RunPageLink=Item No.=FIELD(Item No.),
+                                  Variant Code=FIELD(Variant Code),
+                                  Lot No.=FIELD(Lot No.);
+                      Promoted=Yes;
+                      PromotedIsBig=Yes;
+                      Image=LotInfo;
+                      PromotedCategory=Category4 }
+    }
+  }
+  CONTROLS
+  {
+    { 1900000001;0;Container;
+                ContainerType=ContentArea }
+
+    { 40  ;1   ;Group     ;
+                GroupType=Repeater }
+
+    { 1   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the number of the item that was counted when taking the physical inventory.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Item No." }
+
+    { 3   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the variant of the item on the line.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Variant Code";
+                Visible=FALSE }
+
+    { 5   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the description of the item.;
+                ApplicationArea=#Warehouse;
+                SourceExpr=Description }
+
+    { 7   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the additional description of the item.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Description 2";
+                Visible=FALSE }
+
+    { 9   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the code of the location where the item was counted during taking the physical inventory.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Location Code" }
+
+    { 11  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the code of the bin where the item was counted while performing the physical inventory.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Bin Code";
+                Visible=FALSE }
+
+    { 13  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies if it is necessary to record the item using serial numbers or lot numbers.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Use Item Tracking";
+                Editable=TRUE }
+
+    { 15  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the serial number of the entered item.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Serial No." }
+
+    { 17  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the lot number of the entered item.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Lot No." }
+
+    { 19  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the unit of measure used for the item, for example bottle or piece.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Unit of Measure";
+                Visible=FALSE }
+
+    { 21  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies how each unit of the item or resource is measured, such as in pieces or hours. By default, the value in the Base Unit of Measure field on the item or resource card is inserted.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Unit of Measure Code" }
+
+    { 23  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the quantity of the item of the physical inventory recording line.;
+                ApplicationArea=#Warehouse;
+                SourceExpr=Quantity }
+
+    { 25  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the quantity on the line, expressed in base units of measure.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Quantity (Base)";
+                Visible=FALSE }
+
+    { 27  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies if a value was entered in Quantity of the physical inventory recording line.;
+                ApplicationArea=#Warehouse;
+                SourceExpr=Recorded }
+
+    { 29  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the date when the physical inventory was taken.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Date Recorded";
+                Visible=FALSE }
+
+    { 31  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the time when the physical inventory was taken.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Time Recorded";
+                Visible=FALSE }
+
+    { 33  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the code of the person who performed the physical inventory.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Person Recorded";
+                Visible=FALSE }
+
+  }
+  CODE
+  {
+    VAR
+      CopyPhysInvtRecording@1000 : Report 5883;
+
+    [External]
+    PROCEDURE CopyLine@1();
+    BEGIN
+      CopyPhysInvtRecording.SetPhysInvtRecordLine(Rec);
+      CopyPhysInvtRecording.RUNMODAL;
+      CLEAR(CopyPhysInvtRecording);
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

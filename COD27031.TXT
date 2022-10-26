@@ -1,0 +1,67 @@
+OBJECT Codeunit 27031 Update SAT Payment Catalogs
+{
+  OBJECT-PROPERTIES
+  {
+    Date=07/23/19;
+    Time=12:00:00 PM;
+    Version List=NAVNA14.03;
+  }
+  PROPERTIES
+  {
+    OnRun=VAR
+            UpgradeTagMgt@1310001 : Codeunit 9999;
+            UpgradeTags@1310000 : Codeunit 9998;
+          BEGIN
+            IF UpgradeTagMgt.HasUpgradeTag(UpgradeTags.GetSATPaymentCatalogsSwapTag) THEN
+              EXIT;
+
+            SwapSATPaymentCatalogs;
+
+            UpgradeTagMgt.SetUpgradeTag(UpgradeTags.GetSATPaymentCatalogsSwapTag);
+          END;
+
+  }
+  CODE
+  {
+
+    LOCAL PROCEDURE SwapSATPaymentCatalogs@1310001();
+    VAR
+      PaymentTerms@1310002 : Record 3;
+      PaymentMethod@1310003 : Record 289;
+      SATPaymentMethod@1310000 : Record 27018;
+      SATPaymentTerm@1310001 : Record 27017;
+      TempSATPaymentTerm@1310004 : TEMPORARY Record 27017;
+    BEGIN
+      IF SATPaymentMethod.ISEMPTY AND SATPaymentTerm.ISEMPTY THEN
+        EXIT;
+
+      PaymentMethod.MODIFYALL("SAT Method of Payment",'');
+      PaymentTerms.MODIFYALL("SAT Payment Term",'');
+
+      IF SATPaymentTerm.FINDSET THEN
+        REPEAT
+          TempSATPaymentTerm := SATPaymentTerm;
+          TempSATPaymentTerm.INSERT;
+        UNTIL SATPaymentTerm.NEXT = 0;
+      SATPaymentTerm.DELETEALL;
+
+      IF SATPaymentMethod.FINDSET THEN
+        REPEAT
+          SATPaymentTerm.TRANSFERFIELDS(SATPaymentMethod);
+          SATPaymentTerm.INSERT;
+        UNTIL SATPaymentMethod.NEXT = 0;
+      SATPaymentMethod.DELETEALL;
+
+      IF TempSATPaymentTerm.FINDSET THEN
+        REPEAT
+          SATPaymentMethod.TRANSFERFIELDS(TempSATPaymentTerm);
+          SATPaymentMethod.INSERT;
+        UNTIL TempSATPaymentTerm.NEXT = 0;
+      TempSATPaymentTerm.DELETEALL;
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

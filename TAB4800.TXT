@@ -1,0 +1,43 @@
+OBJECT Table 4800 VATGroup Approved Member
+{
+  OBJECT-PROPERTIES
+  {
+    Date=12/29/20;
+    Time=12:00:00 PM;
+    Version List=NAVW114.21;
+  }
+  PROPERTIES
+  {
+    ObsoleteState=Pending;
+    ObsoleteReason=Moved to VAT Group Management extension table 4700 VAT Group Approved Member;
+    CaptionML=ENU=VATGroup Approved Member;
+  }
+  FIELDS
+  {
+    { 1   ;   ;ID                  ;GUID          ;DataClassification=EndUserPseudonymousIdentifiers;
+                                                   CaptionML=ENU=ID }
+    { 2   ;   ;Group Member Name   ;Text250       ;DataClassification=EndUserIdentifiableInformation;
+                                                   CaptionML=ENU=Group Member Name }
+    { 3   ;   ;Contact Person Name ;Text250       ;DataClassification=EndUserIdentifiableInformation;
+                                                   CaptionML=ENU=Contact Person Name }
+    { 4   ;   ;Contact Person Email;Text250       ;DataClassification=EndUserIdentifiableInformation;
+                                                   CaptionML=ENU=Contact Person Email }
+    { 5   ;   ;Company             ;Text30        ;DataClassification=OrganizationIdentifiableInformation;
+                                                   CaptionML=ENU=Company }
+  }
+  KEYS
+  {
+    {    ;ID                                      ;Clustered=Yes }
+    {    ;Group Member Name                        }
+  }
+  FIELDGROUPS
+  {
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

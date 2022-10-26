@@ -1,0 +1,40 @@
+OBJECT Table 10001 PAC Web Service Detail
+{
+  OBJECT-PROPERTIES
+  {
+    Date=09/07/12;
+    Time=12:00:00 PM;
+    Version List=NAVNA7.00;
+  }
+  PROPERTIES
+  {
+    CaptionML=ENU=PAC Web Service Detail;
+  }
+  FIELDS
+  {
+    { 1   ;   ;PAC Code            ;Code10        ;TableRelation="PAC Web Service".Code;
+                                                   CaptionML=ENU=PAC Code }
+    { 2   ;   ;Environment         ;Option        ;CaptionML=ENU=Environment;
+                                                   OptionCaptionML=ENU=" ,Test,Production";
+                                                   OptionString=[ ,Test,Production] }
+    { 3   ;   ;Type                ;Option        ;CaptionML=ENU=Type;
+                                                   OptionCaptionML=ENU=Request Stamp,Cancel;
+                                                   OptionString=Request Stamp,Cancel }
+    { 21  ;   ;Method Name         ;Text50        ;CaptionML=ENU=Method Name }
+    { 22  ;   ;Address             ;Text250       ;CaptionML=ENU=Address }
+  }
+  KEYS
+  {
+    {    ;PAC Code,Environment,Type               ;Clustered=Yes }
+  }
+  FIELDGROUPS
+  {
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

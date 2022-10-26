@@ -1,0 +1,104 @@
+OBJECT Table 10002 Document Header
+{
+  OBJECT-PROPERTIES
+  {
+    Date=02/25/22;
+    Time=12:00:00 PM;
+    Version List=NAVNA14.34;
+  }
+  PROPERTIES
+  {
+    OnInsert=BEGIN
+               IF NOT ISTEMPORARY THEN
+                 ERROR(TemporaryErr);
+             END;
+
+    CaptionML=ENU=Document Header;
+  }
+  FIELDS
+  {
+    { 2   ;   ;Sell-to/Buy-from No.;Code20        ;CaptionML=ENU=Sell-to/Buy-from No. }
+    { 3   ;   ;No.                 ;Code20        ;CaptionML=ENU=No. }
+    { 4   ;   ;Bill-to/Pay-To No.  ;Code20        ;CaptionML=ENU=Bill-to/Pay-To No. }
+    { 5   ;   ;Bill-to/Pay-To Name ;Text100       ;CaptionML=ENU=Bill-to/Pay-To Name }
+    { 6   ;   ;Bill-to/Pay-To Name 2;Text50       ;CaptionML=ENU=Bill-to/Pay-To Name 2 }
+    { 7   ;   ;Bill-to/Pay-To Address;Text100     ;CaptionML=ENU=Bill-to/Pay-To Address }
+    { 8   ;   ;Bill-to/Pay-To Address 2;Text50    ;CaptionML=ENU=Bill-to/Pay-To Address 2 }
+    { 9   ;   ;Bill-to/Pay-To City ;Text30        ;CaptionML=ENU=Bill-to/Pay-To City }
+    { 10  ;   ;Bill-to/Pay-To Contact;Text100     ;CaptionML=ENU=Bill-to/Pay-To Contact }
+    { 17  ;   ;Ship-to/Buy-from City;Text30       ;CaptionML=ENU=Ship-to/Buy-from City }
+    { 19  ;   ;Order Date          ;Date          ;CaptionML=ENU=Order Date }
+    { 20  ;   ;Posting Date        ;Date          ;CaptionML=ENU=Posting Date }
+    { 23  ;   ;Payment Terms Code  ;Code10        ;CaptionML=ENU=Payment Terms Code }
+    { 28  ;   ;Location Code       ;Code10        ;CaptionML=ENU=Location Code }
+    { 32  ;   ;Currency Code       ;Code10        ;CaptionML=ENU=Currency Code }
+    { 33  ;   ;Currency Factor     ;Decimal       ;CaptionML=ENU=Currency Factor }
+    { 60  ;   ;Amount              ;Decimal       ;CaptionML=ENU=Amount }
+    { 61  ;   ;Amount Including VAT;Decimal       ;CaptionML=ENU=Amount Including Tax }
+    { 79  ;   ;Sell-to/Buy-From Name;Text100      ;CaptionML=ENU=Sell-to/Buy-From Name }
+    { 80  ;   ;Sell-to/Buy-From Name 2;Text50     ;CaptionML=ENU=Sell-to/Buy-From Name 2 }
+    { 81  ;   ;Sell-to/Buy-From Address;Text100   ;CaptionML=ENU=Sell-to/Buy-From Address }
+    { 82  ;   ;Sell-to/Buy-From Address 2;Text50  ;CaptionML=ENU=Sell-to/Buy-From Address 2 }
+    { 83  ;   ;Sell-to/Buy-From City;Text30       ;CaptionML=ENU=Sell-to/Buy-From City }
+    { 84  ;   ;Sell-to/Buy-From Contct;Text100    ;CaptionML=ENU=Sell-to/Buy-From Contct }
+    { 85  ;   ;Bill-to/Pay-To Post Code;Code20    ;CaptionML=ENU=Bill-to/Pay-To ZIP Code }
+    { 86  ;   ;Bill-to/Pay-To County;Text30       ;CaptionML=ENU=Bill-to/Pay-To County }
+    { 87  ;   ;Bill-to/Pay-To Country Code;Code10 ;CaptionML=ENU=Bill-to/Pay-To Country Code }
+    { 88  ;   ;Sell-to/Buy-from Post Code;Code20  ;CaptionML=ENU=Sell-to/Buy-from ZIP Code }
+    { 89  ;   ;Sell-to/Buy-from County;Text30     ;CaptionML=ENU=Sell-to/Buy-from State }
+    { 90  ;   ;Sell-to/Buy-from Country Code;Code10;
+                                                   CaptionML=ENU=Sell-to/Buy-from Country Code }
+    { 91  ;   ;Ship-to/Buy-from Post Code;Code20  ;CaptionML=ENU=Ship-to/Buy-from ZIP Code }
+    { 92  ;   ;Ship-to/Buy-from County;Text30     ;CaptionML=ENU=Ship-to/Buy-from County }
+    { 93  ;   ;Ship-to/Buy-from Country Code;Code10;
+                                                   CaptionML=ENU=Ship-to/Buy-from Country Code }
+    { 99  ;   ;Document Date       ;Date          ;CaptionML=ENU=Document Date }
+    { 104 ;   ;Payment Method Code ;Code10        ;CaptionML=ENU=Payment Method Code }
+    { 10044;  ;Transport Operators ;Integer       ;FieldClass=FlowField;
+                                                   CalcFormula=Count("CFDI Transport Operator" WHERE (Document Table ID=FIELD(Document Table ID),
+                                                                                                      Document No.=FIELD(No.)));
+                                                   CaptionML=ENU=Transport Operators }
+    { 10045;  ;Transit-from Date/Time;DateTime    ;CaptionML=ENU=Transit-from Date/Time }
+    { 10046;  ;Transit Hours       ;Integer       ;CaptionML=ENU=Transit Hours }
+    { 10047;  ;Transit Distance    ;Decimal       ;CaptionML=ENU=Transit Distance }
+    { 10048;  ;Insurer Name        ;Text50        ;CaptionML=ENU=Insurer Name }
+    { 10049;  ;Insurer Policy Number;Text30       ;CaptionML=ENU=Insurer Policy Number }
+    { 10050;  ;Foreign Trade       ;Boolean       ;CaptionML=ENU=Foreign Trade }
+    { 10051;  ;Vehicle Code        ;Code20        ;TableRelation="Fixed Asset";
+                                                   CaptionML=ENU=Vehicle Code }
+    { 10052;  ;Trailer 1           ;Code20        ;TableRelation="Fixed Asset" WHERE (SAT Trailer Type=FILTER(<>''));
+                                                   CaptionML=ENU=Trailer 1 }
+    { 10053;  ;Trailer 2           ;Code20        ;TableRelation="Fixed Asset" WHERE (SAT Trailer Type=FILTER(<>''));
+                                                   CaptionML=ENU=Trailer 2 }
+    { 10054;  ;Transit-from Location;Code10       ;TableRelation=Location WHERE (Use As In-Transit=CONST(No));
+                                                   CaptionML=ENU=Transit-from Location }
+    { 10055;  ;Transit-to Location ;Code10        ;TableRelation=Location WHERE (Use As In-Transit=CONST(No));
+                                                   CaptionML=ENU=Transit-to Location }
+    { 10056;  ;Medical Insurer Name;Text50        ;CaptionML=ENU=Medical Insurer Name }
+    { 10057;  ;Medical Ins. Policy Number;Text30  ;CaptionML=ENU=Medical Ins. Policy Number }
+    { 10058;  ;SAT Weight Unit Of Measure;Code10  ;CaptionML=ENU=SAT Weight Unit Of Measure }
+    { 27000;  ;CFDI Purpose        ;Code10        ;TableRelation="SAT Use Code";
+                                                   CaptionML=ENU=CFDI Purpose }
+    { 27001;  ;CFDI Relation       ;Code10        ;TableRelation="SAT Relationship Type";
+                                                   CaptionML=ENU=CFDI Relation }
+    { 27004;  ;CFDI Export Code    ;Code10        ;TableRelation="CFDI Export Code";
+                                                   CaptionML=ENU=CFDI Export Code }
+    { 27010;  ;Document Table ID   ;Integer       ;CaptionML=ENU=Document Table ID }
+  }
+  KEYS
+  {
+    {    ;No.                                     ;Clustered=Yes }
+  }
+  FIELDGROUPS
+  {
+  }
+  CODE
+  {
+    VAR
+      TemporaryErr@1020000 : TextConst 'ENU=Developer Message: The record must be temporary.';
+
+    BEGIN
+    END.
+  }
+}
+

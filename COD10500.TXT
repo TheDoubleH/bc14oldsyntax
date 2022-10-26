@@ -1,0 +1,401 @@
+OBJECT Codeunit 10500 IRS 1099 Management
+{
+  OBJECT-PROPERTIES
+  {
+    Date=10/29/21;
+    Time=12:00:00 PM;
+    Version List=NAVNA14.30;
+  }
+  PROPERTIES
+  {
+    OnRun=BEGIN
+          END;
+
+  }
+  CODE
+  {
+    VAR
+      BlockIfUpgradeNeededErr@1020000 : TextConst 'ENU=You must update the form boxes in the 1099 Forms-Boxes window before you can run this report.';
+      UpgradeFormBoxesNotificationMsg@1020001 : TextConst '@@@="%1 = year";ENU=The list of 1099 form boxes is not up to date. Update: %1.';
+      UpgradeFormBoxesMsg@1020002 : TextConst 'ENU=Upgrade the form boxes.';
+      ScheduleUpgradeFormBoxesMsg@1020004 : TextConst 'ENU=Schedule an update of the form boxes.';
+      UpgradeFormBoxesScheduledMsg@1020005 : TextConst 'ENU=A job queue entry has been created.\\Make sure Earliest Start Date/Time field in the Job Queue Entry Card window is correct, and then choose the Set Status to Ready action to schedule a background job.';
+      ConfirmUpgradeNowQst@1020003 : TextConst 'ENU=The update process can take a while and block other users activities. Do you want to start the update now?';
+      FormBoxesUpgradedMsg@1020006 : TextConst 'ENU=The 1099 form boxes are successfully updated.';
+      UnkownCodeErr@1020007 : TextConst '@@@="%1 = document number;%2 = vendor number;%3 = IRS 1099 code.";ENU=Invoice %1 for vendor %2 has unknown 1099 code %3.';
+      IRS1099CodeHasNotBeenSetupErr@1020008 : TextConst '@@@="%1 = misc code";ENU=IRS1099 code %1 was not set up during the initialization.';
+      February2020Lbl@1020009 : TextConst 'ENU=February 2020';
+
+    [External]
+    PROCEDURE Calculate1099Amount@2(VAR Invoice1099Amount@1020000 : Decimal;VAR Amounts@1020003 : ARRAY [20] OF Decimal;Codes@1020001 : ARRAY [20] OF Code[10];LastLineNo@1020002 : Integer;VendorLedgerEntry@1000 : Record 25;AppliedAmount@1002 : Decimal);
+    BEGIN
+      VendorLedgerEntry.CALCFIELDS(Amount);
+      Invoice1099Amount := -AppliedAmount * VendorLedgerEntry."IRS 1099 Amount" / VendorLedgerEntry.Amount;
+      UpdateLines(
+        Amounts,Codes,LastLineNo,VendorLedgerEntry,VendorLedgerEntry."IRS 1099 Code",Invoice1099Amount);
+    END;
+
+    [External]
+    PROCEDURE Run1099MiscReport@1020012();
+    BEGIN
+      IF Upgrade2020Needed THEN BEGIN
+        REPORT.RUN(REPORT::"Vendor 1099 Misc");
+        EXIT;
+      END;
+      IF Upgrade2020FebruaryNeeded THEN BEGIN
+        REPORT.RUN(REPORT::"Vendor 1099 Misc 2020");
+        EXIT;
+      END;
+      REPORT.RUN(REPORT::"Vendor 1099 Misc 2021");
+    END;
+
+    [External]
+    PROCEDURE Run1099NecReport@1020014();
+    BEGIN
+      IF Upgrade2021Needed THEN BEGIN
+        REPORT.RUN(REPORT::"Vendor 1099 Nec");
+        EXIT;
+      END;
+      REPORT.RUN(REPORT::"Vendor 1099 Nec 2021");
+    END;
+
+    [External]
+    PROCEDURE Run1099DivReport@1020024();
+    BEGIN
+      IF Upgrade2021Needed THEN BEGIN
+        REPORT.RUN(REPORT::"Vendor 1099 Div");
+        EXIT;
+      END;
+      REPORT.RUN(REPORT::"Vendor 1099 Div 2021");
+    END;
+
+    PROCEDURE ShowUpgradeFormBoxesNotificationIfUpgradeNeeded@1020001();
+    VAR
+      UpgradeYear@1020001 : Text;
+    BEGIN
+      CASE TRUE OF
+        Upgrade2019Needed:
+          UpgradeYear := '2019';
+        Upgrade2020Needed:
+          UpgradeYear := '2020';
+        Upgrade2020FebruaryNeeded:
+          UpgradeYear := February2020Lbl;
+        Upgrade2021Needed:
+          UpgradeYear := '2021';
+        ELSE
+          EXIT;
+      END;
+
+      SendIRS1099UpgradeNotification(UpgradeYear);
+    END;
+
+    LOCAL PROCEDURE SendIRS1099UpgradeNotification@1020021(UpgradeYear@1020001 : Text);
+    VAR
+      UpgradeFormBoxes@1020000 : Notification;
+    BEGIN
+      UpgradeFormBoxes.ID := GetUpgradeFormBoxesNotificationID;
+      UpgradeFormBoxes.MESSAGE := STRSUBSTNO(UpgradeFormBoxesNotificationMsg,UpgradeYear);
+      UpgradeFormBoxes.SCOPE := NOTIFICATIONSCOPE::LocalScope;
+      UpgradeFormBoxes.ADDACTION(
+        GetUpgradeFormBoxesNotificationMsg,CODEUNIT::"IRS 1099 Management",'UpgradeFormBoxesFromNotification');
+      UpgradeFormBoxes.SEND;
+    END;
+
+    PROCEDURE ThrowErrorfUpgrade2019Needed@1020002();
+    BEGIN
+      IF Upgrade2019Needed THEN
+        ERROR(BlockIfUpgradeNeededErr);
+    END;
+
+    PROCEDURE ThrowErrorfUpgrade2020Needed@1020013();
+    BEGIN
+      IF Upgrade2020Needed THEN
+        ERROR(BlockIfUpgradeNeededErr);
+    END;
+
+    PROCEDURE ThrowErrorfUpgrade2021Needed@1020027();
+    BEGIN
+      IF Upgrade2021Needed THEN
+        ERROR(BlockIfUpgradeNeededErr);
+    END;
+
+    PROCEDURE ThrowErrorfUpgrade2020FebruaryNeeded@1020020();
+    BEGIN
+      IF Upgrade2020FebruaryNeeded THEN
+        ERROR(BlockIfUpgradeNeededErr);
+    END;
+
+    PROCEDURE UpgradeNeeded@1020011() : Boolean;
+    BEGIN
+      EXIT(Upgrade2019Needed OR Upgrade2020Needed OR Upgrade2020FebruaryNeeded OR Upgrade2021Needed);
+    END;
+
+    PROCEDURE Upgrade2019Needed@1020000() : Boolean;
+    VAR
+      IRS1099FormBox@1020000 : Record 10010;
+    BEGIN
+      EXIT(NOT IRS1099FormBox.GET('DIV-07'));
+    END;
+
+    PROCEDURE Upgrade2020Needed@1020006() : Boolean;
+    VAR
+      IRS1099FormBox@1020000 : Record 10010;
+    BEGIN
+      EXIT(NOT IRS1099FormBox.GET('NEC-01'));
+    END;
+
+    PROCEDURE Upgrade2020FebruaryNeeded@1020018() : Boolean;
+    VAR
+      IRS1099FormBox@1020000 : Record 10010;
+    BEGIN
+      EXIT(NOT IRS1099FormBox.GET('NEC-04'));
+    END;
+
+    PROCEDURE Upgrade2021Needed@1020023() : Boolean;
+    VAR
+      IRS1099FormBox@1020000 : Record 10010;
+    BEGIN
+      EXIT(NOT IRS1099FormBox.GET('MISC-11'));
+    END;
+
+    LOCAL PROCEDURE GetUpgradeFormBoxesNotificationID@1020003() : Text;
+    BEGIN
+      EXIT('644a30e2-a1f4-45d1-ae23-4eb14071ea8a');
+    END;
+
+    LOCAL PROCEDURE GetUpgradeFormBoxesNotificationMsg@1020008() : Text;
+    BEGIN
+      IF TASKSCHEDULER.CANCREATETASK THEN
+        EXIT(ScheduleUpgradeFormBoxesMsg);
+      EXIT(UpgradeFormBoxesMsg);
+    END;
+
+    PROCEDURE GetAdjustmentAmount@1020010(VendorLedgerEntry@1020000 : Record 25) : Decimal;
+    VAR
+      IRS1099Adjustment@1020002 : Record 10016;
+    BEGIN
+      IF VendorLedgerEntry."IRS 1099 Code" = '' THEN
+        EXIT(0);
+      IF IRS1099Adjustment.GET(
+           VendorLedgerEntry."Vendor No.",VendorLedgerEntry."IRS 1099 Code",DATE2DMY(VendorLedgerEntry."Posting Date",3))
+      THEN
+        EXIT(IRS1099Adjustment.Amount);
+    END;
+
+    PROCEDURE GetAdjustmentRec@1020019(VAR IRS1099Adjustment@1020001 : Record 10016;VendorLedgerEntry@1020000 : Record 25) : Boolean;
+    BEGIN
+      IF VendorLedgerEntry."IRS 1099 Code" = '' THEN
+        EXIT(FALSE);
+      EXIT(
+        IRS1099Adjustment.GET(
+          VendorLedgerEntry."Vendor No.",VendorLedgerEntry."IRS 1099 Code",DATE2DMY(VendorLedgerEntry."Posting Date",3)));
+    END;
+
+    PROCEDURE UpgradeFormBoxesFromNotification@1020004(Notification@1020000 : Notification);
+    BEGIN
+      UpgradeFormBoxes;
+    END;
+
+    PROCEDURE UpgradeFormBoxes@1020007();
+    VAR
+      JobQueueEntry@1020001 : Record 472;
+      UpgradeIRS1099FormBoxes@1020000 : Codeunit 10501;
+      JobQueueManagement@1020002 : Codeunit 456;
+      Confirmed@1020004 : Boolean;
+      Handled@1020003 : Boolean;
+      CanCreateTask@1020005 : Boolean;
+    BEGIN
+      IF NOT UpgradeNeeded THEN
+        EXIT;
+
+      OnBeforeUpgradeFormBoxes(Handled,CanCreateTask);
+      IF NOT Handled THEN
+        CanCreateTask := TASKSCHEDULER.CANCREATETASK;
+      IF CanCreateTask THEN BEGIN
+        JobQueueEntry.INIT;
+        JobQueueEntry."Object Type to Run" := JobQueueEntry."Object Type to Run"::Codeunit;
+        JobQueueEntry."Earliest Start Date/Time" := CREATEDATETIME(TODAY,TIME + 60000);
+        JobQueueEntry."Object ID to Run" := CODEUNIT::"Upgrade IRS 1099 Form Boxes";
+        JobQueueManagement.CreateJobQueueEntry(JobQueueEntry);
+        IF GUIALLOWED THEN
+          MESSAGE(UpgradeFormBoxesScheduledMsg);
+        JobQueueEntry.SETRECFILTER;
+        PAGE.RUN(PAGE::"Job Queue Entry Card",JobQueueEntry);
+      END ELSE BEGIN
+        IF GUIALLOWED THEN
+          Confirmed := CONFIRM(ConfirmUpgradeNowQst)
+        ELSE
+          Confirmed := TRUE;
+        IF Confirmed THEN BEGIN
+          UpgradeIRS1099FormBoxes.RUN;
+          MESSAGE(FormBoxesUpgradedMsg);
+        END;
+      END;
+    END;
+
+    LOCAL PROCEDURE UpdateLines@1020009(VAR Amounts@1020004 : ARRAY [20] OF Decimal;Codes@1020001 : ARRAY [20] OF Code[10];LastLineNo@1020003 : Integer;ApplVendorLedgerEntry@1020005 : Record 25;Code@1000 : Code[10];Amount@1001 : Decimal) : Integer;
+    VAR
+      i@1020002 : Integer;
+    BEGIN
+      i := 1;
+      WHILE (Codes[i] <> Code) AND (i <= LastLineNo) DO
+        i := i + 1;
+
+      IF (Codes[i] = Code) AND (i <= LastLineNo) THEN
+        Amounts[i] += Amount
+      ELSE
+        ERROR(UnkownCodeErr,ApplVendorLedgerEntry."Entry No.",ApplVendorLedgerEntry."Vendor No.",Code);
+      EXIT(i);
+    END;
+
+    [External]
+    PROCEDURE AnyCodeHasAmountExceedMinimum@1020015(Codes@1020001 : ARRAY [20] OF Code[10];Amounts@1020000 : ARRAY [20] OF Decimal;LastLineNo@1020004 : Integer) : Boolean;
+    VAR
+      IRS1099FormBox@1020002 : Record 10010;
+      i@1020003 : Integer;
+    BEGIN
+      FOR i := 1 TO LastLineNo DO
+        IF IRS1099FormBox.GET(Codes[i]) THEN BEGIN
+          IF IRS1099FormBox."Minimum Reportable" < 0.0 THEN
+            IF Amounts[i] <> 0.0 THEN BEGIN
+              Amounts[i] := -Amounts[i];
+              EXIT(TRUE);
+            END;
+          IF IRS1099FormBox."Minimum Reportable" >= 0.0 THEN
+            IF Amounts[i] <> 0.0 THEN
+              IF Amounts[i] >= IRS1099FormBox."Minimum Reportable" THEN
+                EXIT(TRUE);
+        END;
+      EXIT(FALSE);
+    END;
+
+    [External]
+    PROCEDURE AnyCodeWithUpdatedAmountExceedMinimum@1020022(Codes@1020001 : ARRAY [20] OF Code[10];VAR Amounts@1020000 : ARRAY [20] OF Decimal;LastLineNo@1020004 : Integer) AmountExceeded : Boolean;
+    VAR
+      IRS1099FormBox@1020002 : Record 10010;
+      i@1020003 : Integer;
+    BEGIN
+      FOR i := 1 TO LastLineNo DO
+        IF IRS1099FormBox.GET(Codes[i]) THEN BEGIN
+          IF IRS1099FormBox."Minimum Reportable" < 0.0 THEN
+            IF Amounts[i] <> 0.0 THEN BEGIN
+              Amounts[i] := -Amounts[i];
+              AmountExceeded := TRUE;
+            END;
+          IF IRS1099FormBox."Minimum Reportable" >= 0.0 THEN
+            IF Amounts[i] <> 0.0 THEN
+              IF Amounts[i] >= IRS1099FormBox."Minimum Reportable" THEN
+                AmountExceeded := TRUE;
+        END;
+      EXIT(AmountExceeded);
+    END;
+
+    [External]
+    PROCEDURE GetFormattedVendorAddress@1020016(Vendor@1020000 : Record 23) FormattedAddress : Text[30];
+    BEGIN
+      WITH Vendor DO BEGIN
+        FormattedAddress := '';
+        IF STRLEN(City + ', ' + County + '  ' + "Post Code") > MAXSTRLEN(FormattedAddress) THEN
+          EXIT(City);
+        IF (City <> '') AND (County <> '') THEN
+          EXIT(COPYSTR(City + ', ' + County + '  ' + "Post Code",1,MAXSTRLEN(FormattedAddress)));
+        EXIT(COPYSTR(DELCHR(City + ' ' + County + ' ' + "Post Code",'<>'),1,MAXSTRLEN(FormattedAddress)));
+      END;
+    END;
+
+    [External]
+    PROCEDURE FormatCompanyAddress@5(VAR CompanyAddress@1000 : ARRAY [5] OF Text[100];VAR CompanyInfo@1001 : Record 79;TestPrint@1002 : Boolean);
+    VAR
+      i@1020000 : Integer;
+    BEGIN
+      WITH CompanyInfo DO
+        IF TestPrint THEN BEGIN
+          FOR i := 1 TO ARRAYLEN(CompanyAddress) DO
+            CompanyAddress[i] := PADSTR('x',MAXSTRLEN(CompanyAddress[i]),'X');
+        END ELSE BEGIN
+          GET;
+
+          CLEAR(CompanyAddress);
+          CompanyAddress[1] := Name;
+          CompanyAddress[2] := Address;
+          CompanyAddress[3] := "Address 2";
+          IF STRLEN(City + ', ' + County + '  ' + "Post Code") > MAXSTRLEN(CompanyAddress[4]) THEN BEGIN
+            CompanyAddress[4] := City;
+            CompanyAddress[5] := County + '  ' + "Post Code";
+            IF COMPRESSARRAY(CompanyAddress) = ARRAYLEN(CompanyAddress) THEN BEGIN
+              CompanyAddress[3] := CompanyAddress[4];  // lose address 2 to add phone no.
+              CompanyAddress[4] := CompanyAddress[5];
+            END;
+            CompanyAddress[5] := "Phone No.";
+          END ELSE
+            IF (City <> '') AND (County <> '') THEN BEGIN
+              CompanyAddress[4] := City + ', ' + County + '  ' + "Post Code";
+              CompanyAddress[5] := "Phone No.";
+            END ELSE BEGIN
+              CompanyAddress[4] := DELCHR(City + ' ' + County + ' ' + "Post Code",'<>');
+              CompanyAddress[5] := "Phone No.";
+            END;
+          COMPRESSARRAY(CompanyAddress);
+        END;
+    END;
+
+    [External]
+    PROCEDURE GetAmtByCode@4(Codes@1020004 : ARRAY [20] OF Code[10];Amounts@1020003 : ARRAY [20] OF Decimal;LastLineNo@1020001 : Integer;Code@1020005 : Code[10];TestPrint@1020000 : Boolean) : Decimal;
+    VAR
+      i@1020002 : Integer;
+    BEGIN
+      IF TestPrint THEN
+        EXIT(9999999.99);
+
+      i := 1;
+      WHILE (Codes[i] <> Code) AND (i <= LastLineNo) DO
+        i := i + 1;
+
+      IF (Codes[i] = Code) AND (i <= LastLineNo) THEN
+        EXIT(Amounts[i]);
+
+      ERROR(IRS1099CodeHasNotBeenSetupErr,Code);
+    END;
+
+    [External]
+    PROCEDURE ProcessVendorInvoices@1020017(VAR Amounts@1020006 : ARRAY [20] OF Decimal;VendorNo@1000 : Code[20];PeriodDate@1020000 : ARRAY [2] OF Date;Codes@1020007 : ARRAY [20] OF Code[10];LastLineNo@1020005 : Integer;Filter@1020002 : Text);
+    VAR
+      TempVendorLedgerEntry@1020003 : TEMPORARY Record 25;
+      IRS1099Adjustment@1020008 : Record 10016;
+      TempIRS1099Adjustment@1020009 : TEMPORARY Record 10016;
+      EntryApplicationManagement@1020001 : Codeunit 10202;
+      Invoice1099Amount@1020004 : Decimal;
+    BEGIN
+      EntryApplicationManagement.GetAppliedVendorEntries(
+        TempVendorLedgerEntry,VendorNo,PeriodDate,TRUE);
+      WITH TempVendorLedgerEntry DO BEGIN
+        SETFILTER("Document Type",'%1|%2',"Document Type"::Invoice,"Document Type"::"Credit Memo");
+        SETFILTER("IRS 1099 Amount",'<>0');
+        IF Filter <> '' THEN
+          SETFILTER("IRS 1099 Code",Filter);
+        IF FINDSET THEN
+          REPEAT
+            Calculate1099Amount(
+              Invoice1099Amount,Amounts,Codes,LastLineNo,TempVendorLedgerEntry,"Amount to Apply");
+            IF GetAdjustmentRec(IRS1099Adjustment,TempVendorLedgerEntry) THEN BEGIN
+              TempIRS1099Adjustment := IRS1099Adjustment;
+              IF NOT TempIRS1099Adjustment.FIND THEN BEGIN
+                UpdateLines(
+                  Amounts,Codes,LastLineNo,TempVendorLedgerEntry,"IRS 1099 Code",IRS1099Adjustment.Amount);
+                TempIRS1099Adjustment.INSERT;
+              END;
+            END;
+          UNTIL NEXT = 0;
+      END;
+    END;
+
+    [Integration]
+    LOCAL PROCEDURE OnBeforeUpgradeFormBoxes@1020005(VAR Handled@1020000 : Boolean;VAR CreateTask@1020001 : Boolean);
+    BEGIN
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

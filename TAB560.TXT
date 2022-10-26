@@ -1,0 +1,293 @@
+OBJECT Table 560 VAT Clause
+{
+  OBJECT-PROPERTIES
+  {
+    Date=06/30/22;
+    Time=12:00:00 PM;
+    Version List=NAVW114.38;
+  }
+  PROPERTIES
+  {
+    OnInsert=BEGIN
+               SetLastModifiedDateTime;
+             END;
+
+    OnModify=BEGIN
+               SetLastModifiedDateTime;
+             END;
+
+    OnDelete=VAR
+               VATClauseTranslation@1000 : Record 561;
+               VATPostingSetup@1001 : Record 325;
+             BEGIN
+               VATClauseTranslation.SETRANGE("VAT Clause Code",Code);
+               VATClauseTranslation.DELETEALL;
+
+               VATPostingSetup.SETRANGE("VAT Clause Code",Code);
+               VATPostingSetup.MODIFYALL("VAT Clause Code",'');
+             END;
+
+    OnRename=BEGIN
+               SetLastModifiedDateTime;
+             END;
+
+    CaptionML=ENU=Tax Clause;
+    LookupPageID=Page747;
+    DrillDownPageID=Page747;
+  }
+  FIELDS
+  {
+    { 1   ;   ;Code                ;Code20        ;CaptionML=ENU=Code;
+                                                   NotBlank=Yes }
+    { 2   ;   ;Description         ;Text250       ;CaptionML=ENU=Description }
+    { 3   ;   ;Description 2       ;Text250       ;CaptionML=ENU=Description 2 }
+    { 10  ;   ;Last Modified DateTime;DateTime    ;CaptionML=ENU=Last Modified DateTime;
+                                                   Editable=No }
+    { 8000;   ;Id                  ;GUID          ;CaptionML=ENU=Id }
+  }
+  KEYS
+  {
+    {    ;Code                                    ;Clustered=Yes }
+  }
+  FIELDGROUPS
+  {
+  }
+  CODE
+  {
+
+    LOCAL PROCEDURE SetLastModifiedDateTime@1165();
+    BEGIN
+      "Last Modified DateTime" := CURRENTDATETIME;
+    END;
+
+    [External]
+    PROCEDURE TranslateDescription@1(Language@1001 : Code[10]);
+    VAR
+      VATClauseTranslation@1002 : Record 561;
+    BEGIN
+      IF VATClauseTranslation.GET(Code,Language) THEN
+        FillDescriptions(VATClauseTranslation.Description,VATClauseTranslation."Description 2");
+    END;
+
+    [External]
+    PROCEDURE GetDescriptionText@3(RecRelatedVariant@1000 : Variant) Result : Text;
+    VAR
+      DocumentType@1002 : Option;
+      LanguageCode@1001 : Code[10];
+    BEGIN
+      Result := GetDescriptionByExtendedText(RecRelatedVariant);
+      IF Result <> '' THEN
+        EXIT(Result);
+
+      IF GetDocumentTypeAndLanguageCode(RecRelatedVariant,DocumentType,LanguageCode) THEN
+        EXIT(Description + ' ' + "Description 2");
+
+      IF TryFindDescriptionByDocumentType(DocumentType,LanguageCode) THEN BEGIN
+        TranslateDescription(LanguageCode);
+        EXIT(Description + ' ' + "Description 2");
+      END;
+
+      OnAfterGetDescription(Rec,DocumentType,LanguageCode);
+      EXIT(Description + ' ' + "Description 2");
+    END;
+
+    LOCAL PROCEDURE TryFindDescriptionByDocumentType@5(DocumentType@1000 : Option;LanguageCode@1001 : Code[10]) : Boolean;
+    VAR
+      VATClauseByDocType@1002 : Record 562;
+      VATClauseByDocTypeTrans@1003 : Record 563;
+    BEGIN
+      IF VATClauseByDocTypeTrans.GET(Code,DocumentType,LanguageCode) THEN BEGIN
+        FillDescriptions(VATClauseByDocTypeTrans.Description,VATClauseByDocTypeTrans."Description 2");
+        EXIT(TRUE);
+      END;
+
+      IF VATClauseByDocType.GET(Code,DocumentType) THEN BEGIN
+        FillDescriptions(VATClauseByDocType.Description,VATClauseByDocType."Description 2");
+        EXIT(TRUE);
+      END;
+    END;
+
+    LOCAL PROCEDURE GetDescriptionByExtendedText@4(RecRelatedVariant@1000 : Variant) Result : Text;
+    VAR
+      ExtendedTextHeader@1001 : Record 279;
+      TempExtendedTextLine@1014 : TEMPORARY Record 280;
+      SalesHeader@1008 : Record 36;
+      SalesInvoiceHeader@1007 : Record 112;
+      SalesCrMemoHeader@1006 : Record 114;
+      IssuedFinChargeMemoHeader@1005 : Record 304;
+      IssuedReminderHeader@1004 : Record 297;
+      DataTypeManagement@1010 : Codeunit 701;
+      TransferExtendedText@1013 : Codeunit 378;
+      RecRef@1003 : RecordRef;
+      LanguageCode@1002 : Code[10];
+      DocDate@1012 : Date;
+      IsHandled@1011 : Boolean;
+    BEGIN
+      IF NOT DataTypeManagement.GetRecordRef(RecRelatedVariant,RecRef) THEN
+        EXIT;
+
+      ExtendedTextHeader.SETRANGE("Table Name",ExtendedTextHeader."Table Name"::"VAT Clause");
+      ExtendedTextHeader.SETRANGE("No.",Code);
+
+      IsHandled := FALSE;
+      OnFilterExtendedTextHeaderFromDoc(RecRelatedVariant,ExtendedTextHeader,IsHandled);
+      IF NOT IsHandled THEN
+        CASE RecRef.NUMBER OF
+          DATABASE::"Sales Header":
+            BEGIN
+              RecRef.SETTABLE(SalesHeader);
+              CASE SalesHeader."Document Type" OF
+                SalesHeader."Document Type"::"Blanket Order":
+                  ExtendedTextHeader.SETRANGE("Sales Blanket Order",TRUE);
+                SalesHeader."Document Type"::"Credit Memo":
+                  ExtendedTextHeader.SETRANGE("Sales Credit Memo",TRUE);
+                SalesHeader."Document Type"::Invoice:
+                  ExtendedTextHeader.SETRANGE("Sales Invoice",TRUE);
+                SalesHeader."Document Type"::Order:
+                  ExtendedTextHeader.SETRANGE("Sales Order",TRUE);
+                SalesHeader."Document Type"::Quote:
+                  ExtendedTextHeader.SETRANGE("Sales Quote",TRUE);
+                SalesHeader."Document Type"::"Return Order":
+                  ExtendedTextHeader.SETRANGE("Sales Return Order",TRUE);
+              END;
+              LanguageCode := SalesHeader."Language Code";
+              DocDate := SalesHeader."Document Date";
+            END;
+          DATABASE::"Sales Invoice Header":
+            BEGIN
+              RecRef.SETTABLE(SalesInvoiceHeader);
+              ExtendedTextHeader.SETRANGE("Sales Invoice",TRUE);
+              LanguageCode := SalesInvoiceHeader."Language Code";
+              DocDate := SalesInvoiceHeader."Document Date";
+            END;
+          DATABASE::"Sales Cr.Memo Header":
+            BEGIN
+              RecRef.SETTABLE(SalesCrMemoHeader);
+              ExtendedTextHeader.SETRANGE("Sales Credit Memo",TRUE);
+              LanguageCode := SalesCrMemoHeader."Language Code";
+              DocDate := SalesCrMemoHeader."Document Date";
+            END;
+          DATABASE::"Issued Fin. Charge Memo Header":
+            BEGIN
+              RecRef.SETTABLE(IssuedFinChargeMemoHeader);
+              ExtendedTextHeader.SETRANGE("Finance Charge Memo",TRUE);
+              LanguageCode := IssuedFinChargeMemoHeader."Language Code";
+              DocDate := IssuedFinChargeMemoHeader."Document Date";
+            END;
+          DATABASE::"Issued Reminder Header":
+            BEGIN
+              RecRef.SETTABLE(IssuedReminderHeader);
+              ExtendedTextHeader.SETRANGE(Reminder,TRUE);
+              LanguageCode := IssuedReminderHeader."Language Code";
+              DocDate := IssuedReminderHeader."Document Date";
+            END;
+          ELSE
+            EXIT;
+        END;
+
+      IF NOT TransferExtendedText.ReadLines(ExtendedTextHeader,DocDate,LanguageCode) THEN
+        EXIT;
+
+      TransferExtendedText.GetTempExtTextLine(TempExtendedTextLine);
+      IF NOT TempExtendedTextLine.FINDSET THEN
+        EXIT;
+
+      REPEAT
+        IF Result <> '' THEN
+          Result += ' ';
+        Result += TempExtendedTextLine.Text;
+      UNTIL TempExtendedTextLine.NEXT = 0;
+    END;
+
+    LOCAL PROCEDURE GetDocumentTypeAndLanguageCode@2(RecRelatedVariant@1000 : Variant;VAR DocumentType@1001 : Option;VAR LanguageCode@1002 : Code[10]) : Boolean;
+    VAR
+      SalesHeader@1003 : Record 36;
+      SalesInvoiceHeader@1004 : Record 112;
+      SalesCrMemoHeader@1005 : Record 114;
+      IssuedFinChargeMemoHeader@1006 : Record 304;
+      IssuedReminderHeader@1007 : Record 297;
+      VATClauseByDocType@1011 : Record 562;
+      DataTypeManagement@1008 : Codeunit 701;
+      RecRef@1009 : RecordRef;
+      IsHandled@1010 : Boolean;
+    BEGIN
+      IF NOT DataTypeManagement.GetRecordRef(RecRelatedVariant,RecRef) THEN
+        EXIT(FALSE);
+
+      CASE RecRef.NUMBER OF
+        DATABASE::"Sales Header":
+          BEGIN
+            RecRef.SETTABLE(SalesHeader);
+            IF SalesHeader."Document Type" IN [SalesHeader."Document Type"::"Credit Memo",
+                                               SalesHeader."Document Type"::"Return Order"]
+            THEN
+              DocumentType := VATClauseByDocType."Document Type"::"Credit Memo"
+            ELSE
+              DocumentType := VATClauseByDocType."Document Type"::Invoice;
+            LanguageCode := SalesHeader."Language Code";
+            EXIT(TRUE);
+          END;
+        DATABASE::"Sales Invoice Header":
+          BEGIN
+            RecRef.SETTABLE(SalesInvoiceHeader);
+            DocumentType := VATClauseByDocType."Document Type"::Invoice;
+            LanguageCode := SalesInvoiceHeader."Language Code";
+            EXIT(TRUE);
+          END;
+        DATABASE::"Sales Cr.Memo Header":
+          BEGIN
+            RecRef.SETTABLE(SalesCrMemoHeader);
+            DocumentType := VATClauseByDocType."Document Type"::"Credit Memo";
+            LanguageCode := SalesCrMemoHeader."Language Code";
+            EXIT(TRUE);
+          END;
+        DATABASE::"Issued Fin. Charge Memo Header":
+          BEGIN
+            RecRef.SETTABLE(IssuedFinChargeMemoHeader);
+            DocumentType := VATClauseByDocType."Document Type"::"Finance Charge Memo";
+            LanguageCode := IssuedFinChargeMemoHeader."Language Code";
+            EXIT(TRUE);
+          END;
+        DATABASE::"Issued Reminder Header":
+          BEGIN
+            RecRef.SETTABLE(IssuedReminderHeader);
+            DocumentType := VATClauseByDocType."Document Type"::Reminder;
+            LanguageCode := IssuedReminderHeader."Language Code";
+            EXIT(TRUE);
+          END;
+        ELSE BEGIN
+          IsHandled := FALSE;
+          OnGetDocumentTypeAndLanguageCode(Rec,RecRelatedVariant,DocumentType,LanguageCode,IsHandled);
+          EXIT(IsHandled);
+        END;
+      END;
+    END;
+
+    LOCAL PROCEDURE FillDescriptions@8(NewDescription@1000 : Text[250];NewDescription2@1001 : Text[250]);
+    BEGIN
+      IF NewDescription <> '' THEN
+        Description := NewDescription;
+      IF NewDescription2 <> '' THEN
+        "Description 2" := NewDescription2;
+    END;
+
+    [Integration]
+    LOCAL PROCEDURE OnAfterGetDescription@6(VAR VATClause@1000 : Record 560;DocumentType@1001 : Option;LanguageCode@1002 : Code[10]);
+    BEGIN
+    END;
+
+    [Integration]
+    LOCAL PROCEDURE OnGetDocumentTypeAndLanguageCode@7(VATClause@1002 : Record 560;RecRelatedVariant@1003 : Variant;VAR DocumentType@1001 : Option;VAR LanguageCode@1000 : Code[10];VAR IsHandled@1004 : Boolean);
+    BEGIN
+    END;
+
+    [Integration]
+    LOCAL PROCEDURE OnFilterExtendedTextHeaderFromDoc@10(RecRelatedVariant@1001 : Variant;VAR ExtendedTextHeader@1002 : Record 279;VAR IsHandled@1000 : Boolean);
+    BEGIN
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

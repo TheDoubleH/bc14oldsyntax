@@ -1,0 +1,71 @@
+OBJECT Page 9812 Set Web Service Access Key
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/26/20;
+    Time=12:00:00 PM;
+    Version List=NAVW114.12;
+  }
+  PROPERTIES
+  {
+    CaptionML=ENU=Set Web Service Access Key;
+    SourceTable=Table2000000120;
+    DataCaptionExpr="Full Name";
+    PageType=StandardDialog;
+    InstructionalTextML=ENU=Set Web Service Access Key;
+    OnInit=VAR
+             PermissionManager@1001 : Codeunit 9002;
+           BEGIN
+             IF ("User Security ID" <> USERSECURITYID) AND PermissionManager.SoftwareAsAService THEN
+               IF NOT PermissionManager.CanManageUsersOnTenant(USERSECURITYID) THEN
+                 ERROR(CannotEditForOtherUsersErr);
+           END;
+
+    OnQueryClosePage=BEGIN
+                       IF CloseAction = ACTION::OK THEN BEGIN
+                         IF NeverExpires THEN
+                           IdentityManagement.CreateWebServicesKeyNoExpiry("User Security ID")
+                         ELSE
+                           IdentityManagement.CreateWebServicesKey("User Security ID",ExpirationDate);
+                       END;
+                     END;
+
+  }
+  CONTROLS
+  {
+    { 1   ;    ;Container ;
+                Name=General;
+                ContainerType=ContentArea }
+
+    { 5   ;1   ;Group     ;
+                Name=somegroup;
+                CaptionML=ENU=Setting a new Web Service key makes the old key not valid.;
+                GroupType=Group }
+
+    { 4   ;1   ;Field     ;
+                CaptionML=ENU=Key Never Expires;
+                ToolTipML=ENU=Specifies that the web service access key cannot expire.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr=NeverExpires }
+
+    { 3   ;1   ;Field     ;
+                CaptionML=ENU=Key Expiration Date;
+                ToolTipML=ENU=Specifies when the web service access key expires.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr=ExpirationDate;
+                Editable=NOT NeverExpires }
+
+  }
+  CODE
+  {
+    VAR
+      IdentityManagement@1004 : Codeunit 9801;
+      ExpirationDate@1001 : DateTime;
+      NeverExpires@1002 : Boolean;
+      CannotEditForOtherUsersErr@1006 : TextConst 'ENU=You can only change your own web service access keys.';
+
+    BEGIN
+    END.
+  }
+}
+

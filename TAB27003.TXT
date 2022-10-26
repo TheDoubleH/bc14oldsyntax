@@ -1,0 +1,36 @@
+OBJECT Table 27003 CFDI Cancellation Reason
+{
+  OBJECT-PROPERTIES
+  {
+    Date=01/28/22;
+    Time=12:00:00 PM;
+    Version List=NAVNA14.33;
+  }
+  PROPERTIES
+  {
+    CaptionML=ENU=CFDI Cancelation Reason;
+    LookupPageID=Page27003;
+    DrillDownPageID=Page27003;
+  }
+  FIELDS
+  {
+    { 1   ;   ;Code                ;Code10        ;CaptionML=ENU=Code }
+    { 2   ;   ;Description         ;Text100       ;CaptionML=ENU=Description }
+    { 3   ;   ;Substitution Number Required;Boolean;
+                                                   CaptionML=ENU=Substitution Number Required }
+  }
+  KEYS
+  {
+    {    ;Code                                    ;Clustered=Yes }
+  }
+  FIELDGROUPS
+  {
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

@@ -1,0 +1,38 @@
+OBJECT Table 10016 IRS 1099 Adjustment
+{
+  OBJECT-PROPERTIES
+  {
+    Date=12/02/19;
+    Time=12:00:00 PM;
+    Version List=NAVNA14.08;
+  }
+  PROPERTIES
+  {
+    CaptionML=ENU=IRS 1099 Adjustment;
+    LookupPageID=Page10018;
+    DrillDownPageID=Page10018;
+  }
+  FIELDS
+  {
+    { 1   ;   ;Vendor No.          ;Code20        ;TableRelation=Vendor;
+                                                   CaptionML=ENU=Vendor No. }
+    { 2   ;   ;IRS 1099 Code       ;Code10        ;TableRelation="IRS 1099 Form-Box";
+                                                   CaptionML=ENU=IRS 1099 Code }
+    { 3   ;   ;Year                ;Integer       ;CaptionML=ENU=Year }
+    { 4   ;   ;Amount              ;Decimal       ;CaptionML=ENU=Amount }
+  }
+  KEYS
+  {
+    {    ;Vendor No.,IRS 1099 Code,Year           ;Clustered=Yes }
+  }
+  FIELDGROUPS
+  {
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

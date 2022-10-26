@@ -1,0 +1,41 @@
+OBJECT Table 562 VAT Clause by Doc. Type
+{
+  OBJECT-PROPERTIES
+  {
+    Date=06/30/22;
+    Time=12:00:00 PM;
+    Version List=NAVW114.38;
+  }
+  PROPERTIES
+  {
+    CaptionML=ENU=Tax Clause by Document Type;
+  }
+  FIELDS
+  {
+    { 1   ;   ;VAT Clause Code     ;Code20        ;TableRelation="VAT Clause";
+                                                   DataClassification=CustomerContent;
+                                                   CaptionML=ENU=Tax Clause Code }
+    { 2   ;   ;Document Type       ;Option        ;DataClassification=CustomerContent;
+                                                   CaptionML=ENU=Document Type;
+                                                   OptionCaptionML=ENU=" ,,Invoice,Credit Memo,Reminder,Finance Charge Memo";
+                                                   OptionString=[ ,,Invoice,Credit Memo,Reminder,Finance Charge Memo] }
+    { 3   ;   ;Description         ;Text250       ;DataClassification=CustomerContent;
+                                                   CaptionML=ENU=Description }
+    { 4   ;   ;Description 2       ;Text250       ;DataClassification=CustomerContent;
+                                                   CaptionML=ENU=Description 2 }
+  }
+  KEYS
+  {
+    {    ;VAT Clause Code,Document Type           ;Clustered=Yes }
+  }
+  FIELDGROUPS
+  {
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

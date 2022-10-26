@@ -1,0 +1,105 @@
+OBJECT Page 10351 BC O365 Tax Settings List
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/24/19;
+    Time=12:00:00 PM;
+    Version List=NAVNA14.00;
+  }
+  PROPERTIES
+  {
+    Editable=No;
+    CaptionML=ENU=Tax Rates;
+    InsertAllowed=No;
+    DeleteAllowed=No;
+    ModifyAllowed=No;
+    SourceTable=Table318;
+    PageType=List;
+    RefreshOnActivate=Yes;
+    PromotedActionCategoriesML=ENU=New,Process,Report,Manage;
+    ShowFilter=No;
+    OnInit=VAR
+             CompanyInformation@1020000 : Record 79;
+           BEGIN
+             IsCanada := CompanyInformation.IsCanada;
+           END;
+
+    OnAfterGetRecord=BEGIN
+                       IF Code = O365TaxSettingsManagement.GetDefaultTaxArea THEN
+                         TaxAreaDescription := STRSUBSTNO(DefaultTaxDescriptionTxt,GetDescriptionInCurrentLanguage)
+                       ELSE
+                         TaxAreaDescription := GetDescriptionInCurrentLanguage;
+                     END;
+
+    ActionList=ACTIONS
+    {
+      { 1020004 ;    ;ActionContainer;
+                      ActionContainerType=ActionItems }
+      { 1020008 ;1   ;Action    ;
+                      Name=_NEW_TEMP_;
+                      CaptionML=ENU=New;
+                      ToolTipML=ENU=Create a new tax rate.;
+                      ApplicationArea=#Basic,#Suite,#Invoicing;
+                      Promoted=Yes;
+                      Visible=NOT IsCanada;
+                      PromotedIsBig=Yes;
+                      Image=New;
+                      PromotedCategory=Category4;
+                      PromotedOnly=Yes;
+                      OnAction=VAR
+                                 TempTaxArea@1020000 : TEMPORARY Record 318;
+                               BEGIN
+                                 TempTaxArea.INSERT;
+                                 PAGE.RUNMODAL(PAGE::"BC O365 Tax Settings Card",TempTaxArea);
+                                 CurrPage.UPDATE;
+                               END;
+                                }
+      { 1020006 ;1   ;Action    ;
+                      Name=Edit;
+                      CaptionML=ENU=Edit;
+                      ToolTipML=ENU=Open the card for the selected record.;
+                      ApplicationArea=#Basic,#Suite,#Invoicing;
+                      Promoted=Yes;
+                      Image=Edit;
+                      PromotedCategory=Category4;
+                      PromotedOnly=Yes;
+                      Scope=Repeater;
+                      OnAction=VAR
+                                 TempTaxArea@1020000 : TEMPORARY Record 318;
+                               BEGIN
+                                 TempTaxArea := Rec;
+                                 TempTaxArea.INSERT;
+                                 PAGE.RUNMODAL(PAGE::"BC O365 Tax Settings Card",TempTaxArea);
+                               END;
+                                }
+    }
+  }
+  CONTROLS
+  {
+    { 1020000;0;Container ;
+                ContainerType=ContentArea }
+
+    { 1020001;1;Group     ;
+                GroupType=Repeater }
+
+    { 1020002;2;Field     ;
+                CaptionML=ENU=Tax rate;
+                ToolTipML=ENU=Specifies the tax rate used to calculate tax on what you buy or sell.;
+                ApplicationArea=#Basic,#Suite,#Invoicing;
+                SourceExpr=TaxAreaDescription;
+                Editable=FALSE }
+
+  }
+  CODE
+  {
+    VAR
+      O365TaxSettingsManagement@1020001 : Codeunit 10150;
+      IsCanada@1020006 : Boolean;
+      DefaultTaxDescriptionTxt@1020004 : TextConst '@@@="%1 = a VAT rate name, such as ""Reduced VAT""";ENU=%1 (Default)';
+      TaxAreaDescription@1020000 : Text;
+
+    BEGIN
+    END.
+  }
+}
+

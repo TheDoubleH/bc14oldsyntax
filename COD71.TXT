@@ -1,0 +1,29 @@
+OBJECT Codeunit 71 Purch.-Disc. (Yes/No)
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/24/19;
+    Time=12:00:00 PM;
+    Version List=NAVW114.00;
+  }
+  PROPERTIES
+  {
+    TableNo=39;
+    OnRun=VAR
+            ConfirmManagement@1000 : Codeunit 27;
+          BEGIN
+            IF ConfirmManagement.ConfirmProcess(Text000,TRUE) THEN
+              CODEUNIT.RUN(CODEUNIT::"Purch.-Calc.Discount",Rec);
+          END;
+
+  }
+  CODE
+  {
+    VAR
+      Text000@1000 : TextConst 'ENU=Do you want to calculate the invoice discount?';
+
+    BEGIN
+    END.
+  }
+}
+

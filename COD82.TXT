@@ -1,0 +1,283 @@
+OBJECT Codeunit 82 Sales-Post + Print
+{
+  OBJECT-PROPERTIES
+  {
+    Date=07/23/19;
+    Time=12:00:00 PM;
+    Version List=NAVW114.03;
+  }
+  PROPERTIES
+  {
+    TableNo=36;
+    OnRun=VAR
+            SalesHeader@1000 : Record 36;
+          BEGIN
+            SalesHeader.COPY(Rec);
+            Code(SalesHeader);
+            Rec := SalesHeader;
+          END;
+
+  }
+  CODE
+  {
+    VAR
+      ShipInvoiceQst@1000 : TextConst 'ENU=&Ship,&Invoice,Ship &and Invoice';
+      PostAndPrintQst@1001 : TextConst '@@@="%1 = Document Type";ENU=Do you want to post and print the %1?';
+      PostAndEmailQst@1016 : TextConst '@@@="%1 = Document Type";ENU=Do you want to post and email the %1?';
+      ReceiveInvoiceQst@1002 : TextConst 'ENU=&Receive,&Invoice,Receive &and Invoice';
+      SendReportAsEmail@1009 : Boolean;
+
+    [Internal]
+    PROCEDURE PostAndEmail@10(VAR ParmSalesHeader@1000 : Record 36);
+    VAR
+      SalesHeader@1001 : Record 36;
+    BEGIN
+      SendReportAsEmail := TRUE;
+      SalesHeader.COPY(ParmSalesHeader);
+      Code(SalesHeader);
+      ParmSalesHeader := SalesHeader;
+    END;
+
+    LOCAL PROCEDURE Code@2(VAR SalesHeader@1002 : Record 36);
+    VAR
+      SalesSetup@1001 : Record 311;
+      SalesPostViaJobQueue@1000 : Codeunit 88;
+      HideDialog@1003 : Boolean;
+      IsHandled@1004 : Boolean;
+      DefaultOption@1005 : Integer;
+    BEGIN
+      HideDialog := FALSE;
+      IsHandled := FALSE;
+      DefaultOption := 3;
+      OnBeforeConfirmPost(SalesHeader,HideDialog,IsHandled,SendReportAsEmail,DefaultOption);
+      IF IsHandled THEN
+        EXIT;
+
+      IF NOT HideDialog THEN
+        IF NOT ConfirmPost(SalesHeader,DefaultOption) THEN
+          EXIT;
+
+      OnAfterConfirmPost(SalesHeader);
+
+      SalesSetup.GET;
+      IF SalesSetup."Post & Print with Job Queue" AND NOT SendReportAsEmail THEN
+        SalesPostViaJobQueue.EnqueueSalesDoc(SalesHeader)
+      ELSE BEGIN
+        CODEUNIT.RUN(CODEUNIT::"Sales-Post",SalesHeader);
+        GetReport(SalesHeader);
+      END;
+
+      OnAfterPost(SalesHeader);
+      COMMIT;
+    END;
+
+    [External]
+    PROCEDURE GetReport@3(VAR SalesHeader@1000 : Record 36);
+    VAR
+      IsHandled@1001 : Boolean;
+    BEGIN
+      IsHandled := FALSE;
+      OnBeforeGetReport(SalesHeader,IsHandled,SendReportAsEmail);
+      IF IsHandled THEN
+        EXIT;
+
+      WITH SalesHeader DO
+        CASE "Document Type" OF
+          "Document Type"::Order:
+            BEGIN
+              IF Ship THEN
+                PrintShip(SalesHeader);
+              IF Invoice THEN
+                PrintInvoice(SalesHeader);
+            END;
+          "Document Type"::Invoice:
+            PrintInvoice(SalesHeader);
+          "Document Type"::"Return Order":
+            BEGIN
+              IF Receive THEN
+                PrintReceive(SalesHeader);
+              IF Invoice THEN
+                PrintCrMemo(SalesHeader);
+            END;
+          "Document Type"::"Credit Memo":
+            PrintCrMemo(SalesHeader);
+        END;
+    END;
+
+    LOCAL PROCEDURE ConfirmPost@9(VAR SalesHeader@1000 : Record 36;DefaultOption@1003 : Integer) : Boolean;
+    VAR
+      ConfirmManagement@1002 : Codeunit 27;
+      Selection@1001 : Integer;
+    BEGIN
+      IF DefaultOption > 3 THEN
+        DefaultOption := 3;
+      IF DefaultOption <= 0 THEN
+        DefaultOption := 1;
+
+      WITH SalesHeader DO BEGIN
+        CASE "Document Type" OF
+          "Document Type"::Order:
+            BEGIN
+              Selection := STRMENU(ShipInvoiceQst,DefaultOption);
+              IF Selection = 0 THEN
+                EXIT(FALSE);
+              Ship := Selection IN [1,3];
+              Invoice := Selection IN [2,3];
+            END;
+          "Document Type"::"Return Order":
+            BEGIN
+              Selection := STRMENU(ReceiveInvoiceQst,DefaultOption);
+              IF Selection = 0 THEN
+                EXIT(FALSE);
+              Receive := Selection IN [1,3];
+              Invoice := Selection IN [2,3];
+            END
+          ELSE
+            IF NOT ConfirmManagement.ConfirmProcess(
+                 STRSUBSTNO(ConfirmationMessage,"Document Type"),TRUE)
+            THEN
+              EXIT(FALSE);
+        END;
+        "Print Posted Documents" := TRUE;
+      END;
+      EXIT(TRUE);
+    END;
+
+    LOCAL PROCEDURE ConfirmationMessage@4() : Text;
+    BEGIN
+      IF SendReportAsEmail THEN
+        EXIT(PostAndEmailQst);
+      EXIT(PostAndPrintQst);
+    END;
+
+    LOCAL PROCEDURE PrintReceive@1(SalesHeader@1001 : Record 36);
+    VAR
+      ReturnRcptHeader@1000 : Record 6660;
+      IsHandled@1002 : Boolean;
+    BEGIN
+      IsHandled := FALSE;
+      OnBeforePrintReceive(SalesHeader,SendReportAsEmail,IsHandled);
+      IF IsHandled THEN
+        EXIT;
+
+      ReturnRcptHeader."No." := SalesHeader."Last Return Receipt No.";
+      IF ReturnRcptHeader.FIND THEN;
+      ReturnRcptHeader.SETRECFILTER;
+
+      IF SendReportAsEmail THEN
+        ReturnRcptHeader.EmailRecords(TRUE)
+      ELSE
+        ReturnRcptHeader.PrintRecords(FALSE);
+    END;
+
+    LOCAL PROCEDURE PrintInvoice@5(SalesHeader@1000 : Record 36);
+    VAR
+      SalesInvHeader@1003 : Record 112;
+      IsHandled@1001 : Boolean;
+    BEGIN
+      IsHandled := FALSE;
+      OnBeforePrintInvoice(SalesHeader,SendReportAsEmail,IsHandled);
+      IF IsHandled THEN
+        EXIT;
+
+      IF SalesHeader."Last Posting No." = '' THEN
+        SalesInvHeader."No." := SalesHeader."No."
+      ELSE
+        SalesInvHeader."No." := SalesHeader."Last Posting No.";
+      SalesInvHeader.FIND;
+      SalesInvHeader.SETRECFILTER;
+
+      IF SendReportAsEmail THEN
+        SalesInvHeader.EmailRecords(TRUE)
+      ELSE
+        SalesInvHeader.PrintRecords(FALSE);
+    END;
+
+    LOCAL PROCEDURE PrintShip@7(SalesHeader@1000 : Record 36);
+    VAR
+      SalesShptHeader@1001 : Record 110;
+      IsHandled@1002 : Boolean;
+    BEGIN
+      IsHandled := FALSE;
+      OnBeforePrintShip(SalesHeader,SendReportAsEmail,IsHandled);
+      IF IsHandled THEN
+        EXIT;
+
+      SalesShptHeader."No." := SalesHeader."Last Shipping No.";
+      IF SalesShptHeader.FIND THEN;
+      SalesShptHeader.SETRECFILTER;
+
+      IF SendReportAsEmail THEN
+        SalesShptHeader.EmailRecords(TRUE)
+      ELSE
+        SalesShptHeader.PrintRecords(FALSE);
+    END;
+
+    LOCAL PROCEDURE PrintCrMemo@8(SalesHeader@1000 : Record 36);
+    VAR
+      SalesCrMemoHeader@1003 : Record 114;
+      IsHandled@1001 : Boolean;
+    BEGIN
+      IsHandled := FALSE;
+      OnBeforePrintCrMemo(SalesHeader,SendReportAsEmail,IsHandled);
+      IF IsHandled THEN
+        EXIT;
+
+      IF SalesHeader."Last Posting No." = '' THEN
+        SalesCrMemoHeader."No." := SalesHeader."No."
+      ELSE
+        SalesCrMemoHeader."No." := SalesHeader."Last Posting No.";
+      SalesCrMemoHeader.FIND;
+      SalesCrMemoHeader.SETRECFILTER;
+
+      IF SendReportAsEmail THEN
+        SalesCrMemoHeader.EmailRecords(TRUE)
+      ELSE
+        SalesCrMemoHeader.PrintRecords(FALSE);
+    END;
+
+    [Integration]
+    LOCAL PROCEDURE OnAfterPost@11(VAR SalesHeader@1000 : Record 36);
+    BEGIN
+    END;
+
+    [Integration]
+    LOCAL PROCEDURE OnAfterConfirmPost@12(VAR SalesHeader@1000 : Record 36);
+    BEGIN
+    END;
+
+    [Integration]
+    LOCAL PROCEDURE OnBeforeConfirmPost@6(VAR SalesHeader@1000 : Record 36;VAR HideDialog@1001 : Boolean;VAR IsHandled@1002 : Boolean;VAR SendReportAsEmail@1003 : Boolean;VAR DefaultOption@1004 : Integer);
+    BEGIN
+    END;
+
+    [Integration]
+    LOCAL PROCEDURE OnBeforeGetReport@13(VAR SalesHeader@1000 : Record 36;VAR IsHandled@1001 : Boolean;SendReportAsEmail@1002 : Boolean);
+    BEGIN
+    END;
+
+    [Integration]
+    LOCAL PROCEDURE OnBeforePrintInvoice@17(VAR SalesHeader@1000 : Record 36;SendReportAsEmail@1001 : Boolean;VAR IsHandled@1002 : Boolean);
+    BEGIN
+    END;
+
+    [Integration]
+    LOCAL PROCEDURE OnBeforePrintCrMemo@18(VAR SalesHeader@1000 : Record 36;SendReportAsEmail@1001 : Boolean;VAR IsHandled@1002 : Boolean);
+    BEGIN
+    END;
+
+    [Integration]
+    LOCAL PROCEDURE OnBeforePrintReceive@14(VAR SalesHeader@1000 : Record 36;SendReportAsEmail@1001 : Boolean;VAR IsHandled@1002 : Boolean);
+    BEGIN
+    END;
+
+    [Integration]
+    LOCAL PROCEDURE OnBeforePrintShip@16(VAR SalesHeader@1000 : Record 36;SendReportAsEmail@1001 : Boolean;VAR IsHandled@1002 : Boolean);
+    BEGIN
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

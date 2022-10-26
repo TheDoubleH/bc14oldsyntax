@@ -1,0 +1,72 @@
+OBJECT Page 10457 MX Electronic Invoice Setup
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/24/19;
+    Time=12:00:00 PM;
+    Version List=NAVNA14.00;
+  }
+  PROPERTIES
+  {
+    CaptionML=ENU=Electronic Invoicing Setup for Mexico;
+    ApplicationArea=#Basic,#Suite;
+    InsertAllowed=No;
+    DeleteAllowed=No;
+    SourceTable=Table10004;
+    UsageCategory=Administration;
+    OnOpenPage=VAR
+                 EInvoiceMgt@1310001 : Codeunit 10145;
+                 Notify@1310000 : Notification;
+               BEGIN
+                 IF NOT SMTPMail.IsEnabled THEN BEGIN
+                   Notify.MESSAGE(SMTPMissingMsg);
+                   Notify.ADDACTION(SetupSMTPMsg,CODEUNIT::"E-Invoice Mgt.",'OpenAssistedSetup');
+                   Notify.SEND;
+                 END;
+                 EInvoiceMgt.SetupService;
+               END;
+
+    OnQueryClosePage=VAR
+                       CompanyInformation@1310000 : Record 79;
+                       GeneralLedgerSetup@1310001 : Record 98;
+                       PACWebService@1310003 : Record 10000;
+                     BEGIN
+                       IF CompanyInformation.CheckIfMissingMXEInvRequiredFields AND PACWebService.CheckIfMissingMXEInvRequiredFields AND
+                          GeneralLedgerSetup.CheckIfMissingMXEInvRequiredFields
+                       THEN
+                         Enabled := FALSE
+                       ELSE
+                         Enabled := TRUE;
+
+                       MODIFY;
+                     END;
+
+  }
+  CONTROLS
+  {
+    { 1310000; ;Container ;
+                ContainerType=ContentArea }
+
+    { 1310001;1;Part      ;
+                ApplicationArea=#Basic,#Suite;
+                PagePartID=Page10458;
+                PartType=Page }
+
+    { 1310002;1;Part      ;
+                ApplicationArea=#Basic,#Suite;
+                PagePartID=Page10459;
+                PartType=Page }
+
+  }
+  CODE
+  {
+    VAR
+      SMTPMail@1310000 : Codeunit 400;
+      SMTPMissingMsg@1310001 : TextConst 'ENU=You must set up email in Business Central before you can send electronic invoices.';
+      SetupSMTPMsg@1310002 : TextConst 'ENU=Go to Set Up Email.';
+
+    BEGIN
+    END.
+  }
+}
+

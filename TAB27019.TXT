@@ -1,0 +1,36 @@
+OBJECT Table 27019 SAT Weight Unit of Measure
+{
+  OBJECT-PROPERTIES
+  {
+    Date=01/13/22;
+    Time=12:00:00 PM;
+    Version List=NAVNA14.32;
+  }
+  PROPERTIES
+  {
+    DataPerCompany=No;
+    CaptionML=ENU=SAT Weight Unit of Measure;
+    LookupPageID=Page27019;
+    DrillDownPageID=Page27019;
+  }
+  FIELDS
+  {
+    { 1   ;   ;Code                ;Code10        ;CaptionML=ENU=Code }
+    { 2   ;   ;Name                ;Text150       ;CaptionML=ENU=Name }
+    { 3   ;   ;Description         ;Text250       ;CaptionML=ENU=Description }
+  }
+  KEYS
+  {
+    {    ;Code                                    ;Clustered=Yes }
+  }
+  FIELDGROUPS
+  {
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

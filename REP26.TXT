@@ -1,0 +1,181 @@
+OBJECT Report 26 Copy Account Schedule
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/24/19;
+    Time=12:00:00 PM;
+    Version List=NAVW114.00;
+  }
+  PROPERTIES
+  {
+    CaptionML=ENU=Copy Account Schedule;
+    ProcessingOnly=Yes;
+    OnPostReport=BEGIN
+                   MESSAGE(CopySuccessMsg);
+                 END;
+
+  }
+  DATASET
+  {
+    { 1   ;    ;DataItem;SourceAccScheduleName;
+               DataItemTable=Table84;
+               DataItemTableView=SORTING(Name)
+                                 ORDER(Ascending);
+               OnPreDataItem=BEGIN
+                               AssertNewAccountScheduleNameNotEmpty;
+                               AssertNewAccountScheduleNameNotExisting;
+                               AssertSourceAccountScheduleNameNotEmpty;
+                               AssertSourceAccountScheduleNameExists(SourceAccScheduleName);
+                             END;
+
+               OnAfterGetRecord=VAR
+                                  SourceAccScheduleLine@1001 : Record 85;
+                                  AccScheduleName@1000 : Record 84;
+                                BEGIN
+                                  AccScheduleName.GET(CopySourceAccScheduleName);
+                                  CreateNewAccountScheduleName(NewAccScheduleName,AccScheduleName);
+
+                                  SourceAccScheduleLine.SETRANGE("Schedule Name",AccScheduleName.Name);
+                                  IF SourceAccScheduleLine.FINDSET THEN
+                                    REPEAT
+                                      CreateNewAccountScheduleLine(NewAccScheduleName,SourceAccScheduleLine);
+                                    UNTIL SourceAccScheduleLine.NEXT = 0;
+                                END;
+                                 }
+
+  }
+  REQUESTPAGE
+  {
+    PROPERTIES
+    {
+      OnOpenPage=BEGIN
+                   AssertSourceAccountScheduleNameOnlyOne(SourceAccScheduleName);
+
+                   IF SourceAccScheduleName.FINDFIRST THEN
+                     CopySourceAccScheduleName := SourceAccScheduleName.Name;
+                 END;
+
+    }
+    CONTROLS
+    {
+      { 3   ;0   ;Container ;
+                  ContainerType=ContentArea }
+
+      { 1   ;1   ;Group     ;
+                  CaptionML=ENU=Options }
+
+      { 2   ;2   ;Field     ;
+                  Name=NewAccountScheduleName;
+                  CaptionML=ENU=New Account Schedule Name;
+                  ToolTipML=ENU=Specifies the name of the new account schedule after copying.;
+                  ApplicationArea=#Basic,#Suite;
+                  NotBlank=Yes;
+                  SourceExpr=NewAccScheduleName }
+
+      { 5   ;2   ;Field     ;
+                  Name=SourceAccountScheduleName;
+                  CaptionML=ENU=Source Account Schedule Name;
+                  ToolTipML=ENU=Specifies the name of the existing account schedule to copy from.;
+                  ApplicationArea=#Basic,#Suite;
+                  NotBlank=Yes;
+                  SourceExpr=CopySourceAccScheduleName;
+                  Enabled=FALSE }
+
+    }
+  }
+  LABELS
+  {
+  }
+  CODE
+  {
+    VAR
+      NewAccScheduleName@1000 : Code[10];
+      CopySuccessMsg@1005 : TextConst 'ENU=The new account schedule has been created successfully.';
+      MissingSourceErr@1004 : TextConst 'ENU=Could not find an account schedule with the specified name to copy from.';
+      NewNameExistsErr@1002 : TextConst 'ENU=The new account schedule already exists.';
+      NewNameMissingErr@1001 : TextConst 'ENU=You must specify a name for the new account schedule.';
+      CopySourceAccScheduleName@1006 : Code[10];
+      CopySourceNameMissingErr@1007 : TextConst 'ENU=You must specify a valid name for the source account schedule to copy from.';
+      MultipleSourcesErr@1003 : TextConst 'ENU=You can only copy one account schedule at a time.';
+
+    [External]
+    PROCEDURE GetNewAccountScheduleName@1() : Code[10];
+    BEGIN
+      EXIT(NewAccScheduleName);
+    END;
+
+    LOCAL PROCEDURE AssertNewAccountScheduleNameNotEmpty@9();
+    BEGIN
+      IF IsEmptyName(NewAccScheduleName) THEN
+        ERROR(NewNameMissingErr);
+    END;
+
+    LOCAL PROCEDURE AssertNewAccountScheduleNameNotExisting@10();
+    VAR
+      AccScheduleName@1001 : Record 84;
+    BEGIN
+      IF AccScheduleName.GET(NewAccScheduleName) THEN
+        ERROR(NewNameExistsErr);
+    END;
+
+    LOCAL PROCEDURE CreateNewAccountScheduleName@3(NewName@1001 : Code[10];FromAccScheduleName@1002 : Record 84);
+    VAR
+      AccScheduleName@1000 : Record 84;
+    BEGIN
+      IF AccScheduleName.GET(NewName) THEN
+        EXIT;
+
+      AccScheduleName.INIT;
+      AccScheduleName.TRANSFERFIELDS(FromAccScheduleName);
+      AccScheduleName.Name := NewName;
+      AccScheduleName.INSERT;
+    END;
+
+    LOCAL PROCEDURE CreateNewAccountScheduleLine@4(NewName@1002 : Code[10];FromAccScheduleLine@1001 : Record 85);
+    VAR
+      AccScheduleLine@1000 : Record 85;
+    BEGIN
+      IF AccScheduleLine.GET(NewName,FromAccScheduleLine."Line No.") THEN
+        EXIT;
+
+      AccScheduleLine.INIT;
+      AccScheduleLine.TRANSFERFIELDS(FromAccScheduleLine);
+      AccScheduleLine."Schedule Name" := NewName;
+      AccScheduleLine.INSERT;
+    END;
+
+    LOCAL PROCEDURE IsEmptyName@5(ScheduleName@1000 : Code[10]) IsEmpty : Boolean;
+    BEGIN
+      IsEmpty := ScheduleName = '';
+    END;
+
+    LOCAL PROCEDURE AssertSourceAccountScheduleNameNotEmpty@20();
+    BEGIN
+      IF IsEmptyName(CopySourceAccScheduleName) THEN
+        ERROR(CopySourceNameMissingErr);
+    END;
+
+    LOCAL PROCEDURE AssertSourceAccountScheduleNameExists@21(FromAccScheduleName@1001 : Record 84);
+    BEGIN
+      IF NOT FromAccScheduleName.GET(CopySourceAccScheduleName) THEN
+        ERROR(MissingSourceErr);
+    END;
+
+    LOCAL PROCEDURE AssertSourceAccountScheduleNameOnlyOne@2(VAR FromAccScheduleName@1000 : Record 84);
+    VAR
+      AccScheduleName@1001 : Record 84;
+    BEGIN
+      AccScheduleName.COPYFILTERS(FromAccScheduleName);
+
+      IF AccScheduleName.COUNT > 1 THEN
+        ERROR(MultipleSourcesErr);
+    END;
+
+    BEGIN
+    END.
+  }
+  RDLDATA
+  {
+  }
+}
+

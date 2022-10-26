@@ -1,0 +1,66 @@
+OBJECT Page 7703 Miniforms
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/24/19;
+    Time=12:00:00 PM;
+    Version List=NAVW114.00;
+  }
+  PROPERTIES
+  {
+    Editable=No;
+    CaptionML=ENU=Miniforms;
+    ApplicationArea=#ADCS;
+    SourceTable=Table7700;
+    PageType=List;
+    UsageCategory=Lists;
+    AdditionalSearchTermsML=ENU=scanner,handheld,automated data capture,barcode,paper-free;
+    CardPageID=Miniform;
+  }
+  CONTROLS
+  {
+    { 1900000001;0;Container;
+                ContainerType=ContentArea }
+
+    { 1   ;1   ;Group     ;
+                GroupType=Repeater }
+
+    { 2   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies a unique code for a specific miniform.;
+                ApplicationArea=#ADCS;
+                SourceExpr=Code }
+
+    { 13  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies your description of the miniform with the code on the header.;
+                ApplicationArea=#ADCS;
+                SourceExpr=Description }
+
+    { 15  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the number of records that will be sent to the handheld if the miniform on the header is either Selection List or Data List.;
+                ApplicationArea=#ADCS;
+                SourceExpr="No. of Records in List" }
+
+    { 1900000007;0;Container;
+                ContainerType=FactBoxArea }
+
+    { 1900383207;1;Part   ;
+                ApplicationArea=#RecordLinks;
+                Visible=FALSE;
+                PartType=System;
+                SystemPartID=RecordLinks }
+
+    { 1905767507;1;Part   ;
+                ApplicationArea=#Notes;
+                Visible=FALSE;
+                PartType=System;
+                SystemPartID=Notes }
+
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

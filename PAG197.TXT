@@ -1,0 +1,168 @@
+OBJECT Page 197 Acc. Sched. KPI Web Service
+{
+  OBJECT-PROPERTIES
+  {
+    Date=06/25/21;
+    Time=12:00:00 PM;
+    Version List=NAVW114.26;
+  }
+  PROPERTIES
+  {
+    Editable=No;
+    CaptionML=ENU=Account Schedule KPI Web Service;
+    ApplicationArea=#Basic,#Suite;
+    SourceTable=Table197;
+    PageType=List;
+    UsageCategory=Administration;
+    AdditionalSearchTermsML=ENU=financial report,business intelligence,bi,odata;
+    SourceTableTemporary=Yes;
+    OnOpenPage=VAR
+                 AccSchedKPIBuffer@1000 : Record 197;
+                 AccScheduleLine@1001 : Record 85;
+               BEGIN
+                 CODEUNIT.RUN(CODEUNIT::"Update Acc. Sched. KPI Data");
+                 IF AccSchedKPIBuffer.FINDSET THEN
+                   REPEAT
+                     AccScheduleLine.SETRANGE("Schedule Name",AccSchedKPIBuffer."Account Schedule Name");
+                     AccScheduleLine.SETRANGE("Row No.",AccSchedKPIBuffer."KPI Code");
+                     IF AccScheduleLine.FINDFIRST THEN;
+                     IF AccScheduleLine.Show = AccScheduleLine.Show::Yes THEN BEGIN
+                       INIT;
+                       "No." += 1;
+                       TRANSFERFIELDS(AccSchedKPIBuffer,FALSE);
+                       INSERT;
+                     END
+                   UNTIL AccSchedKPIBuffer.NEXT = 0;
+                 RESET;
+                 FINDFIRST;
+               END;
+
+  }
+  CONTROLS
+  {
+    { 1   ;0   ;Container ;
+                ContainerType=ContentArea }
+
+    { 2   ;1   ;Group     ;
+                Name=Group;
+                GroupType=Repeater }
+
+    { 3   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the number of the account-schedule KPI web service.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="No.";
+                Visible=FALSE }
+
+    { 17  ;2   ;Field     ;
+                CaptionML=ENU=Date;
+                ToolTipML=ENU=Specifies the date that the account-schedule KPI data is based on.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr=Date }
+
+    { 16  ;2   ;Field     ;
+                Name=Closed Period;
+                CaptionML=ENU=Closed Period;
+                ToolTipML=ENU=Specifies whether the fiscal year is closed.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Closed Period" }
+
+    { 13  ;2   ;Field     ;
+                Name=Account Schedule Name;
+                CaptionML=ENU=Account Schedule Name;
+                ToolTipML=ENU=Specifies the name of the account schedule that the KPI web service is based on.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Account Schedule Name" }
+
+    { 18  ;2   ;Field     ;
+                Name=KPI Code;
+                CaptionML=ENU=KPI Code;
+                ToolTipML=ENU=Specifies a code for the account-schedule KPI web service.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="KPI Code" }
+
+    { 4   ;2   ;Field     ;
+                Name=KPI Name;
+                CaptionML=ENU=KPI Name;
+                ToolTipML=ENU=Specifies the name that will be shown on the KPI as a user-friendly name for the account schedule values.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="KPI Name" }
+
+    { 5   ;2   ;Field     ;
+                Name=Net Change Actual;
+                CaptionML=ENU=Net Change Actual;
+                ToolTipML=ENU=Specifies changes in the actual general ledger amount, for closed accounting periods, up until the date in the Date field.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Net Change Actual" }
+
+    { 6   ;2   ;Field     ;
+                Name=Balance at Date Actual;
+                CaptionML=ENU=Balance at Date Actual;
+                ToolTipML=ENU=Specifies the actual general ledger balance, based on closed accounting periods, on the date in the Date field.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Balance at Date Actual" }
+
+    { 7   ;2   ;Field     ;
+                Name=Net Change Budget;
+                CaptionML=ENU=Net Change Budget;
+                ToolTipML=ENU=Specifies changes in the budgeted general ledger amount, based on the general ledger budget, up until the date in the Date field.;
+                ApplicationArea=#Suite;
+                SourceExpr="Net Change Budget" }
+
+    { 8   ;2   ;Field     ;
+                Name=Balance at Date Budget;
+                CaptionML=ENU=Balance at Date Budget;
+                ToolTipML=ENU=Specifies the budgeted general ledger balance, based on the general ledger budget, on the date in the Date field.;
+                ApplicationArea=#Suite;
+                SourceExpr="Balance at Date Budget" }
+
+    { 9   ;2   ;Field     ;
+                Name=Net Change Actual Last Year;
+                CaptionML=ENU=Net Change Actual Last Year;
+                ToolTipML=ENU=Specifies actual changes in the general ledger amount, based on closed accounting periods, through the previous accounting year.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Net Change Actual Last Year" }
+
+    { 10  ;2   ;Field     ;
+                Name=Balance at Date Actual Last Year;
+                CaptionML=ENU=Balance at Date Actual Last Year;
+                ToolTipML=ENU=Specifies the actual general ledger balance, based on closed accounting periods, on the date in the Date field in the previous accounting year.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Balance at Date Act. Last Year" }
+
+    { 11  ;2   ;Field     ;
+                Name=Net Change Budget Last Year;
+                CaptionML=ENU=Net Change Budget Last Year;
+                ToolTipML=ENU=Specifies budgeted changes in the general ledger amount, up until the date in the Date field in the previous year.;
+                ApplicationArea=#Suite;
+                SourceExpr="Net Change Budget Last Year" }
+
+    { 12  ;2   ;Field     ;
+                Name=Balance at Date Budget Last Year;
+                CaptionML=ENU=Balance at Date Budget Last Year;
+                ToolTipML=ENU=Specifies the budgeted general ledger balance, based on the general ledger budget, on the date in the Date field in the previous accounting year.;
+                ApplicationArea=#Suite;
+                SourceExpr="Balance at Date Bud. Last Year" }
+
+    { 15  ;2   ;Field     ;
+                Name=Net Change Forecast;
+                CaptionML=ENU=Net Change Forecast;
+                ToolTipML=ENU=Specifies forecasted changes in the general ledger amount, based on open accounting periods, up until the date in the Date field.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Net Change Forecast" }
+
+    { 14  ;2   ;Field     ;
+                Name=Balance at Date Forecast;
+                CaptionML=ENU=Balance at Date Forecast;
+                ToolTipML=ENU=Specifies the forecasted general ledger balance, based on open accounting periods, on the date in the Date field.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Balance at Date Forecast" }
+
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

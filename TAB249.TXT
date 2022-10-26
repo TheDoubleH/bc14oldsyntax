@@ -1,0 +1,343 @@
+OBJECT Table 249 VAT Registration Log
+{
+  OBJECT-PROPERTIES
+  {
+    Date=09/24/21;
+    Time=12:00:00 PM;
+    Version List=NAVW114.29;
+  }
+  PROPERTIES
+  {
+    ReplicateData=No;
+    CaptionML=ENU=Tax Registration Log;
+  }
+  FIELDS
+  {
+    { 1   ;   ;Entry No.           ;Integer       ;AutoIncrement=Yes;
+                                                   CaptionML=ENU=Entry No. }
+    { 2   ;   ;VAT Registration No.;Text20        ;CaptionML=ENU=Tax Registration No.;
+                                                   NotBlank=Yes }
+    { 3   ;   ;Account Type        ;Option        ;CaptionML=ENU=Account Type;
+                                                   OptionCaptionML=ENU=Customer,Vendor,Contact,Company Information;
+                                                   OptionString=Customer,Vendor,Contact,Company Information }
+    { 4   ;   ;Account No.         ;Code20        ;TableRelation=IF (Account Type=CONST(Customer)) Customer
+                                                                 ELSE IF (Account Type=CONST(Vendor)) Vendor;
+                                                   CaptionML=ENU=Account No. }
+    { 5   ;   ;Country/Region Code ;Code10        ;TableRelation=Country/Region.Code;
+                                                   CaptionML=ENU=Country/Region Code;
+                                                   NotBlank=Yes }
+    { 6   ;   ;User ID             ;Code50        ;TableRelation=User."User Name";
+                                                   OnLookup=VAR
+                                                              UserMgt@1000 : Codeunit 418;
+                                                            BEGIN
+                                                              UserMgt.LookupUserID("User ID");
+                                                            END;
+
+                                                   TestTableRelation=No;
+                                                   DataClassification=EndUserIdentifiableInformation;
+                                                   CaptionML=ENU=User ID }
+    { 10  ;   ;Status              ;Option        ;CaptionML=ENU=Status;
+                                                   OptionCaptionML=ENU=Not Verified,Valid,Invalid;
+                                                   OptionString=Not Verified,Valid,Invalid }
+    { 11  ;   ;Verified Name       ;Text150       ;CaptionML=ENU=Verified Name }
+    { 12  ;   ;Verified Address    ;Text150       ;CaptionML=ENU=Verified Address }
+    { 13  ;   ;Verified Date       ;DateTime      ;CaptionML=ENU=Verified Date }
+    { 14  ;   ;Request Identifier  ;Text200       ;CaptionML=ENU=Request Identifier }
+    { 15  ;   ;Verified Street     ;Text50        ;CaptionML=ENU=Verified Street }
+    { 16  ;   ;Verified Postcode   ;Text20        ;CaptionML=ENU=Verified ZIP Code }
+    { 17  ;   ;Verified City       ;Text30        ;CaptionML=ENU=Verified City }
+    { 18  ;   ;Details Status      ;Option        ;CaptionML=ENU=Details Status;
+                                                   OptionCaptionML=ENU=Not Verified,Valid,Not Valid,Partially Valid,Ignored;
+                                                   OptionString=Not Verified,Valid,Not Valid,Partially Valid,Ignored }
+    { 19  ;   ;Template            ;Code20        ;TableRelation="VAT Reg. No. Srv. Template";
+                                                   CaptionML=ENU=Template }
+  }
+  KEYS
+  {
+    {    ;Entry No.                               ;Clustered=Yes }
+  }
+  FIELDGROUPS
+  {
+    { 1   ;Brick               ;Country/Region Code,VAT Registration No.,Status }
+  }
+  CODE
+  {
+    VAR
+      VATRegNoSrvTemplate@1011 : Record 226;
+      DataTypeManagement@1000 : Codeunit 701;
+      AccountName@1004 : Text;
+      AccountStreet@1003 : Text;
+      AccountCity@1002 : Text;
+      AccountPostCode@1001 : Text;
+      ResponseName@1006 : Text;
+      ResponseAddress@1005 : Text;
+      ResponseStreet@1013 : Text;
+      ResponsePostCode@1014 : Text;
+      ResponseCity@1015 : Text;
+      NameMatch@1010 : Boolean;
+      StreetMatch@1009 : Boolean;
+      CityMatch@1008 : Boolean;
+      PostCodeMatch@1007 : Boolean;
+      CustomerUpdatedMsg@1012 : TextConst 'ENU=The customer has been updated.';
+      VendorUpdatedMsg@1016 : TextConst 'ENU=The vendor has been updated.';
+      ContactUpdatedMsg@1017 : TextConst 'ENU=The contact has been updated.';
+      CompInfoUpdatedMsg@1018 : TextConst 'ENU=The company information has been updated.';
+
+    [External]
+    PROCEDURE GetCountryCode@2() : Code[10];
+    VAR
+      CompanyInformation@1000 : Record 79;
+      CountryRegion@1001 : Record 9;
+    BEGIN
+      IF "Country/Region Code" = '' THEN BEGIN
+        IF NOT CompanyInformation.GET THEN
+          EXIT('');
+        EXIT(CompanyInformation."Country/Region Code");
+      END;
+      CountryRegion.GET("Country/Region Code");
+      IF CountryRegion."EU Country/Region Code" = '' THEN
+        EXIT("Country/Region Code");
+      EXIT(CountryRegion."EU Country/Region Code");
+    END;
+
+    [External]
+    PROCEDURE GetVATRegNo@12() : Code[20];
+    VAR
+      VatRegNo@1000 : Code[20];
+    BEGIN
+      VatRegNo := UPPERCASE("VAT Registration No.");
+      VatRegNo := DELCHR(VatRegNo,'=',DELCHR(VatRegNo,'=','ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'));
+      IF STRPOS(VatRegNo,UPPERCASE(GetCountryCode)) = 1 THEN
+        VatRegNo := DELSTR(VatRegNo,1,STRLEN(GetCountryCode));
+      EXIT(VatRegNo);
+    END;
+
+    [External]
+    PROCEDURE InitVATRegLog@40(VAR VATRegistrationLog@1000 : Record 249;CountryCode@1001 : Code[10];AcountType@1002 : Option;AccountNo@1003 : Code[20];VATRegNo@1004 : Text[20]);
+    BEGIN
+      VATRegistrationLog.INIT;
+      VATRegistrationLog."Account Type" := AcountType;
+      VATRegistrationLog."Account No." := AccountNo;
+      VATRegistrationLog."Country/Region Code" := CountryCode;
+      VATRegistrationLog."VAT Registration No." := VATRegNo;
+    END;
+
+    PROCEDURE OpenModifyDetails@3();
+    VAR
+      RecordRef@1001 : RecordRef;
+    BEGIN
+      GetAccountRecordRef(RecordRef);
+      IF OpenDetailsForRecRef(RecordRef) THEN
+        RecordRef.MODIFY;
+    END;
+
+    PROCEDURE OpenDetailsForRecRef@1(VAR RecordRef@1002 : RecordRef) : Boolean;
+    VAR
+      VATRegistrationLogDetails@1000 : Record 227;
+    BEGIN
+      IF GUIALLOWED AND ("Details Status" <> "Details Status"::"Not Verified") THEN BEGIN
+        VATRegistrationLogDetails.SETRANGE("Log Entry No.","Entry No.");
+        PAGE.RUNMODAL(PAGE::"VAT Registration Log Details",VATRegistrationLogDetails);
+        EXIT(ApplyDetailsChanges(RecordRef));
+      END;
+    END;
+
+    LOCAL PROCEDURE ApplyDetailsChanges@26(VAR RecordRef@1004 : RecordRef) Result : Boolean;
+    VAR
+      VATRegistrationLogDetails@1005 : Record 227;
+      Customer@1002 : Record 18;
+    BEGIN
+      VATRegistrationLogDetails.SETRANGE("Log Entry No.","Entry No.");
+      VATRegistrationLogDetails.SETRANGE(Status,VATRegistrationLogDetails.Status::Accepted);
+      Result := VATRegistrationLogDetails.FINDSET;
+      IF Result THEN BEGIN
+        REPEAT
+          CASE VATRegistrationLogDetails."Field Name" OF
+            VATRegistrationLogDetails."Field Name"::Name:
+              ValidateField(RecordRef,Customer.FIELDNAME(Name),VATRegistrationLogDetails.Response);
+            VATRegistrationLogDetails."Field Name"::Address:
+              ValidateField(RecordRef,Customer.FIELDNAME(Address),VATRegistrationLogDetails.Response);
+            VATRegistrationLogDetails."Field Name"::Street:
+              ValidateField(RecordRef,Customer.FIELDNAME(Address),VATRegistrationLogDetails.Response);
+            VATRegistrationLogDetails."Field Name"::City:
+              ValidateField(RecordRef,Customer.FIELDNAME(City),VATRegistrationLogDetails.Response);
+            VATRegistrationLogDetails."Field Name"::"Post Code":
+              ValidateField(RecordRef,Customer.FIELDNAME("Post Code"),VATRegistrationLogDetails.Response);
+          END;
+        UNTIL VATRegistrationLogDetails.NEXT = 0;
+        VATRegistrationLogDetails.MODIFYALL(Status,VATRegistrationLogDetails.Status::Applied);
+        ShowDetailsUpdatedMessage(RecordRef.NUMBER);
+      END;
+    END;
+
+    LOCAL PROCEDURE ShowDetailsUpdatedMessage@13(TableID@1000 : Integer);
+    BEGIN
+      IF GUIALLOWED THEN
+        CASE TableID OF
+          DATABASE::Customer:
+            MESSAGE(CustomerUpdatedMsg);
+          DATABASE::Vendor:
+            MESSAGE(VendorUpdatedMsg);
+          DATABASE::Contact:
+            MESSAGE(ContactUpdatedMsg);
+          DATABASE::"Company Information":
+            MESSAGE(CompInfoUpdatedMsg);
+        END;
+    END;
+
+    LOCAL PROCEDURE ValidateField@25(VAR RecordRef@1001 : RecordRef;FieldName@1002 : Text;Value@1003 : Text);
+    VAR
+      ConfigValidateManagement@1004 : Codeunit 8617;
+      FieldRef@1000 : FieldRef;
+    BEGIN
+      IF DataTypeManagement.FindFieldByName(RecordRef,FieldRef,FieldName) THEN
+        ConfigValidateManagement.EvaluateValueWithValidate(FieldRef,COPYSTR(Value,1,FieldRef.LENGTH),FALSE);
+    END;
+
+    PROCEDURE GetAccountRecordRef@4(VAR RecordRef@1000 : RecordRef) : Boolean;
+    VAR
+      Customer@1001 : Record 18;
+      Vendor@1002 : Record 23;
+      Contact@1004 : Record 5050;
+      CompanyInformation@1003 : Record 79;
+    BEGIN
+      CLEAR(RecordRef);
+      CASE "Account Type" OF
+        "Account Type"::Customer:
+          IF Customer.GET("Account No.") THEN
+            RecordRef.GETTABLE(Customer);
+        "Account Type"::Vendor:
+          IF Vendor.GET("Account No.") THEN
+            RecordRef.GETTABLE(Vendor);
+        "Account Type"::Contact:
+          IF Contact.GET("Account No.") THEN
+            RecordRef.GETTABLE(Contact);
+        "Account Type"::"Company Information":
+          IF CompanyInformation.GET THEN
+            RecordRef.GETTABLE(CompanyInformation);
+      END;
+
+      EXIT(RecordRef.NUMBER <> 0);
+    END;
+
+    PROCEDURE SetAccountDetails@6(Name@1003 : Text;Street@1002 : Text;City@1001 : Text;PostCode@1000 : Text);
+    BEGIN
+      AccountName := Name;
+      AccountStreet := Street;
+      AccountCity := City;
+      AccountPostCode := PostCode;
+    END;
+
+    PROCEDURE SetResponseDetails@5(Name@1003 : Text;Address@1004 : Text;Street@1002 : Text;City@1001 : Text;PostCode@1000 : Text);
+    BEGIN
+      ResponseName := Name;
+      ResponseAddress := Address;
+      ResponseStreet := Street;
+      ResponseCity := City;
+      ResponsePostCode := PostCode;
+
+      "Verified Name" := COPYSTR(ResponseName,1,MAXSTRLEN("Verified Name"));
+      "Verified Address" := COPYSTR(ResponseAddress,1,MAXSTRLEN("Verified Address"));
+      "Verified Street" := COPYSTR(ResponseStreet,1,MAXSTRLEN("Verified Street"));
+      "Verified City" := COPYSTR(ResponseCity,1,MAXSTRLEN("Verified City"));
+      "Verified Postcode" := COPYSTR(ResponsePostCode,1,MAXSTRLEN("Verified Postcode"));
+    END;
+
+    PROCEDURE SetResponseMatchDetails@15(Name@1004 : Boolean;Street@1002 : Boolean;City@1001 : Boolean;PostCode@1000 : Boolean);
+    BEGIN
+      NameMatch := Name;
+      StreetMatch := Street;
+      CityMatch := City;
+      PostCodeMatch := PostCode;
+    END;
+
+    PROCEDURE LogDetails@7() : Boolean;
+    VAR
+      VATRegistrationLogDetails@1001 : Record 227;
+      TotalCount@1000 : Integer;
+      ValidCount@1002 : Integer;
+    BEGIN
+      CheckGetTemplate(VATRegNoSrvTemplate);
+
+      LogDetail(
+        TotalCount,ValidCount,VATRegistrationLogDetails."Field Name"::Name,VATRegNoSrvTemplate."Validate Name",
+        NameMatch,AccountName,ResponseName);
+      LogDetail(
+        TotalCount,ValidCount,VATRegistrationLogDetails."Field Name"::Address,FALSE,FALSE,AccountStreet,ResponseAddress);
+      LogDetail(
+        TotalCount,ValidCount,VATRegistrationLogDetails."Field Name"::Street,VATRegNoSrvTemplate."Validate Street",
+        StreetMatch,AccountStreet,ResponseStreet);
+      LogDetail(
+        TotalCount,ValidCount,VATRegistrationLogDetails."Field Name"::City,VATRegNoSrvTemplate."Validate City",
+        CityMatch,AccountCity,ResponseCity);
+      LogDetail(
+        TotalCount,ValidCount,VATRegistrationLogDetails."Field Name"::"Post Code",VATRegNoSrvTemplate."Validate Post Code",
+        PostCodeMatch,AccountPostCode,ResponsePostCode);
+
+      IF TotalCount > 0 THEN
+        IF VATRegNoSrvTemplate."Ignore Details" THEN
+          "Details Status" := "Details Status"::Ignored
+        ELSE
+          IF TotalCount = ValidCount THEN
+            "Details Status" := "Details Status"::Valid
+          ELSE
+            IF ValidCount > 0 THEN
+              "Details Status" := "Details Status"::"Partially Valid"
+            ELSE
+              "Details Status" := "Details Status"::"Not Valid";
+
+      EXIT(TotalCount > 0);
+    END;
+
+    LOCAL PROCEDURE LogDetail@8(VAR TotalCount@1005 : Integer;VAR ValidCount@1006 : Integer;FieldName@1007 : Option;IsRequested@1003 : Boolean;IsMatched@1002 : Boolean;CurrentValue@1001 : Text;ResponseValue@1000 : Text);
+    VAR
+      VATRegistrationLogDetails@1004 : Record 227;
+    BEGIN
+      IF NOT IsRequested AND (ResponseValue = '') THEN
+        EXIT;
+
+      InitVATRegistrationLogDetailsFromRec(VATRegistrationLogDetails,FieldName,CurrentValue);
+
+      IF IsRequested THEN BEGIN
+        VATRegistrationLogDetails.Requested := VATRegistrationLogDetails."Current Value";
+        IF CurrentValue <> ResponseValue THEN
+          VATRegistrationLogDetails.Response := COPYSTR(ResponseValue,1,MAXSTRLEN(VATRegistrationLogDetails.Response));
+      END ELSE
+        IF ResponseValue <> '' THEN
+          VATRegistrationLogDetails.Response := COPYSTR(ResponseValue,1,MAXSTRLEN(VATRegistrationLogDetails.Response));
+
+      IF IsMatched OR
+         (VATRegistrationLogDetails."Current Value" = VATRegistrationLogDetails.Response) AND
+         (VATRegistrationLogDetails.Response <> '')
+      THEN
+        VATRegistrationLogDetails.Status := VATRegistrationLogDetails.Status::Valid;
+      VATRegistrationLogDetails.INSERT;
+
+      TotalCount += 1;
+      IF VATRegistrationLogDetails.Status = VATRegistrationLogDetails.Status::Valid THEN
+        ValidCount += 1;
+    END;
+
+    LOCAL PROCEDURE InitVATRegistrationLogDetailsFromRec@11(VAR VATRegistrationLogDetails@1000 : Record 227;FieldName@1002 : Option;CurrentValue@1001 : Text);
+    BEGIN
+      VATRegistrationLogDetails.INIT;
+      VATRegistrationLogDetails."Log Entry No." := "Entry No.";
+      VATRegistrationLogDetails."Account Type" := "Account Type";
+      VATRegistrationLogDetails."Account No." := "Account No.";
+      VATRegistrationLogDetails.Status := VATRegistrationLogDetails.Status::"Not Valid";
+      VATRegistrationLogDetails."Field Name" := FieldName;
+      VATRegistrationLogDetails."Current Value" := COPYSTR(CurrentValue,1,MAXSTRLEN(VATRegistrationLogDetails.Requested));
+    END;
+
+    PROCEDURE CheckGetTemplate@9(VAR VATRegNoSrvTemplateLcl@1000 : Record 226);
+    BEGIN
+      IF Template = '' THEN
+        Template := VATRegNoSrvTemplate.FindTemplate(Rec);
+      VATRegNoSrvTemplateLcl := VATRegNoSrvTemplate;
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

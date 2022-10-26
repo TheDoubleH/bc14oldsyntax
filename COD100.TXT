@@ -1,0 +1,406 @@
+OBJECT Codeunit 100 Calc. G/L Acc. Where-Used
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/24/19;
+    Time=12:00:00 PM;
+    Version List=NAVW114.00;
+  }
+  PROPERTIES
+  {
+    OnRun=BEGIN
+          END;
+
+  }
+  CODE
+  {
+    VAR
+      GLAccWhereUsed@1000 : TEMPORARY Record 180;
+      NextEntryNo@1001 : Integer;
+      Text000@1002 : TextConst 'ENU=The update has been interrupted to respect the warning.';
+      ShowWhereUsedQst@1003 : TextConst '@@@=%1 -  Table Caption;ENU=You cannot delete a %1 that is used in one or more setup windows.\Do you want to open the G/L Account No. Where-Used List Window?';
+
+    [External]
+    PROCEDURE ShowSetupForm@8(GLAccWhereUsed@1000 : Record 180);
+    VAR
+      Currency@1002 : Record 4;
+      GenJnlTemplate@1013 : Record 80;
+      GenJnlBatch@1014 : Record 232;
+      CustPostingGr@1004 : Record 92;
+      VendPostingGr@1005 : Record 93;
+      JobPostingGr@1006 : Record 208;
+      GenJnlAlloc@1007 : Record 221;
+      GenPostingSetup@1001 : Record 252;
+      BankAccPostingGr@1008 : Record 277;
+      VATPostingSetup@1009 : Record 325;
+      FAPostingGr@1010 : Record 5606;
+      FAAlloc@1003 : Record 5615;
+      InventoryPostingSetup@1011 : Record 5813;
+      ServiceContractAccGr@1012 : Record 5973;
+      ICPartner@1015 : Record 413;
+      PaymentMethod@1016 : Record 289;
+    BEGIN
+      WITH GLAccWhereUsed DO
+        CASE "Table ID" OF
+          DATABASE::Currency:
+            BEGIN
+              Currency.Code := COPYSTR("Key 1",1,MAXSTRLEN(Currency.Code));
+              PAGE.RUN(0,Currency);
+            END;
+          DATABASE::"Gen. Journal Template":
+            BEGIN
+              GenJnlTemplate.Name := COPYSTR("Key 1",1,MAXSTRLEN(GenJnlTemplate.Name));
+              PAGE.RUN(PAGE::"General Journal Templates",GenJnlTemplate);
+            END;
+          DATABASE::"Gen. Journal Batch":
+            BEGIN
+              GenJnlBatch."Journal Template Name" := COPYSTR("Key 1",1,MAXSTRLEN(GenJnlBatch."Journal Template Name"));
+              GenJnlBatch.Name := COPYSTR("Key 2",1,MAXSTRLEN(GenJnlBatch.Name));
+              GenJnlBatch.SETRANGE("Journal Template Name",GenJnlBatch."Journal Template Name");
+              PAGE.RUN(0,GenJnlBatch);
+            END;
+          DATABASE::"Customer Posting Group":
+            BEGIN
+              CustPostingGr.Code := COPYSTR("Key 1",1,MAXSTRLEN(CustPostingGr.Code));
+              PAGE.RUN(0,CustPostingGr);
+            END;
+          DATABASE::"Vendor Posting Group":
+            BEGIN
+              VendPostingGr.Code := COPYSTR("Key 1",1,MAXSTRLEN(VendPostingGr.Code));
+              PAGE.RUN(0,VendPostingGr);
+            END;
+          DATABASE::"Job Posting Group":
+            BEGIN
+              JobPostingGr.Code := COPYSTR("Key 1",1,MAXSTRLEN(JobPostingGr.Code));
+              PAGE.RUN(0,JobPostingGr);
+            END;
+          DATABASE::"Gen. Jnl. Allocation":
+            BEGIN
+              GenJnlAlloc."Journal Template Name" := COPYSTR("Key 1",1,MAXSTRLEN(GenJnlAlloc."Journal Template Name"));
+              GenJnlAlloc."Journal Batch Name" := COPYSTR("Key 2",1,MAXSTRLEN(GenJnlAlloc."Journal Batch Name"));
+              EVALUATE(GenJnlAlloc."Journal Line No.","Key 3");
+              EVALUATE(GenJnlAlloc."Line No.","Key 4");
+              GenJnlAlloc.SETRANGE("Journal Template Name",GenJnlAlloc."Journal Template Name");
+              GenJnlAlloc.SETRANGE("Journal Batch Name",GenJnlAlloc."Journal Batch Name");
+              GenJnlAlloc.SETRANGE("Journal Line No.",GenJnlAlloc."Journal Line No.");
+              PAGE.RUN(PAGE::Allocations,GenJnlAlloc);
+            END;
+          DATABASE::"General Posting Setup":
+            BEGIN
+              GenPostingSetup."Gen. Bus. Posting Group" :=
+                COPYSTR("Key 1",1,MAXSTRLEN(GenPostingSetup."Gen. Bus. Posting Group"));
+              GenPostingSetup."Gen. Prod. Posting Group" :=
+                COPYSTR("Key 2",1,MAXSTRLEN(GenPostingSetup."Gen. Prod. Posting Group"));
+              PAGE.RUN(0,GenPostingSetup);
+            END;
+          DATABASE::"Bank Account Posting Group":
+            BEGIN
+              BankAccPostingGr.Code := COPYSTR("Key 1",1,MAXSTRLEN(BankAccPostingGr.Code));
+              PAGE.RUN(0,BankAccPostingGr);
+            END;
+          DATABASE::"VAT Posting Setup":
+            BEGIN
+              VATPostingSetup."VAT Bus. Posting Group" :=
+                COPYSTR("Key 1",1,MAXSTRLEN(VATPostingSetup."VAT Bus. Posting Group"));
+              VATPostingSetup."VAT Prod. Posting Group" :=
+                COPYSTR("Key 2",1,MAXSTRLEN(VATPostingSetup."VAT Prod. Posting Group"));
+              PAGE.RUN(0,VATPostingSetup);
+            END;
+          DATABASE::"FA Posting Group":
+            BEGIN
+              FAPostingGr.Code := COPYSTR("Key 1",1,MAXSTRLEN(FAPostingGr.Code));
+              PAGE.RUN(PAGE::"FA Posting Group Card",FAPostingGr);
+            END;
+          DATABASE::"FA Allocation":
+            BEGIN
+              FAAlloc.Code := COPYSTR("Key 1",1,MAXSTRLEN(FAAlloc.Code));
+              EVALUATE(FAAlloc."Allocation Type","Key 2");
+              EVALUATE(FAAlloc."Line No.","Key 3");
+              FAAlloc.SETRANGE(Code,FAAlloc.Code);
+              FAAlloc.SETRANGE("Allocation Type",FAAlloc."Allocation Type");
+              PAGE.RUN(0,FAAlloc);
+            END;
+          DATABASE::"Inventory Posting Setup":
+            BEGIN
+              InventoryPostingSetup."Location Code" := COPYSTR("Key 1",1,MAXSTRLEN(InventoryPostingSetup."Location Code"));
+              InventoryPostingSetup."Invt. Posting Group Code" :=
+                COPYSTR("Key 2",1,MAXSTRLEN(InventoryPostingSetup."Invt. Posting Group Code"));
+              PAGE.RUN(PAGE::"Inventory Posting Setup",InventoryPostingSetup);
+            END;
+          DATABASE::"Service Contract Account Group":
+            BEGIN
+              ServiceContractAccGr.Code := COPYSTR("Key 1",1,MAXSTRLEN(ServiceContractAccGr.Code));
+              PAGE.RUN(0,ServiceContractAccGr);
+            END;
+          DATABASE::"IC Partner":
+            BEGIN
+              ICPartner.Code := COPYSTR("Key 1",1,MAXSTRLEN(ICPartner.Code));
+              PAGE.RUN(0,ICPartner);
+            END;
+          DATABASE::"Payment Method":
+            BEGIN
+              PaymentMethod.Code := COPYSTR("Key 1",1,MAXSTRLEN(PaymentMethod.Code));
+              PAGE.RUN(0,PaymentMethod);
+            END;
+          DATABASE::"Sales & Receivables Setup":
+            PAGE.RUN(PAGE::"Sales & Receivables Setup");
+          DATABASE::"Purchases & Payables Setup":
+            PAGE.RUN(PAGE::"Purchases & Payables Setup");
+          ELSE
+            OnShowExtensionPage(GLAccWhereUsed);
+        END;
+    END;
+
+    [External]
+    PROCEDURE DeleteGLNo@14(GLAccNo@1000 : Code[20]) : Boolean;
+    VAR
+      GLSetup@1001 : Record 98;
+      GLAcc@1002 : Record 15;
+      ConfirmManagement@1003 : Codeunit 27;
+    BEGIN
+      GLSetup.GET;
+      IF GLSetup."Check G/L Account Usage" THEN BEGIN
+        CheckPostingGroups(GLAccNo);
+        IF GLAccWhereUsed.FINDFIRST THEN BEGIN
+          COMMIT;
+          IF ConfirmManagement.ConfirmProcessUI(STRSUBSTNO(ShowWhereUsedQst,GLAcc.TABLECAPTION),TRUE) THEN
+            ShowGLAccWhereUsed;
+          ERROR(Text000);
+        END;
+      END;
+      EXIT(TRUE);
+    END;
+
+    [External]
+    PROCEDURE CheckGLAcc@5(GLAccNo@1000 : Code[20]);
+    BEGIN
+      CheckPostingGroups(GLAccNo);
+      ShowGLAccWhereUsed;
+    END;
+
+    LOCAL PROCEDURE ShowGLAccWhereUsed@3();
+    BEGIN
+      OnBeforeShowGLAccWhereUsed(GLAccWhereUsed);
+
+      GLAccWhereUsed.SETCURRENTKEY("Table Name");
+      PAGE.RUNMODAL(0,GLAccWhereUsed);
+    END;
+
+    [External]
+    PROCEDURE InsertGroupForRecord@28(VAR TempGLAccountWhereUsed@1006 : TEMPORARY Record 180;TableID@1005 : Integer;TableCaption@1004 : Text[80];GLAccNo@1003 : Code[20];GLAccNo2@1002 : Code[20];FieldCaption@1001 : Text[80];Key@1000 : ARRAY [8] OF Text[80]);
+    BEGIN
+      TempGLAccountWhereUsed."Table ID" := TableID;
+      TempGLAccountWhereUsed."Table Name" := TableCaption;
+      GLAccWhereUsed.COPY(TempGLAccountWhereUsed,TRUE);
+      InsertGroup(GLAccNo,GLAccNo2,FieldCaption,Key);
+    END;
+
+    LOCAL PROCEDURE InsertGroup@10(GLAccNo@1000 : Code[20];GLAccNo2@1001 : Code[20];FieldCaption@1003 : Text[80];Key@1002 : ARRAY [8] OF Text[80]);
+    BEGIN
+      IF GLAccNo = GLAccNo2 THEN BEGIN
+        IF NextEntryNo = 0 THEN
+          NextEntryNo := GetWhereUsedNextEntryNo;
+
+        GLAccWhereUsed."Field Name" := FieldCaption;
+        IF Key[1] <> '' THEN
+          GLAccWhereUsed.Line := Key[1] + '=' + Key[4]
+        ELSE
+          GLAccWhereUsed.Line := '';
+        IF Key[2] <> '' THEN
+          GLAccWhereUsed.Line := GLAccWhereUsed.Line + ', ' + Key[2] + '=' + Key[5];
+        IF Key[3] <> '' THEN
+          GLAccWhereUsed.Line := GLAccWhereUsed.Line + ', ' + Key[3] + '=' + Key[6];
+        IF Key[7] <> '' THEN
+          GLAccWhereUsed.Line := GLAccWhereUsed.Line + ', ' + Key[7] + '=' + Key[8];
+        GLAccWhereUsed."Entry No." := NextEntryNo;
+        GLAccWhereUsed."Key 1" := COPYSTR(Key[4],1,MAXSTRLEN(GLAccWhereUsed."Key 1"));
+        GLAccWhereUsed."Key 2" := COPYSTR(Key[5],1,MAXSTRLEN(GLAccWhereUsed."Key 2"));
+        GLAccWhereUsed."Key 3" := COPYSTR(Key[6],1,MAXSTRLEN(GLAccWhereUsed."Key 3"));
+        GLAccWhereUsed."Key 4" := COPYSTR(Key[8],1,MAXSTRLEN(GLAccWhereUsed."Key 4"));
+        NextEntryNo := NextEntryNo + 1;
+        GLAccWhereUsed.INSERT;
+      END;
+    END;
+
+    LOCAL PROCEDURE InsertGroupFromRecRef@43(VAR RecRef@1008 : RecordRef;FieldCaption@1002 : Text[80]);
+    VAR
+      KeyRef@1007 : KeyRef;
+      FieldRef@1006 : FieldRef;
+      KeyFieldCount@1005 : Integer;
+      FieldCaptionAndValue@1004 : Text;
+    BEGIN
+      IF NextEntryNo = 0 THEN
+        NextEntryNo := GetWhereUsedNextEntryNo;
+
+      GLAccWhereUsed."Entry No." := NextEntryNo;
+      GLAccWhereUsed."Field Name" := FieldCaption;
+      GLAccWhereUsed.Line := '';
+      KeyRef := RecRef.KEYINDEX(1);
+      FOR KeyFieldCount := 1 TO KeyRef.FIELDCOUNT DO BEGIN
+        FieldRef := KeyRef.FIELDINDEX(KeyFieldCount);
+        FieldCaptionAndValue := STRSUBSTNO('%1=%2',FieldRef.CAPTION,FieldRef.VALUE);
+        IF GLAccWhereUsed.Line = '' THEN
+          GLAccWhereUsed.Line := COPYSTR(FieldCaptionAndValue,1,MAXSTRLEN(GLAccWhereUsed.Line))
+        ELSE
+          GLAccWhereUsed.Line :=
+            COPYSTR(GLAccWhereUsed.Line + ', ' + FieldCaptionAndValue,1,MAXSTRLEN(GLAccWhereUsed.Line));
+
+        CASE KeyFieldCount OF
+          1:
+            GLAccWhereUsed."Key 1" := COPYSTR(FORMAT(FieldRef.VALUE),1,MAXSTRLEN(GLAccWhereUsed."Key 1"));
+          2:
+            GLAccWhereUsed."Key 2" := COPYSTR(FORMAT(FieldRef.VALUE),1,MAXSTRLEN(GLAccWhereUsed."Key 2"));
+          3:
+            GLAccWhereUsed."Key 3" := COPYSTR(FORMAT(FieldRef.VALUE),1,MAXSTRLEN(GLAccWhereUsed."Key 3"));
+          4:
+            GLAccWhereUsed."Key 4" := COPYSTR(FORMAT(FieldRef.VALUE),1,MAXSTRLEN(GLAccWhereUsed."Key 4"));
+        END;
+      END;
+      NextEntryNo := NextEntryNo + 1;
+      GLAccWhereUsed.INSERT;
+    END;
+
+    LOCAL PROCEDURE CheckPostingGroups@18(GLAccNo@1000 : Code[20]);
+    VAR
+      GLAcc@1001 : Record 15;
+      TableBuffer@1002 : TEMPORARY Record 2000000026;
+    BEGIN
+      NextEntryNo := 0;
+      CLEAR(GLAccWhereUsed);
+      GLAccWhereUsed.DELETEALL;
+      GLAcc.GET(GLAccNo);
+      GLAccWhereUsed."G/L Account No." := GLAccNo;
+      GLAccWhereUsed."G/L Account Name" := GLAcc.Name;
+
+      IF FillTableBuffer(TableBuffer) THEN
+        REPEAT
+          CheckTable(GLAccNo,TableBuffer.Number);
+        UNTIL TableBuffer.NEXT = 0;
+
+      OnAfterCheckPostingGroups(GLAccWhereUsed,GLAccNo);
+    END;
+
+    LOCAL PROCEDURE FillTableBuffer@1(VAR TableBuffer@1000 : Record 2000000026) : Boolean;
+    BEGIN
+      AddTable(TableBuffer,DATABASE::Currency);
+      AddTable(TableBuffer,DATABASE::"Gen. Journal Template");
+      AddTable(TableBuffer,DATABASE::"Gen. Journal Batch");
+      AddTable(TableBuffer,DATABASE::"Customer Posting Group");
+      AddTable(TableBuffer,DATABASE::"Vendor Posting Group");
+      AddTable(TableBuffer,DATABASE::"Job Posting Group");
+      AddTable(TableBuffer,DATABASE::"Gen. Jnl. Allocation");
+      AddTable(TableBuffer,DATABASE::"General Posting Setup");
+      AddTable(TableBuffer,DATABASE::"Bank Account Posting Group");
+      AddTable(TableBuffer,DATABASE::"VAT Posting Setup");
+      AddTable(TableBuffer,DATABASE::"FA Posting Group");
+      AddTable(TableBuffer,DATABASE::"FA Allocation");
+      AddTable(TableBuffer,DATABASE::"Inventory Posting Setup");
+      AddTable(TableBuffer,DATABASE::"Service Contract Account Group");
+      AddTable(TableBuffer,DATABASE::"IC Partner");
+      AddTable(TableBuffer,DATABASE::"Payment Method");
+      AddTable(TableBuffer,DATABASE::"Sales & Receivables Setup");
+      AddTable(TableBuffer,DATABASE::"Purchases & Payables Setup");
+      AddTable(TableBuffer,DATABASE::"Employee Posting Group");
+      AddTable(TableBuffer,DATABASE::"Business Unit");
+      AddTable(TableBuffer,DATABASE::"Cash Flow Setup");
+
+      AddCountryTables(TableBuffer);
+
+      OnAfterFillTableBuffer(TableBuffer);
+
+      EXIT(TableBuffer.FINDSET);
+    END;
+
+    LOCAL PROCEDURE AddTable@6(VAR TableBuffer@1000 : Record 2000000026;TableID@1001 : Integer);
+    BEGIN
+      IF NOT TableBuffer.GET(TableID) THEN BEGIN
+        TableBuffer.Number := TableID;
+        TableBuffer.INSERT;
+      END;
+    END;
+
+    LOCAL PROCEDURE AddCountryTables@2(VAR TableBuffer@1000 : Record 2000000026);
+    BEGIN
+      TableBuffer.RESET;
+    END;
+
+    LOCAL PROCEDURE CheckTable@46(GLAccNo@1000 : Code[20];TableID@1005 : Integer);
+    VAR
+      TableRelationsMetadata@1006 : Record 2000000141;
+      Field@1001 : Record 2000000041;
+      RecRef@1004 : RecordRef;
+    BEGIN
+      RecRef.OPEN(TableID);
+      GLAccWhereUsed.INIT;
+      GLAccWhereUsed."Table ID" := TableID;
+      GLAccWhereUsed."Table Name" := RecRef.CAPTION;
+
+      TableRelationsMetadata.SETRANGE("Table ID",TableID);
+      TableRelationsMetadata.SETRANGE("Related Table ID",DATABASE::"G/L Account");
+      IF TableRelationsMetadata.FINDSET THEN
+        REPEAT
+          Field.GET(TableRelationsMetadata."Table ID",TableRelationsMetadata."Field No.");
+          IF (Field.Class = Field.Class::Normal) AND (Field.ObsoleteState <> Field.ObsoleteState::Removed) THEN
+            CheckField(RecRef,TableRelationsMetadata,GLAccNo);
+        UNTIL TableRelationsMetadata.NEXT = 0;
+    END;
+
+    LOCAL PROCEDURE CheckField@11(VAR RecRef@1000 : RecordRef;TableRelationsMetadata@1005 : Record 2000000141;GLAccNo@1007 : Code[20]);
+    VAR
+      FieldRef@1002 : FieldRef;
+    BEGIN
+      RecRef.RESET;
+      FieldRef := RecRef.FIELD(TableRelationsMetadata."Field No.");
+      FieldRef.SETRANGE(GLAccNo);
+      SetConditionFilter(RecRef,TableRelationsMetadata);
+      IF RecRef.FINDSET THEN
+        REPEAT
+          InsertGroupFromRecRef(RecRef,FieldRef.CAPTION);
+        UNTIL RecRef.NEXT = 0;
+    END;
+
+    LOCAL PROCEDURE SetConditionFilter@25(VAR RecRef@1001 : RecordRef;TableRelationsMetadata@1000 : Record 2000000141);
+    VAR
+      FieldRef@1002 : FieldRef;
+    BEGIN
+      IF TableRelationsMetadata."Condition Field No." <> 0 THEN BEGIN
+        FieldRef := RecRef.FIELD(TableRelationsMetadata."Condition Field No.");
+        FieldRef.SETFILTER(TableRelationsMetadata."Condition Value");
+      END;
+    END;
+
+    LOCAL PROCEDURE GetWhereUsedNextEntryNo@24() : Integer;
+    VAR
+      TempGLAccountWhereUsed@1000 : TEMPORARY Record 180;
+    BEGIN
+      TempGLAccountWhereUsed.COPY(GLAccWhereUsed,TRUE);
+      IF TempGLAccountWhereUsed.FINDLAST THEN
+        EXIT(TempGLAccountWhereUsed."Entry No." + 1);
+      EXIT(1);
+    END;
+
+    [Integration]
+    LOCAL PROCEDURE OnShowExtensionPage@19(GLAccountWhereUsed@1000 : Record 180);
+    BEGIN
+    END;
+
+    [Integration]
+    LOCAL PROCEDURE OnAfterCheckPostingGroups@20(VAR TempGLAccountWhereUsed@1001 : TEMPORARY Record 180;GLAccNo@1000 : Code[20]);
+    BEGIN
+    END;
+
+    [Integration]
+    LOCAL PROCEDURE OnAfterFillTableBuffer@4(VAR TableBuffer@1000 : Record 2000000026);
+    BEGIN
+    END;
+
+    [Integration]
+    LOCAL PROCEDURE OnBeforeShowGLAccWhereUsed@22(VAR GLAccountWhereUsed@1000 : Record 180);
+    BEGIN
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

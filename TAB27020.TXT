@@ -1,0 +1,33 @@
+OBJECT Table 27020 SAT MX Resources
+{
+  OBJECT-PROPERTIES
+  {
+    Date=11/22/17;
+    Time=12:00:00 PM;
+    Version List=NAVNA11.00;
+  }
+  PROPERTIES
+  {
+    DataPerCompany=No;
+    CaptionML=ENU=SAT MX Resources;
+  }
+  FIELDS
+  {
+    { 1   ;   ;Code                ;Code50        ;CaptionML=ENU=Code }
+    { 2   ;   ;Blob                ;BLOB          ;CaptionML=ENU=Blob }
+  }
+  KEYS
+  {
+    {    ;Code                                    ;Clustered=Yes }
+  }
+  FIELDGROUPS
+  {
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

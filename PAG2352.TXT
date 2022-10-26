@@ -1,0 +1,82 @@
+OBJECT Page 2352 BC O365 Country/Region List
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/24/19;
+    Time=12:00:00 PM;
+    Version List=NAVW114.00;
+  }
+  PROPERTIES
+  {
+    Editable=No;
+    CaptionML=ENU=Countries/Regions;
+    DeleteAllowed=No;
+    LinksAllowed=No;
+    SourceTable=Table2152;
+    PageType=List;
+    SourceTableTemporary=Yes;
+    CardPageID=O365 Country/Region Card;
+    RefreshOnActivate=Yes;
+    OnOpenPage=VAR
+                 CountryRegion@1000 : Record 9;
+               BEGIN
+                 DELETEALL;
+                 IF CountryRegion.FINDSET THEN
+                   REPEAT
+                     Code := CountryRegion.Code;
+                     Name := CountryRegion.GetNameInCurrentLanguage;
+                     IF INSERT THEN;
+                   UNTIL CountryRegion.NEXT = 0;
+                 SETCURRENTKEY(Name);
+               END;
+
+    OnInsertRecord=BEGIN
+                     EXIT(O365SalesManagement.InsertNewCountryCode(Rec));
+                   END;
+
+    OnModifyRecord=BEGIN
+                     EXIT(O365SalesManagement.ModifyCountryCode(xRec,Rec));
+                   END;
+
+  }
+  CONTROLS
+  {
+    { 1000;0   ;Container ;
+                ContainerType=ContentArea }
+
+    { 1001;1   ;Group     ;
+                Name=Group;
+                GroupType=Repeater }
+
+    { 1002;2   ;Field     ;
+                ToolTipML=ENU=Specifies the ISO code of the country or region.;
+                ApplicationArea=#Basic,#Suite,#Invoicing;
+                SourceExpr=Code;
+                OnValidate=BEGIN
+                             IF (xRec.Code <> '') AND (Code <> xRec.Code) THEN
+                               ERROR(RenameCountryErr);
+                           END;
+                            }
+
+    { 1003;2   ;Field     ;
+                ToolTipML=ENU=Specifies the name of the country or region.;
+                ApplicationArea=#Basic,#Suite,#Invoicing;
+                SourceExpr=Name }
+
+    { 1   ;2   ;Field     ;
+                ApplicationArea=#Basic,#Suite,#Invoicing;
+                SourceExpr="VAT Scheme";
+                Visible=FALSE }
+
+  }
+  CODE
+  {
+    VAR
+      O365SalesManagement@1000 : Codeunit 2107;
+      RenameCountryErr@1001 : TextConst 'ENU=You cannot change the country code.';
+
+    BEGIN
+    END.
+  }
+}
+

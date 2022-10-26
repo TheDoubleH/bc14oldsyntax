@@ -1,0 +1,203 @@
+OBJECT Report 5881 Make Phys. Invt. Recording
+{
+  OBJECT-PROPERTIES
+  {
+    Date=12/19/19;
+    Time=12:00:00 PM;
+    Version List=NAVW114.09;
+  }
+  PROPERTIES
+  {
+    CaptionML=ENU=Make New Phys. Invt. Recording;
+    ProcessingOnly=Yes;
+    OnPreReport=BEGIN
+                  HeaderCount := 0;
+                END;
+
+    OnPostReport=BEGIN
+                   CASE HeaderCount OF
+                     0:
+                       MESSAGE(NewOrderNotCreatedMsg);
+                     1:
+                       MESSAGE(NewOrderCreatedMsg,
+                         PhysInvtRecordHeader."Order No.",PhysInvtRecordHeader."Recording No." );
+                     ELSE
+                       MESSAGE(DifferentOrdersMsg,HeaderCount);
+                   END;
+
+                   OnAfterOnPostReport(PhysInvtRecordHeader,HeaderCount);
+                 END;
+
+  }
+  DATASET
+  {
+    { 3530;    ;DataItem;                    ;
+               DataItemTable=Table5875;
+               DataItemTableView=SORTING(No.);
+               OnAfterGetRecord=BEGIN
+                                  TESTFIELD(Status,Status::Open);
+                                END;
+
+               ReqFilterFields=No. }
+
+    { 8887;1   ;DataItem;                    ;
+               DataItemTable=Table5876;
+               DataItemTableView=SORTING(Document No.,Line No.);
+               OnPreDataItem=BEGIN
+                               HeaderInserted := FALSE;
+                             END;
+
+               OnAfterGetRecord=BEGIN
+                                  IF CheckOrderLine("Phys. Invt. Order Line") THEN BEGIN
+                                    IF NOT HeaderInserted THEN BEGIN
+                                      InsertRecordingHeader("Phys. Invt. Order Header");
+                                      HeaderInserted := TRUE;
+                                      NextLineNo := 10000;
+                                      HeaderCount := HeaderCount + 1;
+                                    END;
+                                    InsertRecordingLine("Phys. Invt. Order Line");
+                                  END;
+                                END;
+
+               ReqFilterFields=Item No.,Location Code,Bin Code,Shelf No.,Inventory Posting Group;
+               DataItemLink=Document No.=FIELD(No.) }
+
+  }
+  REQUESTPAGE
+  {
+    PROPERTIES
+    {
+      SaveValues=Yes;
+    }
+    CONTROLS
+    {
+      { 1900000001;0;Container;
+                  ContainerType=ContentArea }
+
+      { 1900000002;1;Group  ;
+                  CaptionML=ENU=Options }
+
+      { 3   ;2   ;Field     ;
+                  CaptionML=ENU=Only Lines Not In Recordings;
+                  ToolTipML=ENU=Specifies that a new physical inventory recording lines are only created when the data does not exist on any other physical inventory recording line. This is useful when you want to make sure that different recordings do not contain the same items.;
+                  ApplicationArea=#Basic,#Suite;
+                  SourceExpr=OnlyLinesNotInRecordings }
+
+      { 5   ;2   ;Field     ;
+                  CaptionML=ENU=Allow Recording Without Order;
+                  ToolTipML=ENU=Specifies that recording lines are automatically created for items that do not exist on the physical inventory order. This can only happen if none of the values in these four fields exist for an item on the order: Item No., Variant Code, Location Code, and Bin Code.;
+                  ApplicationArea=#Basic,#Suite;
+                  SourceExpr=AllowRecWithoutOrder }
+
+    }
+  }
+  LABELS
+  {
+  }
+  CODE
+  {
+    VAR
+      NewOrderNotCreatedMsg@1000 : TextConst 'ENU=A physical inventory recording was not created because no valid physical inventory order lines exist.';
+      NewOrderCreatedMsg@1001 : TextConst '@@@="%1 = Order No. %2 = Recording No.";ENU=Physical inventory recording %1 %2 has been created.';
+      DifferentOrdersMsg@1002 : TextConst '@@@="%1 = counter";ENU=%1 different orders has been created.';
+      PhysInvtRecordHeader@1003 : Record 5877;
+      PhysInvtRecordLine@1004 : Record 5878;
+      NextLineNo@1005 : Integer;
+      HeaderCount@1006 : Integer;
+      OnlyLinesNotInRecordings@1007 : Boolean;
+      HeaderInserted@1008 : Boolean;
+      AllowRecWithoutOrder@1009 : Boolean;
+
+    [External]
+    PROCEDURE CheckOrderLine@1(PhysInvtOrderLine@1000 : Record 5876) : Boolean;
+    VAR
+      PhysInvtRecordLine2@1001 : Record 5878;
+    BEGIN
+      WITH PhysInvtOrderLine DO BEGIN
+        IF EmptyLine THEN
+          EXIT(FALSE);
+        TESTFIELD("Item No.");
+        IF OnlyLinesNotInRecordings THEN BEGIN
+          PhysInvtRecordLine2.SETCURRENTKEY(
+            "Order No.","Item No.","Variant Code","Location Code","Bin Code");
+          PhysInvtRecordLine2.SETRANGE("Order No.","Document No.");
+          PhysInvtRecordLine2.SETRANGE("Item No.","Item No.");
+          PhysInvtRecordLine2.SETRANGE("Variant Code","Variant Code");
+          PhysInvtRecordLine2.SETRANGE("Location Code","Location Code");
+          PhysInvtRecordLine2.SETRANGE("Bin Code","Bin Code");
+          OnCheckOrderLineOnAfterSetFilters(PhysInvtRecordLine2,PhysInvtOrderLine);
+          IF PhysInvtRecordLine2.FINDFIRST THEN
+            EXIT(FALSE);
+        END;
+      END;
+      EXIT(TRUE);
+    END;
+
+    [External]
+    PROCEDURE InsertRecordingHeader@2(PhysInvtOrderHeader@1000 : Record 5875);
+    BEGIN
+      WITH PhysInvtRecordHeader DO BEGIN
+        INIT;
+        "Order No." := PhysInvtOrderHeader."No.";
+        "Recording No." := 0;
+        "Person Responsible" := PhysInvtOrderHeader."Person Responsible";
+        "Location Code" := PhysInvtOrderHeader."Location Code";
+        "Bin Code" := PhysInvtOrderHeader."Bin Code";
+        "Allow Recording Without Order" := AllowRecWithoutOrder;
+        INSERT(TRUE);
+      END;
+    END;
+
+    [External]
+    PROCEDURE InsertRecordingLine@3(PhysInvtOrderLine@1000 : Record 5876);
+    BEGIN
+      WITH PhysInvtRecordLine DO BEGIN
+        INIT;
+        "Order No." := PhysInvtRecordHeader."Order No.";
+        "Recording No." := PhysInvtRecordHeader."Recording No.";
+        "Line No." := NextLineNo;
+        VALIDATE("Item No.",PhysInvtOrderLine."Item No.");
+        VALIDATE("Variant Code",PhysInvtOrderLine."Variant Code");
+        VALIDATE("Location Code",PhysInvtOrderLine."Location Code");
+        VALIDATE("Bin Code",PhysInvtOrderLine."Bin Code");
+        Description := PhysInvtOrderLine.Description;
+        "Description 2" := PhysInvtOrderLine."Description 2";
+        "Use Item Tracking" := PhysInvtOrderLine."Use Item Tracking";
+        "Shelf No." := PhysInvtOrderLine."Shelf No.";
+        VALIDATE("Unit of Measure Code",PhysInvtOrderLine."Base Unit of Measure Code");
+        Recorded := FALSE;
+        OnBeforePhysInvtRecordLineInsert(PhysInvtRecordLine,PhysInvtOrderLine);
+        INSERT;
+        OnAfterPhysInvtRecordLineInsert(PhysInvtRecordLine,PhysInvtOrderLine);
+        NextLineNo := NextLineNo + 10000;
+      END;
+    END;
+
+    [Integration]
+    LOCAL PROCEDURE OnAfterOnPostReport@4(VAR PhysInvtRecordHeader@1000 : Record 5877;HeadCount@1001 : Integer);
+    BEGIN
+    END;
+
+    [Integration]
+    LOCAL PROCEDURE OnAfterPhysInvtRecordLineInsert@10(VAR PhysInvtRecordLine@1000 : Record 5878;PhysInvtOrderLine@1001 : Record 5876);
+    BEGIN
+    END;
+
+    [Integration]
+    LOCAL PROCEDURE OnBeforePhysInvtRecordLineInsert@9(VAR PhysInvtRecordLine@1000 : Record 5878;PhysInvtOrderLine@1001 : Record 5876);
+    BEGIN
+    END;
+
+    [Integration]
+    LOCAL PROCEDURE OnCheckOrderLineOnAfterSetFilters@7(VAR PhysInvtRecordLine@1000 : Record 5878;PhysInvtOrderLine@1001 : Record 5876);
+    BEGIN
+    END;
+
+    BEGIN
+    END.
+  }
+  RDLDATA
+  {
+  }
+}
+

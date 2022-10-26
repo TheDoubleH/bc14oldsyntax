@@ -1,0 +1,208 @@
+OBJECT Codeunit 352 Intrastat File Writer
+{
+  OBJECT-PROPERTIES
+  {
+    Date=01/13/22;
+    Time=12:00:00 PM;
+    Version List=NAVW114.32;
+  }
+  PROPERTIES
+  {
+    OnRun=BEGIN
+          END;
+
+  }
+  CODE
+  {
+    VAR
+      TempResultFileTempBlob@1000 : TEMPORARY Record 99008535;
+      TempCurrFileTempBlob@1001 : TEMPORARY Record 99008535;
+      DataCompression@1019 : Codeunit 425;
+      ResultFileOutStream@1002 : OutStream;
+      CurrFileOutStream@1003 : OutStream;
+      ResultFileOutStreamIsInitialized@1004 : Boolean;
+      ZipResultFile@1005 : Boolean;
+      ZipIsInitialized@1006 : Boolean;
+      SplitShipmentAndReceiptFiles@1007 : Boolean;
+      CurrFileLineCounter@1008 : Integer;
+      FileLineCounterLimit@1009 : Integer;
+      CurrFileName@1010 : Text;
+      PrevFileName@1011 : Text;
+      ServerFileName@1020 : Text;
+      StatisticsPeriod@1012 : Code[10];
+      DefaultXMLFilenameTxt@1013 : TextConst '@@@=%1 - statistics period YYMM;ENU=Intrastat-%1.xml';
+      DefaultFilenameTxt@1014 : TextConst '@@@=%1 - statistics period YYMM;ENU=Intrastat-%1.txt';
+      DefaultIndexedFilenameTxt@1015 : TextConst '@@@=%1 - statistics period YYMM, 1 - file start index;ENU=Intrastat-%1-1.txt';
+      ShipmentFilenameTxt@1016 : TextConst '@@@=%1 - statistics period YYMM;ENU=Shipment-%1.txt';
+      ReceiptFilenameTxt@1017 : TextConst '@@@=%1 - statistics period YYMM;ENU=Receipt-%1.txt';
+      ZipFilenameTxt@1018 : TextConst '@@@=%1 - statistics period YYMM;ENU=Intrastat-%1.zip';
+
+    PROCEDURE Initialize@2(newZipResultFile@1000 : Boolean;newSplitShipmentAndReceiptFiles@1001 : Boolean;newFileLineCounterLimit@1002 : Integer);
+    BEGIN
+      ZipResultFile := newZipResultFile;
+      SplitShipmentAndReceiptFiles := newSplitShipmentAndReceiptFiles;
+      FileLineCounterLimit := newFileLineCounterLimit;
+
+      ZipResultFile := ZipResultFile OR SplitShipmentAndReceiptFiles OR (newFileLineCounterLimit > 0);
+
+      IF NOT ResultFileOutStreamIsInitialized THEN
+        TempResultFileTempBlob.Blob.CREATEOUTSTREAM(ResultFileOutStream);
+
+      TempResultFileTempBlob.INSERT;
+      TempCurrFileTempBlob.INSERT;
+    END;
+
+    PROCEDURE InitializeNextFile@3(newFileName@1000 : Text);
+    BEGIN
+      CurrFileName := newFileName;
+      CurrFileLineCounter := 0;
+      CLEAR(TempCurrFileTempBlob);
+      TempCurrFileTempBlob.Blob.CREATEOUTSTREAM(CurrFileOutStream);
+    END;
+
+    PROCEDURE SetResultFileOutStream@4(VAR newResultFileOutStream@1000 : OutStream);
+    BEGIN
+      ResultFileOutStream := newResultFileOutStream;
+      ResultFileOutStreamIsInitialized := TRUE;
+    END;
+
+    PROCEDURE SetStatisticsPeriod@5(newStatisticsPeriod@1000 : Code[10]);
+    BEGIN
+      StatisticsPeriod := newStatisticsPeriod;
+    END;
+
+    PROCEDURE SetServerFileName@21(newServerFileName@1000 : Text);
+    BEGIN
+      ServerFileName := newServerFileName;
+    END;
+
+    PROCEDURE GetDefaultXMLFileName@6() : Text;
+    BEGIN
+      EXIT(DefaultXMLFilenameTxt);
+    END;
+
+    PROCEDURE GetDefaultFileName@7() : Text;
+    BEGIN
+      EXIT(DefaultFilenameTxt);
+    END;
+
+    PROCEDURE GetDefaultIndexedFileName@8() : Text;
+    BEGIN
+      EXIT(DefaultIndexedFilenameTxt);
+    END;
+
+    PROCEDURE GetDefaultShipmentFileName@9() : Text;
+    BEGIN
+      EXIT(ShipmentFilenameTxt);
+    END;
+
+    PROCEDURE GetDefaultReceiptFileName@10() : Text;
+    BEGIN
+      EXIT(ReceiptFilenameTxt);
+    END;
+
+    PROCEDURE GetDefaultOrReceiptFileName@11() : Text;
+    BEGIN
+      IF SplitShipmentAndReceiptFiles THEN
+        EXIT(ReceiptFilenameTxt);
+      EXIT(DefaultFilenameTxt);
+    END;
+
+    PROCEDURE GetCurrFileOutStream@12(VAR FileOutStream@1000 : OutStream);
+    BEGIN
+      FileOutStream := CurrFileOutStream;
+    END;
+
+    PROCEDURE IsSplitShipmentAndReceiptFiles@13() : Boolean;
+    BEGIN
+      EXIT(SplitShipmentAndReceiptFiles);
+    END;
+
+    PROCEDURE CloseAndDownloadResultFile@14();
+    VAR
+      FileManagement@1000 : Codeunit 419;
+      ResultFileName@1001 : Text;
+    BEGIN
+      IF ZipResultFile THEN BEGIN
+        DataCompression.SaveZipArchive(ResultFileOutStream);
+        DataCompression.CloseZipArchive;
+      END;
+
+      IF ResultFileOutStreamIsInitialized THEN
+        EXIT;
+
+      IF ZipResultFile THEN
+        ResultFileName := ZipFilenameTxt
+      ELSE
+        ResultFileName := CurrFileName;
+
+      ResultFileName := STRSUBSTNO(ResultFileName,StatisticsPeriod);
+      IF ServerFileName = '' THEN
+        FileManagement.BLOBExport(TempResultFileTempBlob,ResultFileName,TRUE)
+      ELSE
+        FileManagement.BLOBExportToServerFile(TempResultFileTempBlob,ServerFileName);
+    END;
+
+    PROCEDURE AddCurrFileToResultFile@15();
+    VAR
+      CurrFileInStream@1000 : InStream;
+    BEGIN
+      IF NOT ZipIsInitialized AND ZipResultFile THEN BEGIN
+        ZipIsInitialized := TRUE;
+        DataCompression.CreateZipArchive;
+      END;
+
+      IF PrevFileName = CurrFileName THEN
+        CurrFileName := IncFileName(CurrFileName);
+      CurrFileName := STRSUBSTNO(CurrFileName,StatisticsPeriod);
+
+      TempCurrFileTempBlob.Blob.CREATEINSTREAM(CurrFileInStream);
+      IF ZipResultFile THEN
+        DataCompression.AddEntry(CurrFileInStream,CurrFileName)
+      ELSE
+        COPYSTREAM(ResultFileOutStream,CurrFileInStream);
+
+      PrevFileName := CurrFileName;
+      InitializeNextFile(CurrFileName);
+    END;
+
+    LOCAL PROCEDURE IncFileName@16(FileName@1000 : Text) NewFileName : Text;
+    BEGIN
+      NewFileName := INCSTR(FileName);
+      IF NewFileName = '' THEN
+        EXIT(INCSTR(DefaultIndexedFilenameTxt));
+    END;
+
+    PROCEDURE WriteLine@17(Line@1000 : Text);
+    BEGIN
+      CheckFileLineCounterAndAddToResultFile;
+
+      IF CurrFileLineCounter > 0 THEN
+        WriteLineBreak;
+      CurrFileOutStream.WRITETEXT(Line);
+      CurrFileLineCounter += 1;
+    END;
+
+    PROCEDURE Write@18(Line@1000 : Text);
+    BEGIN
+      CurrFileOutStream.WRITETEXT(Line);
+    END;
+
+    PROCEDURE WriteLineBreak@19();
+    BEGIN
+      CurrFileOutStream.WRITETEXT;
+    END;
+
+    LOCAL PROCEDURE CheckFileLineCounterAndAddToResultFile@20();
+    BEGIN
+      IF (CurrFileLineCounter >= FileLineCounterLimit) AND (FileLineCounterLimit > 0) THEN BEGIN
+        ZipResultFile := TRUE;
+        AddCurrFileToResultFile;
+      END;
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

@@ -1,0 +1,55 @@
+OBJECT Table 310 No. Series Relationship
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/24/19;
+    Time=12:00:00 PM;
+    Version List=NAVW114.00;
+  }
+  PROPERTIES
+  {
+    CaptionML=ENU=No. Series Relationship;
+    LookupPageID=Page458;
+    DrillDownPageID=Page458;
+  }
+  FIELDS
+  {
+    { 1   ;   ;Code                ;Code20        ;TableRelation="No. Series";
+                                                   OnValidate=BEGIN
+                                                                CALCFIELDS(Description);
+                                                              END;
+
+                                                   CaptionML=ENU=Code;
+                                                   NotBlank=Yes }
+    { 2   ;   ;Series Code         ;Code20        ;TableRelation="No. Series";
+                                                   OnValidate=BEGIN
+                                                                CALCFIELDS("Series Description");
+                                                              END;
+
+                                                   CaptionML=ENU=Series Code;
+                                                   NotBlank=Yes }
+    { 3   ;   ;Description         ;Text100       ;FieldClass=FlowField;
+                                                   CalcFormula=Lookup("No. Series".Description WHERE (Code=FIELD(Code)));
+                                                   CaptionML=ENU=Description;
+                                                   Editable=No }
+    { 4   ;   ;Series Description  ;Text100       ;FieldClass=FlowField;
+                                                   CalcFormula=Lookup("No. Series".Description WHERE (Code=FIELD(Series Code)));
+                                                   CaptionML=ENU=Series Description;
+                                                   Editable=No }
+  }
+  KEYS
+  {
+    {    ;Code,Series Code                        ;Clustered=Yes }
+    {    ;Series Code,Code                         }
+  }
+  FIELDGROUPS
+  {
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

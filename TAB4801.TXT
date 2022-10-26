@@ -1,0 +1,44 @@
+OBJECT Table 4801 VATGroup Calculation
+{
+  OBJECT-PROPERTIES
+  {
+    Date=12/29/20;
+    Time=12:00:00 PM;
+    Version List=NAVW114.21;
+  }
+  PROPERTIES
+  {
+    ObsoleteState=Pending;
+    ObsoleteReason=Moved to VAT Group Management extension table 4701 VAT Group Calculation;
+    CaptionML=ENU=VATGroup Calculation;
+  }
+  FIELDS
+  {
+    { 1   ;   ;ID                  ;GUID          ;DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=ID }
+    { 2   ;   ;VAT Group Submission No.;Code20    ;CaptionML=ENU=Tax Group Submission No. }
+    { 3   ;   ;VAT Group Submission ID;GUID       ;DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Tax Group Submission ID }
+    { 4   ;   ;VAT Report No.      ;Code20        ;CaptionML=ENU=Tax Report No. }
+    { 5   ;   ;Group Member Name   ;Text250       ;CaptionML=ENU=Group Member Name }
+    { 6   ;   ;Box No.             ;Text30        ;CaptionML=ENU=Box No. }
+    { 7   ;   ;Amount              ;Decimal       ;CaptionML=ENU=Amount;
+                                                   AutoFormatType=1 }
+    { 8   ;   ;Submitted On        ;DateTime      ;DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Submitted On }
+  }
+  KEYS
+  {
+    {    ;ID                                      ;Clustered=Yes }
+  }
+  FIELDGROUPS
+  {
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

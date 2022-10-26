@@ -1,0 +1,84 @@
+OBJECT Page 246 VAT Reg. No. Srv. Templates
+{
+  OBJECT-PROPERTIES
+  {
+    Date=09/24/21;
+    Time=12:00:00 PM;
+    Version List=NAVW114.29;
+  }
+  PROPERTIES
+  {
+    CaptionML=ENU=Tax Reg. No. Validation Templates;
+    SourceTable=Table226;
+    PageType=List;
+    OnOpenPage=VAR
+                 VATRegNoSrvConfig@1000 : Record 248;
+               BEGIN
+                 VATRegNoSrvConfig.GET;
+                 CheckInitDefaultTemplate(VATRegNoSrvConfig);
+               END;
+
+  }
+  CONTROLS
+  {
+    { 1   ;0   ;Container ;
+                ContainerType=ContentArea }
+
+    { 2   ;1   ;Group     ;
+                Name=Group;
+                GroupType=Repeater }
+
+    { 3   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the template code.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr=Code }
+
+    { 5   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the country/region code.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Country/Region Code" }
+
+    { 6   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the account type.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Account Type" }
+
+    { 4   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the account number.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Account No." }
+
+    { 9   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies if the name value is validated.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Validate Name" }
+
+    { 7   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies if the street value is validated.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Validate Street" }
+
+    { 11  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies if the city value is validated.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Validate City" }
+
+    { 10  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies if the ZIP code value is validated.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Validate Post Code" }
+
+    { 8   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies if you want to exclude any detailed information that the validation service returns. Choose the field to view all validation details.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Ignore Details" }
+
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

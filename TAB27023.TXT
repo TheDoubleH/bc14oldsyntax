@@ -1,0 +1,36 @@
+OBJECT Table 27023 SAT Permission Type
+{
+  OBJECT-PROPERTIES
+  {
+    Date=01/13/22;
+    Time=12:00:00 PM;
+    Version List=NAVNA14.32;
+  }
+  PROPERTIES
+  {
+    DataPerCompany=No;
+    CaptionML=ENU=SAT Permission Type;
+    LookupPageID=Page27023;
+    DrillDownPageID=Page27023;
+  }
+  FIELDS
+  {
+    { 1   ;   ;Code                ;Code10        ;CaptionML=ENU=Code }
+    { 2   ;   ;Description         ;Text150       ;CaptionML=ENU=Description }
+    { 3   ;   ;Transport Key       ;Code10        ;CaptionML=ENU=Transport Key }
+  }
+  KEYS
+  {
+    {    ;Code                                    ;Clustered=Yes }
+  }
+  FIELDGROUPS
+  {
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

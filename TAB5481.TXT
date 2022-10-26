@@ -1,0 +1,41 @@
+OBJECT Table 5481 Account Entity Setup
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/24/19;
+    Time=12:00:00 PM;
+    Version List=NAVW114.00;
+  }
+  PROPERTIES
+  {
+    ObsoleteState=Pending;
+    ObsoleteReason=Became obsolete after refactoring of the NAV APIs.;
+    CaptionML=ENU=Account Entity Setup;
+  }
+  FIELDS
+  {
+    { 1   ;   ;Primary Key         ;Code10        ;CaptionML=ENU=Primary Key }
+    { 2   ;   ;Show Balance        ;Boolean       ;CaptionML=ENU=Show Balance }
+  }
+  KEYS
+  {
+    {    ;Primary Key                             ;Clustered=Yes }
+  }
+  FIELDGROUPS
+  {
+  }
+  CODE
+  {
+
+    [External]
+    PROCEDURE SafeGet@1();
+    BEGIN
+      IF NOT GET THEN
+        INSERT;
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

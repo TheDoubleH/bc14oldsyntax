@@ -1,0 +1,192 @@
+OBJECT Page 5879 Phys. Inventory Recording
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/24/19;
+    Time=12:00:00 PM;
+    Version List=NAVW114.00;
+  }
+  PROPERTIES
+  {
+    CaptionML=ENU=Phys. Inventory Recording;
+    SourceTable=Table5877;
+    PageType=Document;
+    ActionList=ACTIONS
+    {
+      { 1900000003;0 ;ActionContainer;
+                      ActionContainerType=RelatedInformation }
+      { 25      ;1   ;ActionGroup;
+                      CaptionML=ENU=&Recording;
+                      Image=Document }
+      { 27      ;2   ;Action    ;
+                      CaptionML=ENU=Co&mments;
+                      ToolTipML=ENU=View or add comments for the recording.;
+                      ApplicationArea=#Warehouse;
+                      RunObject=Page 5891;
+                      RunPageLink=Document Type=CONST(Recording),
+                                  Order No.=FIELD(Order No.),
+                                  Recording No.=FIELD(Recording No.);
+                      Image=ViewComments }
+      { 1900000004;0 ;ActionContainer;
+                      ActionContainerType=ActionItems }
+      { 28      ;1   ;ActionGroup;
+                      CaptionML=ENU=F&unctions;
+                      Image=Action }
+      { 29      ;2   ;Action    ;
+                      Ellipsis=Yes;
+                      CaptionML=ENU=E&xport Recording Lines;
+                      ToolTipML=ENU=Send the list of counted inventory items to a file.;
+                      ApplicationArea=#Warehouse;
+                      Promoted=Yes;
+                      Image=Export;
+                      PromotedCategory=Process;
+                      OnAction=VAR
+                                 PhysInvtRecordHeader@1001 : Record 5877;
+                                 ExportPhysInvtRecording@1000 : XMLport 5875;
+                               BEGIN
+                                 PhysInvtRecordHeader.COPY(Rec);
+
+                                 ExportPhysInvtRecording.Set(PhysInvtRecordHeader);
+                                 ExportPhysInvtRecording.RUN;
+                                 CLEAR(ExportPhysInvtRecording);
+                               END;
+                                }
+      { 30      ;2   ;Action    ;
+                      Ellipsis=Yes;
+                      CaptionML=ENU=I&mport Recording Lines;
+                      ToolTipML=ENU=Import a list of counted inventory items from a file.;
+                      ApplicationArea=#Warehouse;
+                      Promoted=Yes;
+                      Image=Import;
+                      PromotedCategory=Process;
+                      OnAction=VAR
+                                 PhysInvtRecordHeader@1000 : Record 5877;
+                                 ImportPhysInvtRecording@1001 : XMLport 5876;
+                               BEGIN
+                                 PhysInvtRecordHeader.COPY(Rec);
+
+                                 ImportPhysInvtRecording.Set(PhysInvtRecordHeader);
+                                 ImportPhysInvtRecording.RUN;
+                                 CLEAR(ImportPhysInvtRecording);
+                               END;
+                                }
+      { 34      ;2   ;Action    ;
+                      ShortCutKey=Ctrl+F9;
+                      Ellipsis=Yes;
+                      CaptionML=ENU=Fi&nish;
+                      ToolTipML=ENU=Indicate that counting is finished. After this, you can no longer change the physical inventory order. When finishing the physical inventory order, the expected quantity and the recorded quantities are compared and the differences calculated.;
+                      ApplicationArea=#Warehouse;
+                      RunObject=Codeunit 5875;
+                      Promoted=Yes;
+                      Image=Approve;
+                      PromotedCategory=Process }
+      { 35      ;2   ;Action    ;
+                      Ellipsis=Yes;
+                      CaptionML=ENU=Reo&pen;
+                      ToolTipML=ENU=Reopen the recording. This also reopens the related physical inventory order.;
+                      ApplicationArea=#Warehouse;
+                      RunObject=Codeunit 5877;
+                      Promoted=Yes;
+                      Image=ReOpen;
+                      PromotedCategory=Process }
+      { 36      ;1   ;Action    ;
+                      Name=Print;
+                      Ellipsis=Yes;
+                      CaptionML=ENU=&Print;
+                      ToolTipML=ENU=Print the recording document. The printed document has an empty column in which to write the counted quantities.;
+                      ApplicationArea=#Warehouse;
+                      Promoted=Yes;
+                      Image=Print;
+                      PromotedCategory=Process;
+                      OnAction=BEGIN
+                                 DocPrint.PrintInvtRecording(Rec,TRUE);
+                               END;
+                                }
+    }
+  }
+  CONTROLS
+  {
+    { 1900000001;0;Container;
+                ContainerType=ContentArea }
+
+    { 1   ;1   ;Group     ;
+                CaptionML=ENU=General }
+
+    { 14  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the physical inventory order number that is linked to the physical inventory recording.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Order No." }
+
+    { 16  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies a number that is assigned to the physical inventory recording, when you link a physical inventory recording to a physical inventory order.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Recording No." }
+
+    { 19  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the description of the inventory recording.;
+                ApplicationArea=#Warehouse;
+                SourceExpr=Description }
+
+    { 12  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the location where the items must be counted.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Location Code" }
+
+    { 2   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the code of the person responsible for performing this physical inventory recording.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Person Responsible" }
+
+    { 10  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies if the physical inventory recording is open or finished.;
+                ApplicationArea=#Warehouse;
+                SourceExpr=Status }
+
+    { 8   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the user ID of the person who performed the physical inventory.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Person Recorded" }
+
+    { 4   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the date when the physical inventory was taken.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Date Recorded" }
+
+    { 6   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the time when the physical inventory was taken.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Time Recorded" }
+
+    { 21  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies that recording lines are automatically created for items that do not exist on the physical inventory order. This can only happen if none of the values in these four fields exist for an item on the order: Item No., Variant Code, Location Code, and Bin Code.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Allow Recording Without Order" }
+
+    { 24  ;1   ;Part      ;
+                Name=Lines;
+                ApplicationArea=#Warehouse;
+                SubPageView=SORTING(Order No.,Recording No.,Line No.);
+                SubPageLink=Order No.=FIELD(Order No.),
+                            Recording No.=FIELD(Recording No.);
+                PagePartID=Page5881 }
+
+    { 1900000007;0;Container;
+                ContainerType=FactBoxArea }
+
+    { 1905767507;1;Part   ;
+                ApplicationArea=#Notes;
+                Visible=TRUE;
+                PartType=System;
+                SystemPartID=Notes }
+
+  }
+  CODE
+  {
+    VAR
+      DocPrint@1001 : Codeunit 229;
+
+    BEGIN
+    END.
+  }
+}
+

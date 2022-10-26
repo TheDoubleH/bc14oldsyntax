@@ -1,0 +1,35 @@
+OBJECT Table 27025 SAT Packaging Type
+{
+  OBJECT-PROPERTIES
+  {
+    Date=01/13/22;
+    Time=12:00:00 PM;
+    Version List=NAVNA14.32;
+  }
+  PROPERTIES
+  {
+    DataPerCompany=No;
+    CaptionML=ENU=SAT Packaging Type;
+    LookupPageID=Page27025;
+    DrillDownPageID=Page27025;
+  }
+  FIELDS
+  {
+    { 1   ;   ;Code                ;Code10        ;CaptionML=ENU=Code }
+    { 2   ;   ;Description         ;Text150       ;CaptionML=ENU=Description }
+  }
+  KEYS
+  {
+    {    ;Code                                    ;Clustered=Yes }
+  }
+  FIELDGROUPS
+  {
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

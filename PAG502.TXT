@@ -1,0 +1,89 @@
+OBJECT Page 502 OAuth2ControlAddIn
+{
+  OBJECT-PROPERTIES
+  {
+    Date=12/01/21;
+    Time=12:00:00 PM;
+    Version List=NAVW114.31;
+  }
+  PROPERTIES
+  {
+    Editable=No;
+    CaptionML=ENU=Waiting for a response - do not close this page;
+    InsertAllowed=No;
+    DeleteAllowed=No;
+    ModifyAllowed=No;
+    LinksAllowed=No;
+  }
+  CONTROLS
+  {
+    { 1   ;    ;Container ;
+                ContainerType=ContentArea }
+
+    { 2   ;1   ;Field     ;
+                Name=OAuthIntegration;
+                ApplicationArea=#All;
+                ControlAddIn=[Microsoft.Dynamics.Nav.Client.OAuthIntegration;PublicKeyToken=31bf3856ad364e35] }
+
+  }
+  CODE
+  {
+    VAR
+      OAuthRequestUrl@1002 : Text;
+      AuthError@1005 : Text;
+      AuthCode@1004 : Text;
+      AuthCodeErrorLbl@1008 : TextConst '@@@="%1 = The authorization error message, %2 = The authorization error description";ENU=Error: %1, description: %2';
+      CloseWindowMsg@1000 : TextConst 'ENU=Authorization completed. Close the window to proceed.';
+
+    PROCEDURE SetOAuth2Properties@4(AuthRequestUrl@1000 : Text);
+    BEGIN
+      OAuthRequestUrl := AuthRequestUrl;
+    END;
+
+    PROCEDURE GetAuthCode@6() : Text;
+    BEGIN
+      EXIT(AuthCode);
+    END;
+
+    PROCEDURE GetAuthError@9() : Text;
+    BEGIN
+      EXIT(AuthError);
+    END;
+
+    EVENT OAuthIntegration@-2::AuthorizationCodeRetrieved@3(authorizationCode@1000 : Text);
+    VAR
+      FileMgt@1002 : Codeunit 419;
+    BEGIN
+      AuthCode := authorizationCode;
+      IF FileMgt.IsWindowsClient THEN
+        MESSAGE(CloseWindowMsg);
+      CurrPage.CLOSE;
+    END;
+
+    EVENT OAuthIntegration@-2::AuthorizationErrorOccurred@4(error@1001 : Text;description@1000 : Text);
+    BEGIN
+      AuthError := STRSUBSTNO(AuthCodeErrorLbl,error,description);
+      CurrPage.CLOSE;
+    END;
+
+    EVENT OAuthIntegration@-2::AppRegistrationInformationRetrieved@5(clientId@1001 : Text;clientSecret@1000 : Text);
+    BEGIN
+    END;
+
+    EVENT OAuthIntegration@-2::AppRegistrationErrorOccurred@6(errorCode@1001 : Text;description@1000 : Text);
+    BEGIN
+    END;
+
+    EVENT OAuthIntegration@-2::ControlAddInReady@7();
+    VAR
+      URI@1000 : DotNet "'System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Uri";
+    BEGIN
+      URI := URI.Uri(OAuthRequestUrl);
+      CurrPage.OAuthIntegration.StartAuthorization(URI);
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

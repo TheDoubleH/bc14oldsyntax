@@ -1,0 +1,238 @@
+OBJECT Page 348 Import Item Pictures
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/24/19;
+    Time=12:00:00 PM;
+    Version List=NAVW114.00;
+  }
+  PROPERTIES
+  {
+    CaptionML=ENU=Import Item Pictures;
+    ApplicationArea=#Basic,#Suite;
+    InsertAllowed=No;
+    DeleteAllowed=No;
+    ModifyAllowed=No;
+    SourceTable=Table31;
+    PageType=List;
+    UsageCategory=Tasks;
+    SourceTableTemporary=Yes;
+    OnQueryClosePage=BEGIN
+                       SETRANGE("Import Status","Import Status"::Pending);
+                       IF NOT ISEMPTY THEN
+                         IF NOT CONFIRM(ImportIncompleteQst,FALSE) THEN BEGIN
+                           SETRANGE("Import Status");
+                           EXIT(FALSE);
+                         END;
+
+                       EXIT(TRUE);
+                     END;
+
+    ActionList=ACTIONS
+    {
+      { 8       ;    ;ActionContainer;
+                      ActionContainerType=ActionItems }
+      { 12      ;1   ;ActionGroup;
+                      CaptionML=ENU=Functions }
+      { 9       ;2   ;Action    ;
+                      Name=ImportPictures;
+                      CaptionML=ENU=Import Pictures;
+                      ToolTipML=ENU=Import pictures into items cards. Existing pictures will be replaced if the Replace Pictures check box is selected.;
+                      ApplicationArea=#Basic,#Suite;
+                      Promoted=Yes;
+                      PromotedIsBig=Yes;
+                      Image=ImportExport;
+                      PromotedCategory=Process;
+                      PromotedOnly=Yes;
+                      OnAction=BEGIN
+                                 ImportPictures(ReplaceMode);
+                                 AddedCount := GetAddedCount;
+                                 ReplacedCount := GetReplacedCount;
+                               END;
+                                }
+      { 15      ;2   ;Action    ;
+                      Name=ShowItemCard;
+                      CaptionML=ENU=Show Item Card;
+                      ToolTipML=ENU=Open the item card that contains the picture.;
+                      ApplicationArea=#Basic,#Suite;
+                      RunObject=Page 30;
+                      RunPageLink=No.=FIELD(Item No.);
+                      Promoted=Yes;
+                      PromotedIsBig=Yes;
+                      PromotedCategory=Process;
+                      PromotedOnly=Yes }
+    }
+  }
+  CONTROLS
+  {
+    { 1   ;0   ;Container ;
+                ContainerType=ContentArea }
+
+    { 6   ;1   ;Group     ;
+                GroupType=Group }
+
+    { 11  ;2   ;Field     ;
+                Width=60;
+                AssistEdit=Yes;
+                CaptionML=ENU=Select a ZIP File;
+                ToolTipML=ENU=Specifies a ZIP file with pictures for upload.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr=ZipFileName;
+                Editable=FALSE;
+                OnAssistEdit=BEGIN
+                               IF ZipFileName <> '' THEN BEGIN
+                                 DELETEALL;
+                                 ZipFileName := '';
+                               END;
+                               ZipFileName := LoadZIPFile('',TotalCount,ReplaceMode);
+                               ReplaceModeEditable := ZipFileName <> '';
+                               FINDFIRST;
+
+                               UpdateCounters;
+                             END;
+                              }
+
+    { 13  ;2   ;Field     ;
+                CaptionML=ENU=Replace Pictures;
+                ToolTipML=ENU=Specifies if existing item pictures are replaced during import.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr=ReplaceMode;
+                Editable=ReplaceModeEditable;
+                OnValidate=BEGIN
+                             IF ZipFileName = '' THEN
+                               ERROR(SelectZIPFilenameErr);
+
+                             RESET;
+                             SETRANGE("Picture Already Exists",TRUE);
+                             IF ReplaceMode THEN
+                               MODIFYALL("Import Status","Import Status"::Pending)
+                             ELSE
+                               MODIFYALL("Import Status","Import Status"::Skip);
+                             SETRANGE("Picture Already Exists");
+
+                             UpdateCounters;
+                             CurrPage.UPDATE;
+                           END;
+                            }
+
+    { 23  ;1   ;Group     ;
+                GroupType=Group }
+
+    { 22  ;2   ;Field     ;
+                CaptionML=ENU=Pictures to Add;
+                ToolTipML=ENU=Specifies the number of item pictures that can be added with the selected ZIP file.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr=AddCount;
+                Editable=FALSE }
+
+    { 17  ;2   ;Field     ;
+                CaptionML=ENU=Pictures to Replace;
+                ToolTipML=ENU=Specifies the number of existing item pictures that can be replaced with the selected ZIP file.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr=ReplaceCount;
+                Editable=FALSE }
+
+    { 16  ;2   ;Field     ;
+                CaptionML=ENU=Total Pictures;
+                ToolTipML=ENU=Specifies the total number of item pictures that can be imported from the selected ZIP file.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr=TotalCount;
+                Editable=FALSE }
+
+    { 7   ;2   ;Field     ;
+                CaptionML=ENU=Added Pictures;
+                ToolTipML=ENU=Specifies how many item pictures were added last time you used the Import Pictures action.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr=AddedCount;
+                Editable=FALSE }
+
+    { 24  ;2   ;Field     ;
+                CaptionML=ENU=Replaced Pictures;
+                ToolTipML=ENU=Specifies how many item pictures were replaced last time you used the Import Pictures action.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr=ReplacedCount;
+                Editable=FALSE }
+
+    { 2   ;1   ;Group     ;
+                Name=Group;
+                CaptionML=ENU=Pictures;
+                Editable=FALSE;
+                GroupType=Repeater }
+
+    { 5   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the number of the item that the picture is for.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Item No." }
+
+    { 4   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the description of the item that the picture is for.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Item Description" }
+
+    { 21  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies if a picture already exists for the item card.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Picture Already Exists" }
+
+    { 3   ;2   ;Field     ;
+                Width=20;
+                ToolTipML=ENU=Specifies the name of the picture file. It must be the same as the item number.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="File Name" }
+
+    { 18  ;2   ;Field     ;
+                Width=10;
+                ToolTipML=ENU=Specifies the format of the picture file.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="File Extension" }
+
+    { 19  ;2   ;Field     ;
+                Width=10;
+                ToolTipML=ENU=Specifies the size of the picture file.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="File Size (KB)" }
+
+    { 14  ;2   ;Field     ;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Modified Date";
+                Visible=FALSE }
+
+    { 20  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies when the picture was last modified.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Modified Time";
+                Visible=FALSE }
+
+    { 10  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies if the last import of the picture was been skipped, is pending, or is completed.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Import Status" }
+
+  }
+  CODE
+  {
+    VAR
+      ZipFileName@1000 : Text;
+      TotalCount@1009 : Integer;
+      AddCount@1010 : Integer;
+      SelectZIPFilenameErr@1005 : TextConst 'ENU=You must select the ZIP file first.';
+      ImportIncompleteQst@1004 : TextConst 'ENU=One or more pictures have not been imported yet. If you leave the page, you must upload the ZIP file again to import remaining pictures.\\Do you want to leave this page?';
+      AddedCount@1003 : Integer;
+      ReplaceCount@1002 : Integer;
+      ReplacedCount@1006 : Integer;
+      ReplaceMode@1001 : Boolean;
+      ReplaceModeEditable@1007 : Boolean;
+
+    LOCAL PROCEDURE UpdateCounters@5();
+    BEGIN
+      AddCount := GetAddCount;
+      ReplaceCount := GetReplaceCount;
+      AddedCount := GetAddedCount;
+      ReplacedCount := GetReplacedCount;
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

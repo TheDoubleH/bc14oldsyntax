@@ -1,0 +1,428 @@
+OBJECT Codeunit 350 IntraJnlManagement
+{
+  OBJECT-PROPERTIES
+  {
+    Date=05/27/22;
+    Time=12:00:00 PM;
+    Version List=NAVW114.37;
+  }
+  PROPERTIES
+  {
+    Permissions=TableData 261=imd,
+                TableData 262=imd;
+    OnRun=BEGIN
+          END;
+
+  }
+  CODE
+  {
+    VAR
+      Text000@1000 : TextConst 'ENU=INTRASTAT';
+      Text001@1001 : TextConst 'ENU=Intrastat Journal';
+      Text002@1002 : TextConst 'ENU=DEFAULT';
+      Text003@1003 : TextConst 'ENU=Default Journal';
+      OpenFromBatch@1004 : Boolean;
+      AdvChecklistErr@1005 : TextConst 'ENU=There are one or more errors. For details, see the journal error FactBox.';
+
+    [External]
+    PROCEDURE TemplateSelection@1(PageID@1003 : Integer;VAR IntrastatJnlLine@1002 : Record 263;VAR JnlSelected@1001 : Boolean);
+    VAR
+      IntraJnlTemplate@1000 : Record 261;
+    BEGIN
+      JnlSelected := TRUE;
+
+      IntraJnlTemplate.RESET;
+      IntraJnlTemplate.SETRANGE("Page ID",PageID);
+
+      CASE IntraJnlTemplate.COUNT OF
+        0:
+          BEGIN
+            IntraJnlTemplate.INIT;
+            IntraJnlTemplate.Name := Text000;
+            IntraJnlTemplate.Description := Text001;
+            IntraJnlTemplate.VALIDATE("Page ID");
+            IntraJnlTemplate.INSERT;
+            COMMIT;
+          END;
+        1:
+          IntraJnlTemplate.FINDFIRST;
+        ELSE
+          JnlSelected := PAGE.RUNMODAL(0,IntraJnlTemplate) = ACTION::LookupOK;
+      END;
+      IF JnlSelected THEN BEGIN
+        IntrastatJnlLine.FILTERGROUP(2);
+        IntrastatJnlLine.SETRANGE("Journal Template Name",IntraJnlTemplate.Name);
+        IntrastatJnlLine.FILTERGROUP(0);
+        IF OpenFromBatch THEN BEGIN
+          IntrastatJnlLine."Journal Template Name" := '';
+          PAGE.RUN(IntraJnlTemplate."Page ID",IntrastatJnlLine);
+        END;
+      END;
+    END;
+
+    [External]
+    PROCEDURE TemplateSelectionFromBatch@9(VAR IntrastatJnlBatch@1003 : Record 262);
+    VAR
+      IntrastatJnlLine@1000 : Record 263;
+      IntraJnlTemplate@1002 : Record 261;
+    BEGIN
+      OpenFromBatch := TRUE;
+      IntraJnlTemplate.GET(IntrastatJnlBatch."Journal Template Name");
+      IntraJnlTemplate.TESTFIELD("Page ID");
+      IntrastatJnlBatch.TESTFIELD(Name);
+
+      IntrastatJnlLine.FILTERGROUP := 2;
+      IntrastatJnlLine.SETRANGE("Journal Template Name",IntraJnlTemplate.Name);
+      IntrastatJnlLine.FILTERGROUP := 0;
+
+      IntrastatJnlLine."Journal Template Name" := '';
+      IntrastatJnlLine."Journal Batch Name" := IntrastatJnlBatch.Name;
+      PAGE.RUN(IntraJnlTemplate."Page ID",IntrastatJnlLine);
+    END;
+
+    [External]
+    PROCEDURE OpenJnl@2(VAR CurrentJnlBatchName@1000 : Code[10];VAR IntrastatJnlLine@1001 : Record 263);
+    BEGIN
+      CheckTemplateName(IntrastatJnlLine.GETRANGEMAX("Journal Template Name"),CurrentJnlBatchName);
+      IntrastatJnlLine.FILTERGROUP(2);
+      IntrastatJnlLine.SETRANGE("Journal Batch Name",CurrentJnlBatchName);
+      IntrastatJnlLine.FILTERGROUP(0);
+    END;
+
+    [External]
+    PROCEDURE OpenJnlBatch@10(VAR IntrastatJnlBatch@1003 : Record 262);
+    VAR
+      IntraJnlTemplate@1001 : Record 261;
+      IntrastatJnlLine@1004 : Record 263;
+      JnlSelected@1002 : Boolean;
+    BEGIN
+      IF IntrastatJnlBatch.GETFILTER("Journal Template Name") <> '' THEN
+        EXIT;
+      IntrastatJnlBatch.FILTERGROUP(2);
+      IF IntrastatJnlBatch.GETFILTER("Journal Template Name") <> '' THEN BEGIN
+        IntrastatJnlBatch.FILTERGROUP(0);
+        EXIT;
+      END;
+      IntrastatJnlBatch.FILTERGROUP(0);
+
+      IF NOT IntrastatJnlBatch.FIND('-') THEN BEGIN
+        IF NOT IntraJnlTemplate.FINDFIRST THEN
+          TemplateSelection(0,IntrastatJnlLine,JnlSelected);
+        IF IntraJnlTemplate.FINDFIRST THEN
+          CheckTemplateName(IntraJnlTemplate.Name,IntrastatJnlBatch.Name);
+      END;
+      IntrastatJnlBatch.FIND('-');
+      JnlSelected := TRUE;
+      IF IntrastatJnlBatch.GETFILTER("Journal Template Name") <> '' THEN
+        IntraJnlTemplate.SETRANGE(Name,IntrastatJnlBatch.GETFILTER("Journal Template Name"));
+      CASE IntraJnlTemplate.COUNT OF
+        1:
+          IntraJnlTemplate.FINDFIRST;
+        ELSE
+          JnlSelected := PAGE.RUNMODAL(0,IntraJnlTemplate) = ACTION::LookupOK;
+      END;
+      IF NOT JnlSelected THEN
+        ERROR('');
+
+      IntrastatJnlBatch.FILTERGROUP(0);
+      IntrastatJnlBatch.SETRANGE("Journal Template Name",IntraJnlTemplate.Name);
+      IntrastatJnlBatch.FILTERGROUP(2);
+    END;
+
+    LOCAL PROCEDURE CheckTemplateName@3(CurrentJnlTemplateName@1000 : Code[10];VAR CurrentJnlBatchName@1001 : Code[10]);
+    VAR
+      IntraJnlTemplate@1002 : Record 261;
+      IntrastatJnlBatch@1003 : Record 262;
+    BEGIN
+      IntrastatJnlBatch.SETRANGE("Journal Template Name",CurrentJnlTemplateName);
+      IF NOT IntrastatJnlBatch.GET(CurrentJnlTemplateName,CurrentJnlBatchName) THEN BEGIN
+        IF NOT IntrastatJnlBatch.FINDFIRST THEN BEGIN
+          IntraJnlTemplate.GET(CurrentJnlTemplateName);
+          IntrastatJnlBatch.INIT;
+          IntrastatJnlBatch."Journal Template Name" := IntraJnlTemplate.Name;
+          IntrastatJnlBatch.Name := Text002;
+          IntrastatJnlBatch.Description := Text003;
+          IntrastatJnlBatch.INSERT;
+          COMMIT;
+        END;
+        CurrentJnlBatchName := IntrastatJnlBatch.Name;
+      END;
+    END;
+
+    [External]
+    PROCEDURE CheckName@4(CurrentJnlBatchName@1000 : Code[10];VAR IntrastatJnlLine@1001 : Record 263);
+    VAR
+      IntrastatJnlBatch@1002 : Record 262;
+    BEGIN
+      IntrastatJnlBatch.GET(IntrastatJnlLine.GETRANGEMAX("Journal Template Name"),CurrentJnlBatchName);
+    END;
+
+    [External]
+    PROCEDURE SetName@5(CurrentJnlBatchName@1000 : Code[10];VAR IntrastatJnlLine@1001 : Record 263);
+    BEGIN
+      IntrastatJnlLine.FILTERGROUP(2);
+      IntrastatJnlLine.SETRANGE("Journal Batch Name",CurrentJnlBatchName);
+      IntrastatJnlLine.FILTERGROUP(0);
+      IF IntrastatJnlLine.FIND('-') THEN;
+    END;
+
+    [External]
+    PROCEDURE LookupName@7(CurrentJnlTemplateName@1000 : Code[10];CurrentJnlBatchName@1001 : Code[10];VAR EntrdJnlBatchName@1002 : Text[10]) : Boolean;
+    VAR
+      IntrastatJnlBatch@1003 : Record 262;
+    BEGIN
+      IntrastatJnlBatch."Journal Template Name" := CurrentJnlTemplateName;
+      IntrastatJnlBatch.Name := CurrentJnlBatchName;
+      IntrastatJnlBatch.FILTERGROUP(2);
+      IntrastatJnlBatch.SETRANGE("Journal Template Name",CurrentJnlTemplateName);
+      IntrastatJnlBatch.FILTERGROUP(0);
+      IF PAGE.RUNMODAL(0,IntrastatJnlBatch) <> ACTION::LookupOK THEN
+        EXIT(FALSE);
+
+      EntrdJnlBatchName := IntrastatJnlBatch.Name;
+      EXIT(TRUE);
+    END;
+
+    [External]
+    PROCEDURE CalcStatisticalValue@6(VAR IntrastatJnlLine@1000 : Record 263;LastIntrastatJnlLine@1001 : Record 263;VAR StatisticalValue@1002 : Decimal;VAR TotalStatisticalValue@1003 : Decimal;VAR ShowStatisticalValue@1004 : Boolean;VAR ShowTotalStatisticalValue@1005 : Boolean);
+    VAR
+      TempIntrastatJnlLine@1006 : Record 263;
+      TempIntrastatJnlLine2@1007 : Record 263;
+    BEGIN
+      TempIntrastatJnlLine.COPYFILTERS(IntrastatJnlLine);
+
+      IF TempIntrastatJnlLine.CALCSUMS("Statistical Value") THEN BEGIN
+        IF IntrastatJnlLine."Line No." <> 0 THEN // 0 = New record
+          TotalStatisticalValue := TempIntrastatJnlLine."Statistical Value"
+        ELSE
+          TotalStatisticalValue := TempIntrastatJnlLine."Statistical Value" + LastIntrastatJnlLine."Statistical Value";
+
+        ShowTotalStatisticalValue := TRUE;
+      END ELSE
+        ShowTotalStatisticalValue := FALSE;
+
+      IF IntrastatJnlLine."Line No." <> 0 THEN BEGIN // 0 = New record
+        TempIntrastatJnlLine.SETFILTER("Line No.",'<=%1',IntrastatJnlLine."Line No.");
+        IF TempIntrastatJnlLine.CALCSUMS("Statistical Value") THEN BEGIN
+          StatisticalValue := TempIntrastatJnlLine."Statistical Value";
+          ShowStatisticalValue := TRUE;
+        END ELSE
+          ShowStatisticalValue := FALSE;
+      END ELSE BEGIN
+        TempIntrastatJnlLine.SETFILTER("Line No.",'<=%1',LastIntrastatJnlLine."Line No.");
+        IF TempIntrastatJnlLine.CALCSUMS("Statistical Value") THEN BEGIN
+          TempIntrastatJnlLine2.COPYFILTERS(IntrastatJnlLine);
+          TempIntrastatJnlLine2 := LastIntrastatJnlLine;
+          IF TempIntrastatJnlLine2.NEXT <> 0 THEN BEGIN
+            StatisticalValue := TempIntrastatJnlLine."Statistical Value";
+          END ELSE
+            StatisticalValue := TempIntrastatJnlLine."Statistical Value" + LastIntrastatJnlLine."Statistical Value";
+
+          ShowStatisticalValue := TRUE;
+        END ELSE
+          ShowStatisticalValue := FALSE;
+      END;
+    END;
+
+    PROCEDURE ValidateChecklistReport@15(IntrastatJnlLine@1002 : Record 263);
+    VAR
+      IntrastatChecklistSetup@1000 : Record 8451;
+      ErrorMessage@1001 : Record 700;
+    BEGIN
+      ChecklistSetBatchContext(ErrorMessage,IntrastatJnlLine);
+      IF IntrastatChecklistSetup.FINDSET THEN
+        REPEAT
+          ErrorMessage.LogIfEmpty(IntrastatJnlLine,IntrastatChecklistSetup."Field No.",ErrorMessage."Message Type"::Error);
+        UNTIL IntrastatChecklistSetup.NEXT = 0;
+    END;
+
+    PROCEDURE ValidateReportWithAdvancedChecklist@13(IntrastatJnlLine@1002 : Record 263;ReportId@1000 : Integer;ThrowError@1003 : Boolean) : Boolean;
+    VAR
+      AdvancedIntrastatChecklist@1001 : Record 8452;
+    BEGIN
+      EXIT(
+        ValidateObjectWithAdvancedChecklist(
+          IntrastatJnlLine,AdvancedIntrastatChecklist."Object Type"::Report,ReportId,ThrowError));
+    END;
+
+    PROCEDURE ValidateCodeunitWithAdvancedChecklist@14(IntrastatJnlLine@1002 : Record 263;CodeunitId@1000 : Integer;ThrowError@1003 : Boolean) : Boolean;
+    VAR
+      AdvancedIntrastatChecklist@1001 : Record 8452;
+    BEGIN
+      EXIT(
+        ValidateObjectWithAdvancedChecklist(
+          IntrastatJnlLine,AdvancedIntrastatChecklist."Object Type"::Codeunit,CodeunitId,ThrowError));
+    END;
+
+    PROCEDURE IsAdvancedChecklistReportField@12(ReportId@1001 : Integer;FieldNo@1002 : Integer;FilterExpression@1003 : Text) : Boolean;
+    VAR
+      AdvancedIntrastatChecklist@1000 : Record 8452;
+    BEGIN
+      AdvancedIntrastatChecklist.SETRANGE("Object Type",AdvancedIntrastatChecklist."Object Type"::Report);
+      AdvancedIntrastatChecklist.SETRANGE("Object Id",ReportId);
+      AdvancedIntrastatChecklist.SETRANGE("Field No.",FieldNo);
+      AdvancedIntrastatChecklist.SETRANGE("Filter Expression",FilterExpression);
+      EXIT(NOT AdvancedIntrastatChecklist.ISEMPTY);
+    END;
+
+    LOCAL PROCEDURE ValidateObjectWithAdvancedChecklist@8(IntrastatJnlLine@1000 : Record 263;ObjectType@1005 : Option;ObjectId@1004 : Integer;ThrowError@1002 : Boolean) : Boolean;
+    VAR
+      ErrorMessage@1001 : Record 700;
+      AdvancedIntrastatChecklist@1003 : Record 8452;
+      AnyError@1006 : Boolean;
+    BEGIN
+      ChecklistSetBatchContext(ErrorMessage,IntrastatJnlLine);
+      AdvancedIntrastatChecklist.SETRANGE("Object Type",ObjectType);
+      AdvancedIntrastatChecklist.SETRANGE("Object Id",ObjectId);
+      IF AdvancedIntrastatChecklist.FINDSET THEN
+        REPEAT
+          IF AdvancedIntrastatChecklist.LinePassesFilterExpression(IntrastatJnlLine) THEN
+            AnyError :=
+              AnyError OR
+              (ErrorMessage.LogIfEmpty(
+                 IntrastatJnlLine,AdvancedIntrastatChecklist."Field No.",ErrorMessage."Message Type"::Error) <> 0);
+        UNTIL AdvancedIntrastatChecklist.NEXT = 0;
+
+      IF AnyError AND ThrowError THEN
+        ThrowJournalBatchError;
+
+      EXIT(NOT AnyError);
+    END;
+
+    PROCEDURE ChecklistClearBatchErrors@11(IntrastatJnlBatch@1000 : Record 262);
+    VAR
+      ErrorMessage@1001 : Record 700;
+    BEGIN
+      ErrorMessage.SetContext(IntrastatJnlBatch);
+      ErrorMessage.ClearLog;
+    END;
+
+    LOCAL PROCEDURE ChecklistSetBatchContext@16(VAR ErrorMessage@1000 : Record 700;IntrastatJnlLine@1001 : Record 263);
+    VAR
+      IntrastatJnlBatch@1002 : Record 262;
+    BEGIN
+      IntrastatJnlBatch."Journal Template Name" := IntrastatJnlLine."Journal Template Name";
+      IntrastatJnlBatch.Name := IntrastatJnlLine."Journal Batch Name";
+      ErrorMessage.SetContext(IntrastatJnlBatch);
+    END;
+
+    PROCEDURE CreateDefaultAdvancedIntrastatSetup@18();
+    VAR
+      IntrastatJnlLine@1000 : Record 263;
+    BEGIN
+      CreateAdvancedChecklistSetupCommonFields(REPORT::"Intrastat - Checklist");
+      CreateAdvancedChecklistSetupCommonFields(REPORT::"Intrastat - Form");
+      CreateAdvancedChecklistSetupCommonFields(REPORT::"Intrastat - Make Disk Tax Auth");
+
+      CreateAdvancedChecklistFieldSetup(REPORT::"Intrastat - Checklist",IntrastatJnlLine.FIELDNO(Quantity),'');
+      CreateAdvancedChecklistFieldSetup(REPORT::"Intrastat - Form",IntrastatJnlLine.FIELDNO(Quantity),'Supplementary Units: True');
+      CreateAdvancedChecklistFieldSetup(
+        REPORT::"Intrastat - Make Disk Tax Auth",IntrastatJnlLine.FIELDNO(Quantity),'Supplementary Units: True');
+    END;
+
+    LOCAL PROCEDURE CreateAdvancedChecklistSetupCommonFields@19(ReportId@1001 : Integer);
+    VAR
+      IntrastatJnlLine@1000 : Record 263;
+    BEGIN
+      CreateAdvancedChecklistFieldSetup(ReportId,IntrastatJnlLine.FIELDNO("Tariff No."),'');
+      CreateAdvancedChecklistFieldSetup(ReportId,IntrastatJnlLine.FIELDNO("Country/Region Code"),'');
+      CreateAdvancedChecklistFieldSetup(ReportId,IntrastatJnlLine.FIELDNO("Transaction Type"),'');
+      CreateAdvancedChecklistFieldSetup(ReportId,IntrastatJnlLine.FIELDNO("Total Weight"),'Supplementary Units: False');
+      CreateAdvancedChecklistFieldSetup(ReportId,IntrastatJnlLine.FIELDNO("Partner VAT ID"),'Type: Shipment');
+      CreateAdvancedChecklistFieldSetup(ReportId,IntrastatJnlLine.FIELDNO("Country/Region of Origin Code"),'Type: Shipment');
+    END;
+
+    LOCAL PROCEDURE CreateAdvancedChecklistFieldSetup@20(ReportId@1001 : Integer;FieldNo@1002 : Integer;FilterExpr@1003 : Text);
+    VAR
+      AdvancedIntrastatChecklist@1000 : Record 8452;
+    BEGIN
+      AdvancedIntrastatChecklist.INIT;
+      AdvancedIntrastatChecklist.VALIDATE("Object Type",AdvancedIntrastatChecklist."Object Type"::Report);
+      AdvancedIntrastatChecklist.VALIDATE("Object Id",ReportId);
+      AdvancedIntrastatChecklist.VALIDATE("Field No.",FieldNo);
+      AdvancedIntrastatChecklist.VALIDATE(
+        "Filter Expression",COPYSTR(FilterExpr,1,MAXSTRLEN(AdvancedIntrastatChecklist."Filter Expression")));
+      IF AdvancedIntrastatChecklist.INSERT THEN;
+    END;
+
+    PROCEDURE CheckForJournalBatchError@17(IntrastatJnlLine@1001 : Record 263;ThrowError@1000 : Boolean);
+    VAR
+      ErrorMessage@1002 : Record 700;
+    BEGIN
+      ChecklistSetBatchContext(ErrorMessage,IntrastatJnlLine);
+      IF ErrorMessage.HasErrors(FALSE) AND ThrowError THEN
+        ThrowJournalBatchError;
+    END;
+
+    LOCAL PROCEDURE ThrowJournalBatchError@22();
+    BEGIN
+      COMMIT;
+      ERROR(AdvChecklistErr);
+    END;
+
+    PROCEDURE RoundTotalWeight@21(TotalWeight@1002 : Decimal) : Decimal;
+    VAR
+      IsHandled@1001 : Boolean;
+    BEGIN
+      OnBeforeRoundTotalWeight(IsHandled,TotalWeight);
+      IF IsHandled THEN
+        EXIT(TotalWeight);
+
+      EXIT(ROUND(TotalWeight,1,'>'));
+    END;
+
+    [External]
+    PROCEDURE GetCompanyVATRegNo@24() : Text[50];
+    VAR
+      CompanyInformation@1000 : Record 79;
+      IntrastatSetup@1002 : Record 247;
+    BEGIN
+      CompanyInformation.GET;
+      IF NOT IntrastatSetup.GET THEN
+        EXIT(CompanyInformation."VAT Registration No.");
+      EXIT(
+        GetVATRegNo(
+          CompanyInformation."Country/Region Code",CompanyInformation."VAT Registration No.",
+          IntrastatSetup."Company VAT No. on File"));
+    END;
+
+    [External]
+    PROCEDURE GetVATRegNo@27(CountryCode@1000 : Code[10];VATRegNo@1001 : Text[20];VATRegNoType@1002 : Option) : Text[50];
+    VAR
+      IntrastatSetup@1004 : Record 247;
+      CountryRegion@1003 : Record 9;
+    BEGIN
+      CASE VATRegNoType OF
+        IntrastatSetup."Company VAT No. on File"::"VAT Reg. No.":
+          EXIT(VATRegNo);
+        IntrastatSetup."Company VAT No. on File"::"EU Country Code + VAT Reg. No":
+          BEGIN
+            CountryRegion.GET(CountryCode);
+            IF CountryRegion."EU Country/Region Code" <> '' THEN
+              CountryCode := CountryRegion."EU Country/Region Code";
+            EXIT(CountryCode + VATRegNo);
+          END;
+        IntrastatSetup."Company VAT No. on File"::"VAT Reg. No. Without EU Country Code":
+          BEGIN
+            CountryRegion.GET(CountryCode);
+            IF CountryRegion."EU Country/Region Code" <> '' THEN
+              CountryCode := CountryRegion."EU Country/Region Code";
+            IF COPYSTR(VATRegNo,1,STRLEN(DELCHR(CountryCode,'<>'))) =
+               DELCHR(CountryCode,'<>')
+            THEN
+              EXIT(COPYSTR(VATRegNo,STRLEN(DELCHR(CountryCode,'<>')) + 1,50));
+            EXIT(VATRegNo);
+          END;
+      END;
+    END;
+
+    [Integration]
+    LOCAL PROCEDURE OnBeforeRoundTotalWeight@23(VAR IsHandled@1000 : Boolean;VAR TotalWeight@1001 : Decimal);
+    BEGIN
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

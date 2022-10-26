@@ -1,0 +1,53 @@
+OBJECT Table 6302 Power BI Report Buffer
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/02/20;
+    Time=12:00:00 PM;
+    Version List=NAVW114.11;
+  }
+  PROPERTIES
+  {
+    ReplicateData=No;
+    CaptionML=ENU=Power BI Report Buffer;
+  }
+  FIELDS
+  {
+    { 1   ;   ;ReportID            ;GUID          ;DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=ReportID }
+    { 2   ;   ;ReportName          ;Text100       ;DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=ReportName }
+    { 3   ;   ;EmbedUrl            ;Text250       ;OnValidate=BEGIN
+                                                                ReportEmbedUrl := EmbedUrl;
+                                                              END;
+
+                                                   DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=EmbedUrl }
+    { 4   ;   ;Enabled             ;Boolean       ;DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Enabled }
+    { 10  ;   ;ReportEmbedUrl      ;Text2048      ;OnValidate=BEGIN
+                                                                IF STRLEN(ReportEmbedUrl) <= MAXSTRLEN(EmbedUrl) THEN
+                                                                  EmbedUrl := COPYSTR(ReportEmbedUrl,1,MAXSTRLEN(EmbedUrl))
+                                                                ELSE
+                                                                  EmbedUrl := '';
+                                                              END;
+
+                                                   DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=ReportEmbedUrl }
+  }
+  KEYS
+  {
+    {    ;ReportID                                ;Clustered=Yes }
+    {    ;ReportName                               }
+  }
+  FIELDGROUPS
+  {
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

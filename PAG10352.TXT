@@ -1,0 +1,72 @@
+OBJECT Page 10352 BC O365 Tax Settings
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/24/19;
+    Time=12:00:00 PM;
+    Version List=NAVNA14.00;
+  }
+  PROPERTIES
+  {
+    Editable=No;
+    CaptionML=ENU=" ";
+    PageType=CardPart;
+    OnInit=BEGIN
+             UpdateFields;
+           END;
+
+    OnAfterGetCurrRecord=BEGIN
+                           UpdateFields;
+                         END;
+
+  }
+  CONTROLS
+  {
+    { 3   ;    ;Container ;
+                ContainerType=ContentArea }
+
+    { 1020001;1;Group     ;
+                GroupType=Group;
+                InstructionalTextML=ENU=You can manage tax rates and mark the default one. }
+
+    { 1020000;1;Field     ;
+                Name=TaxRate;
+                CaptionML=ENU=Tax rate;
+                ToolTipML=ENU=Specifies the tax rate used to calculate tax on what you sell.;
+                ApplicationArea=#Basic,#Suite,#Invoicing;
+                SourceExpr=TaxAreaDescription;
+                Importance=Promoted;
+                Editable=FALSE;
+                OnAssistEdit=VAR
+                               TaxArea@1020000 : Record 318;
+                             BEGIN
+                               IF TaxArea.GET(TaxAreaCode) THEN;
+                               IF PAGE.RUNMODAL(PAGE::"BC O365 Tax Settings List",TaxArea) = ACTION::LookupOK THEN
+                                 O365TaxSettingsManagement.AssignDefaultTaxArea(TaxArea.Code);
+                               UpdateFields;
+                             END;
+                              }
+
+  }
+  CODE
+  {
+    VAR
+      O365TaxSettingsManagement@1020001 : Codeunit 10150;
+      TaxAreaCode@1020000 : Code[20];
+      TaxAreaDescription@1020002 : Text;
+
+    LOCAL PROCEDURE UpdateFields@2();
+    VAR
+      TaxArea@1020000 : Record 318;
+    BEGIN
+      TaxAreaCode := O365TaxSettingsManagement.GetDefaultTaxArea;
+      TaxArea.SETRANGE(Code,TaxAreaCode);
+      IF TaxArea.FINDFIRST THEN
+        TaxAreaDescription := TaxArea.GetDescriptionInCurrentLanguage;
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

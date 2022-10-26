@@ -1,0 +1,153 @@
+OBJECT Codeunit 10501 Upgrade IRS 1099 Form Boxes
+{
+  OBJECT-PROPERTIES
+  {
+    Date=10/29/21;
+    Time=12:00:00 PM;
+    Version List=NAVNA14.30;
+  }
+  PROPERTIES
+  {
+    Permissions=TableData 23=rim,
+                TableData 25=rim,
+                TableData 38=rim,
+                TableData 81=rim,
+                TableData 122=rim,
+                TableData 124=rim;
+    OnRun=VAR
+            IRS1099Management@1020003 : Codeunit 10500;
+          BEGIN
+            IF IRS1099Management.Upgrade2019Needed THEN
+              UpdateIRS1099FormBoxesTo2019;
+            IF IRS1099Management.Upgrade2020Needed THEN
+              UpdateIRS1099FormBoxesTo2020;
+            IF IRS1099Management.Upgrade2020FebruaryNeeded THEN
+              UpdateIRS1099FormBoxesTo2020February;
+            IF IRS1099Management.Upgrade2021Needed THEN
+              UpdateIRS1099FormBoxesTo2021;
+          END;
+
+  }
+  CODE
+  {
+    VAR
+      ConfirmIRS1099CodeUpdateQst@1020000 : TextConst '@@@="%1 - old code;%2 - new code";ENU=One or more entries have been posted with IRS 1099 code %1.\\Do you want to continue and update all the data associated with this vendor and the existing IRS 1099 code with the new code, %2?';
+
+    LOCAL PROCEDURE UpdateIRS1099FormBoxesTo2019@1020006();
+    BEGIN
+      ShiftIRS1099('DIV-11');
+      ShiftIRS1099('DIV-10');
+      ShiftIRS1099('DIV-09');
+      ShiftIRS1099('DIV-08');
+      ShiftIRS1099('DIV-06');
+      ShiftIRS1099('DIV-05');
+      InsertIRS1099('DIV-05','Section 199A dividends',10.0);
+    END;
+
+    LOCAL PROCEDURE UpdateIRS1099FormBoxesTo2020@1020004();
+    BEGIN
+      MoveIRS1099('MISC-07','NEC-01');
+      MoveIRS1099('MISC-09','MISC-07');
+      MoveIRS1099('MISC-10','MISC-09');
+      MoveIRS1099('MISC-14','MISC-10');
+      MoveIRS1099('MISC-15-A','MISC-12');
+      MoveIRS1099('MISC-16','MISC-15');
+      InsertIRS1099('MISC-14','Nonqualified deferred compensation',0);
+    END;
+
+    LOCAL PROCEDURE UpdateIRS1099FormBoxesTo2020February@1020002();
+    BEGIN
+      InsertIRS1099('NEC-04','Federal income tax withheld',0);
+    END;
+
+    LOCAL PROCEDURE UpdateIRS1099FormBoxesTo2021@1020003();
+    BEGIN
+      InsertIRS1099('DIV-02-E','Section 897 ordinary dividends',0);
+      InsertIRS1099('DIV-02-F','Section 897 capital gain',0);
+      InsertIRS1099('MISC-11','Fish purchased for resale',600);
+      InsertIRS1099('NEC-02','Payer made direct sales totaling $5,000 or more of consumer products to recipient for resale',5000);
+    END;
+
+    LOCAL PROCEDURE ShiftIRS1099@1020033(IRSCode@1020001 : Code[10]);
+    VAR
+      IRS1099FormBox@1020000 : Record 10010;
+    BEGIN
+      IF NOT IRS1099FormBox.GET(IRSCode) THEN
+        EXIT;
+
+      IRS1099FormBox.RENAME(INCSTR(IRSCode));
+    END;
+
+    LOCAL PROCEDURE MoveIRS1099@1020000(FromIRSCode@1020001 : Code[10];ToIRSCode@1020002 : Code[10]);
+    VAR
+      IRS1099FormBox@1020000 : Record 10010;
+    BEGIN
+      IF NOT IRS1099FormBox.GET(FromIRSCode) THEN
+        EXIT;
+
+      IRS1099FormBox.RENAME(ToIRSCode);
+    END;
+
+    LOCAL PROCEDURE InsertIRS1099@1020005(NewCode@1020001 : Code[10];NewDescription@1001 : Text[100];NewMinimum@1002 : Decimal);
+    VAR
+      IRS1099FormBox@1020000 : Record 10010;
+    BEGIN
+      IRS1099FormBox.INIT;
+      IRS1099FormBox.Code := NewCode;
+      IRS1099FormBox.Description := NewDescription;
+      IRS1099FormBox."Minimum Reportable" := NewMinimum;
+      IRS1099FormBox.INSERT;
+    END;
+
+    PROCEDURE UpdateIRSCodeInPostedData@1020001(VendNo@1020009 : Code[20];ExistingCode@1020007 : Code[10];NewCode@1020008 : Code[10]);
+    VAR
+      VendorLedgerEntry@1020001 : Record 25;
+      PurchaseHeader@1020002 : Record 38;
+      PurchInvHeader@1020003 : Record 122;
+      PurchCrMemoHdr@1020004 : Record 124;
+      GenJournalLineAccount@1020005 : Record 81;
+      GenJournalLineBalAccount@1020006 : Record 81;
+      Confirmed@1020000 : Boolean;
+    BEGIN
+      IF ExistingCode = '' THEN
+        EXIT;
+
+      IF ExistingCode <> NewCode THEN BEGIN
+        VendorLedgerEntry.SETRANGE("Vendor No.",VendNo);
+        VendorLedgerEntry.SETRANGE("IRS 1099 Code",ExistingCode);
+        PurchaseHeader.SETRANGE("Pay-to Vendor No.",VendNo);
+        PurchaseHeader.SETRANGE("IRS 1099 Code",ExistingCode);
+        PurchInvHeader.SETRANGE("Pay-to Vendor No.",VendNo);
+        PurchInvHeader.SETRANGE("IRS 1099 Code",ExistingCode);
+        PurchCrMemoHdr.SETRANGE("Pay-to Vendor No.",VendNo);
+        PurchCrMemoHdr.SETRANGE("IRS 1099 Code",ExistingCode);
+        GenJournalLineAccount.SETRANGE("Account Type",GenJournalLineAccount."Account Type"::Vendor);
+        GenJournalLineAccount.SETRANGE("Account No.",VendNo);
+        GenJournalLineAccount.SETRANGE("IRS 1099 Code",ExistingCode);
+        GenJournalLineBalAccount.SETRANGE("Bal. Account Type",GenJournalLineAccount."Bal. Account Type"::Vendor);
+        GenJournalLineBalAccount.SETRANGE("Bal. Account No.",VendNo);
+        GenJournalLineBalAccount.SETRANGE("IRS 1099 Code",ExistingCode);
+        IF VendorLedgerEntry.ISEMPTY AND PurchaseHeader.ISEMPTY AND PurchInvHeader.ISEMPTY AND
+           PurchCrMemoHdr.ISEMPTY AND GenJournalLineAccount.ISEMPTY AND GenJournalLineBalAccount.ISEMPTY
+        THEN
+          EXIT;
+        IF GUIALLOWED THEN
+          Confirmed := CONFIRM(STRSUBSTNO(ConfirmIRS1099CodeUpdateQst,ExistingCode,NewCode))
+        ELSE
+          Confirmed := TRUE;
+        IF NOT Confirmed THEN
+          EXIT;
+        VendorLedgerEntry.MODIFYALL("IRS 1099 Code",NewCode);
+        PurchaseHeader.MODIFYALL("IRS 1099 Code",NewCode);
+        PurchInvHeader.MODIFYALL("IRS 1099 Code",NewCode);
+        PurchCrMemoHdr.MODIFYALL("IRS 1099 Code",NewCode);
+        GenJournalLineAccount.MODIFYALL("IRS 1099 Code",NewCode);
+        GenJournalLineBalAccount.MODIFYALL("IRS 1099 Code",NewCode);
+      END;
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

@@ -1,0 +1,57 @@
+OBJECT Page 5895 Exp. Phys. Invt. Tracking
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/24/19;
+    Time=12:00:00 PM;
+    Version List=NAVW114.00;
+  }
+  PROPERTIES
+  {
+    Editable=No;
+    CaptionML=ENU=Exp. Phys. Invt. Tracking;
+    SourceTable=Table5886;
+    PageType=List;
+  }
+  CONTROLS
+  {
+    { 1900000001;0;Container;
+                ContainerType=ContentArea }
+
+    { 40  ;1   ;Group     ;
+                GroupType=Repeater }
+
+    { 1   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the expected Serial No.;
+                ApplicationArea=#ItemTracking;
+                SourceExpr="Serial No." }
+
+    { 3   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the expected Lot No.;
+                ApplicationArea=#ItemTracking;
+                SourceExpr="Lot No." }
+
+    { 5   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the expected quantity of Serial No. and Lot No. that relates to the Base Unit of Measure Code, in the Inventory Order Line.;
+                ApplicationArea=#ItemTracking;
+                SourceExpr="Quantity (Base)" }
+
+    { 7   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the number of the Inventory Order.;
+                ApplicationArea=#ItemTracking;
+                SourceExpr="Order No" }
+
+    { 9   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the line number of the Inventory Order Line.;
+                ApplicationArea=#ItemTracking;
+                SourceExpr="Order Line No." }
+
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

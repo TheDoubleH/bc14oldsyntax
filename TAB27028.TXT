@@ -1,0 +1,37 @@
+OBJECT Table 27028 SAT Locality
+{
+  OBJECT-PROPERTIES
+  {
+    Date=01/13/22;
+    Time=12:00:00 PM;
+    Version List=NAVNA14.32;
+  }
+  PROPERTIES
+  {
+    DataPerCompany=No;
+    CaptionML=ENU=SAT Locality;
+    LookupPageID=Page27028;
+    DrillDownPageID=Page27028;
+  }
+  FIELDS
+  {
+    { 1   ;   ;Code                ;Code10        ;CaptionML=ENU=Code }
+    { 2   ;   ;State               ;Code10        ;TableRelation="SAT State";
+                                                   CaptionML=ENU=State }
+    { 3   ;   ;Description         ;Text50        ;CaptionML=ENU=Description }
+  }
+  KEYS
+  {
+    {    ;Code,State                              ;Clustered=Yes }
+  }
+  FIELDGROUPS
+  {
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

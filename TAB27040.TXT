@@ -1,0 +1,48 @@
+OBJECT Table 27040 DIOT-Concept
+{
+  OBJECT-PROPERTIES
+  {
+    Date=10/26/19;
+    Time=12:00:00 PM;
+    Version List=NAVNA14.07;
+  }
+  PROPERTIES
+  {
+    ObsoleteState=Pending;
+    ObsoleteReason=Moved to extension;
+    CaptionML=ENU=DIOT Concept;
+  }
+  FIELDS
+  {
+    { 1   ;   ;Concept No.         ;Integer       ;CaptionML=ENU=Concept No.;
+                                                   MinValue=1;
+                                                   MaxValue=17 }
+    { 2   ;   ;Column No.          ;Integer       ;CaptionML=ENU=Column No.;
+                                                   MinValue=8;
+                                                   MaxValue=24 }
+    { 3   ;   ;Description         ;Text250       ;CaptionML=ENU=Description }
+    { 4   ;   ;Column Type         ;Option        ;CaptionML=ENU=Column Type;
+                                                   OptionCaptionML=ENU=None,Tax Base,Tax Amount;
+                                                   OptionString=None,VAT Base,Vat Amount }
+    { 5   ;   ;Non-Deductible      ;Boolean       ;CaptionML=ENU=Non-Deductible }
+    { 6   ;   ;Non-Deductible Pct  ;Decimal       ;CaptionML=ENU=Non-Deductible percent;
+                                                   MinValue=0 }
+    { 7   ;   ;VAT Links Count     ;Integer       ;FieldClass=FlowField;
+                                                   CalcFormula=Count("DIOT-Concept Link" WHERE (DIOT Concept No.=FIELD(Concept No.)));
+                                                   CaptionML=ENU=Tax Links Count }
+  }
+  KEYS
+  {
+    {    ;Concept No.                             ;Clustered=Yes }
+  }
+  FIELDGROUPS
+  {
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

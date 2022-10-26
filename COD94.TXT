@@ -1,0 +1,61 @@
+OBJECT Codeunit 94 Blnkt Purch Ord. to Ord. (Y/N)
+{
+  OBJECT-PROPERTIES
+  {
+    Date=08/23/19;
+    Time=12:00:00 PM;
+    Version List=NAVW114.04;
+  }
+  PROPERTIES
+  {
+    TableNo=38;
+    OnRun=VAR
+            ConfirmManagement@1000 : Codeunit 27;
+            SkipMessage@1001 : Boolean;
+          BEGIN
+            IF IsOnRunHandled(Rec) THEN
+              EXIT;
+
+            TESTFIELD("Document Type","Document Type"::"Blanket Order");
+            IF NOT ConfirmManagement.ConfirmProcess(Text000,TRUE) THEN
+              EXIT;
+
+            BlanketPurchOrderToOrder.RUN(Rec);
+            BlanketPurchOrderToOrder.GetPurchOrderHeader(PurchOrderHeader);
+
+            OnAfterCreatePurchOrder(PurchOrderHeader,SkipMessage);
+            IF NOT SkipMessage THEN
+              MESSAGE(Text001,PurchOrderHeader."No.","No.");
+          END;
+
+  }
+  CODE
+  {
+    VAR
+      Text000@1000 : TextConst 'ENU=Do you want to create an order from the blanket order?';
+      Text001@1001 : TextConst 'ENU=Order %1 has been created from blanket order %2.';
+      PurchOrderHeader@1002 : Record 38;
+      BlanketPurchOrderToOrder@1003 : Codeunit 97;
+
+    LOCAL PROCEDURE IsOnRunHandled@3(VAR PurchaseHeader@1000 : Record 38) IsHandled : Boolean;
+    BEGIN
+      IsHandled := FALSE;
+      OnBeforeRun(PurchaseHeader,IsHandled);
+      EXIT(IsHandled);
+    END;
+
+    [Integration]
+    LOCAL PROCEDURE OnAfterCreatePurchOrder@1(VAR PurchaseHeader@1000 : Record 38;VAR SkipMessage@1001 : Boolean);
+    BEGIN
+    END;
+
+    [Integration]
+    LOCAL PROCEDURE OnBeforeRun@4(VAR PurchaseHeader@1000 : Record 38;VAR IsHandled@1001 : Boolean);
+    BEGIN
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

@@ -1,0 +1,159 @@
+OBJECT Page 5878 Physical Inventory Order Lines
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/24/19;
+    Time=12:00:00 PM;
+    Version List=NAVW114.00;
+  }
+  PROPERTIES
+  {
+    Editable=No;
+    CaptionML=ENU=Physical Inventory Order Lines;
+    SourceTable=Table5876;
+    PageType=List;
+    ActionList=ACTIONS
+    {
+      { 1900000003;0 ;ActionContainer;
+                      ActionContainerType=RelatedInformation }
+      { 44      ;1   ;ActionGroup;
+                      CaptionML=ENU=&Line;
+                      Image=Line }
+      { 45      ;2   ;Action    ;
+                      ShortCutKey=Shift+F7;
+                      CaptionML=ENU=Show Document;
+                      ToolTipML=ENU=Open the document that the selected line exists on.;
+                      ApplicationArea=#Warehouse;
+                      RunObject=Page 5875;
+                      RunPageView=SORTING(No.);
+                      RunPageLink=No.=FIELD(Document No.);
+                      Promoted=Yes;
+                      PromotedIsBig=Yes;
+                      Image=View;
+                      PromotedCategory=Process }
+    }
+  }
+  CONTROLS
+  {
+    { 1900000001;0;Container;
+                ContainerType=ContentArea }
+
+    { 2   ;1   ;Group     ;
+                GroupType=Repeater }
+
+    { 1   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the document number.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Document No." }
+
+    { 3   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the number of the line.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Line No.";
+                Visible=FALSE }
+
+    { 5   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the item to be counted.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Item No." }
+
+    { 7   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the variant of the item on the line.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Variant Code";
+                Visible=FALSE }
+
+    { 9   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the description of the item.;
+                ApplicationArea=#Warehouse;
+                SourceExpr=Description }
+
+    { 11  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies an additional description of the item.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Description 2";
+                Visible=FALSE }
+
+    { 13  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the location where the item must be counted.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Location Code" }
+
+    { 15  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the unit of measure, such as bottle or piece, that is currently used for the item.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Unit of Measure";
+                Visible=FALSE }
+
+    { 17  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the unit of measure, such as bottle or piece, that is currently used for the item.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Base Unit of Measure Code" }
+
+    { 19  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the expected inventory quantity in the base unit of measure.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Qty. Expected (Base)" }
+
+    { 21  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies if the Qty. Expected (Base) field has been updated with the Calculate Expected Qty. function.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Qty. Exp. Calculated" }
+
+    { 23  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the counted quantity in the base unit of measure on the physical inventory order line.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Qty. Recorded (Base)" }
+
+    { 25  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies if the item exists on one or more physical inventory recording lines.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="On Recording Lines" }
+
+    { 27  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies how many of the related physical inventory recordings are closed.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="No. Finished Rec.-Lines" }
+
+    { 29  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies whether the Inventory Order Line was automatically created by finishing a Phys. Inventory.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Recorded Without Order";
+                Visible=FALSE }
+
+    { 31  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies if the difference in the Quantity (Base) field on the related closed recording is positive or negative.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Entry Type" }
+
+    { 33  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the difference between the Qty. Expected (Base) and the Qty. Recorded (Base) fields.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Quantity (Base)" }
+
+    { 35  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the sum of unit costs for the item quantity on the line.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Unit Amount" }
+
+    { 37  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the unit costs of the item, which will be used when posting the physical inventory.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Unit Cost";
+                Visible=FALSE }
+
+    { 39  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the shelf number where the item can be found normally.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Shelf No.";
+                Visible=FALSE }
+
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

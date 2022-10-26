@@ -1,0 +1,75 @@
+OBJECT Page 734 VAT Clauses by Doc. Type
+{
+  OBJECT-PROPERTIES
+  {
+    Date=06/30/22;
+    Time=12:00:00 PM;
+    Version List=NAVW114.38;
+  }
+  PROPERTIES
+  {
+    CaptionML=ENU=Tax Clauses by Document Type;
+    SourceTable=Table562;
+    DelayedInsert=Yes;
+    PageType=List;
+    ActionList=ACTIONS
+    {
+      { 9       ;    ;ActionContainer;
+                      ActionContainerType=ActionItems }
+      { 10      ;1   ;Action    ;
+                      Name=T&ranslation;
+                      CaptionML=ENU=T&ranslation;
+                      ToolTipML=ENU=View or edit translations for each tax clause description in different languages.;
+                      ApplicationArea=#Basic,#Suite;
+                      RunObject=Page 735;
+                      RunPageLink=VAT Clause Code=FIELD(VAT Clause Code),
+                                  Document Type=FIELD(Document Type);
+                      Promoted=Yes;
+                      Image=Translation;
+                      PromotedCategory=Process }
+    }
+  }
+  CONTROLS
+  {
+    { 1   ;0   ;Container ;
+                ContainerType=ContentArea }
+
+    { 2   ;1   ;Group     ;
+                Name=Group;
+                GroupType=Repeater }
+
+    { 3   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the document type, which is used to provide a tax description associated with a sales line on a sales invoice, credit memo, or other sales document.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Document Type" }
+
+    { 4   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the translation of the tax clause description. The translated version of the description is displayed as the tax clause, based on the Language Code setting on the customer card.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr=Description }
+
+    { 5   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the translation of the additional tax clause description.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Description 2" }
+
+    { 6   ;0   ;Container ;
+                ContainerType=FactBoxArea }
+
+    { 7   ;1   ;Part      ;
+                PartType=System;
+                SystemPartID=RecordLinks }
+
+    { 8   ;1   ;Part      ;
+                PartType=System;
+                SystemPartID=Notes }
+
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

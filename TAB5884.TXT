@@ -1,0 +1,67 @@
+OBJECT Table 5884 Pstd. Phys. Invt. Tracking
+{
+  OBJECT-PROPERTIES
+  {
+    Date=07/23/19;
+    Time=12:00:00 PM;
+    Version List=NAVW114.03;
+  }
+  PROPERTIES
+  {
+    CaptionML=ENU=Pstd. Phys. Invt. Tracking;
+    LookupPageID=Page5894;
+    DrillDownPageID=Page5894;
+  }
+  FIELDS
+  {
+    { 1   ;   ;Item Tracking No.   ;Integer       ;CaptionML=ENU=Item Tracking No. }
+    { 2   ;   ;Line No.            ;Integer       ;CaptionML=ENU=Line No. }
+    { 3   ;   ;Document No.        ;Code20        ;CaptionML=ENU=Document No. }
+    { 11  ;   ;Item No.            ;Code20        ;TableRelation=Item;
+                                                   CaptionML=ENU=Item No.;
+                                                   Editable=No }
+    { 12  ;   ;Description         ;Text100       ;CaptionML=ENU=Description }
+    { 13  ;   ;Location Code       ;Code10        ;TableRelation=Location;
+                                                   CaptionML=ENU=Location Code;
+                                                   Editable=No }
+    { 14  ;   ;Quantity            ;Decimal       ;InitValue=1;
+                                                   CaptionML=ENU=Quantity;
+                                                   DecimalPlaces=0:5 }
+    { 15  ;   ;Serial No.          ;Code50        ;TableRelation="Serial No. Information"."Serial No." WHERE (Item No.=FIELD(Item No.),
+                                                                                                              Variant Code=FIELD(Variant Code));
+                                                   ValidateTableRelation=No;
+                                                   TestTableRelation=No;
+                                                   CaptionML=ENU=Serial No. }
+    { 18  ;   ;Positive            ;Boolean       ;CaptionML=ENU=Positive;
+                                                   Editable=No }
+    { 19  ;   ;Warranty Date       ;Date          ;CaptionML=ENU=Warranty Date }
+    { 20  ;   ;Expiration Date     ;Date          ;CaptionML=ENU=Expiration Date }
+    { 5400;   ;Lot No.             ;Code50        ;TableRelation="Lot No. Information"."Lot No." WHERE (Item No.=FIELD(Item No.),
+                                                                                                        Variant Code=FIELD(Variant Code));
+                                                   ValidateTableRelation=No;
+                                                   TestTableRelation=No;
+                                                   CaptionML=ENU=Lot No. }
+    { 5401;   ;Variant Code        ;Code10        ;CaptionML=ENU=Variant Code;
+                                                   Editable=No }
+    { 5402;   ;Bin Code            ;Code20        ;TableRelation=Bin.Code WHERE (Location Code=FIELD(Location Code));
+                                                   CaptionML=ENU=Bin Code;
+                                                   Editable=No }
+    { 5403;   ;Entry Type          ;Option        ;CaptionML=ENU=Entry Type;
+                                                   OptionCaptionML=ENU=" ,Positive Adjmt.,Negative Adjmt.";
+                                                   OptionString=[ ,Positive Adjmt.,Negative Adjmt.] }
+  }
+  KEYS
+  {
+    {    ;Document No.,Item Tracking No.,Line No. ;Clustered=Yes }
+  }
+  FIELDGROUPS
+  {
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

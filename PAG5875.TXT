@@ -1,0 +1,342 @@
+OBJECT Page 5875 Physical Inventory Order
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/24/19;
+    Time=12:00:00 PM;
+    Version List=NAVW114.00;
+  }
+  PROPERTIES
+  {
+    CaptionML=ENU=Physical Inventory Order;
+    SourceTable=Table5875;
+    PageType=Document;
+    ActionList=ACTIONS
+    {
+      { 1900000003;0 ;ActionContainer;
+                      ActionContainerType=RelatedInformation }
+      { 24      ;1   ;ActionGroup;
+                      CaptionML=ENU=O&rder;
+                      Image=Order }
+      { 26      ;2   ;Action    ;
+                      ShortCutKey=F7;
+                      CaptionML=ENU=Statistics;
+                      ToolTipML=ENU=View statistical information for the physical inventory order.;
+                      ApplicationArea=#Warehouse;
+                      RunObject=Page 5897;
+                      RunPageLink=No.=FIELD(No.);
+                      Promoted=Yes;
+                      Image=Statistics;
+                      PromotedCategory=Process }
+      { 27      ;2   ;Action    ;
+                      CaptionML=ENU=Co&mments;
+                      ToolTipML=ENU=View or edit comments for the physical inventory order.;
+                      ApplicationArea=#Warehouse;
+                      RunObject=Page 5891;
+                      RunPageLink=Document Type=CONST(Order),
+                                  Order No.=FIELD(No.),
+                                  Recording No.=CONST(0);
+                      Image=ViewComments }
+      { 28      ;2   ;Action    ;
+                      CaptionML=ENU=&Recordings;
+                      ToolTipML=ENU=Open any related physical inventory recordings, the documents that are used to record the actual counting.;
+                      ApplicationArea=#Warehouse;
+                      RunObject=Page 5880;
+                      RunPageView=SORTING(Order No.,Recording No.);
+                      RunPageLink=Order No.=FIELD(No.);
+                      Image=Document }
+      { 29      ;2   ;Action    ;
+                      CaptionML=ENU=Dimensions;
+                      ToolTipML=ENU=View or edit dimensions, such as a project or department, that are assigned to the physical inventory order for financial analysis.;
+                      ApplicationArea=#Warehouse;
+                      Image=Dimensions;
+                      OnAction=BEGIN
+                                 ShowDocDim;
+                                 CurrPage.SAVERECORD;
+                               END;
+                                }
+      { 31      ;2   ;Action    ;
+                      CaptionML=ENU=Show &Duplicate Lines;
+                      ToolTipML=ENU=Show lines that have the same value in the Item No., Variant Code, Location Code, and Bin Code fields.;
+                      ApplicationArea=#Warehouse;
+                      RunObject=Codeunit 5886;
+                      Image=CheckDuplicates }
+      { 1900000004;0 ;ActionContainer;
+                      ActionContainerType=ActionItems }
+      { 32      ;1   ;ActionGroup;
+                      CaptionML=ENU=F&unctions;
+                      Image=Action }
+      { 33      ;2   ;Action    ;
+                      Name=CalculateLines;
+                      Ellipsis=Yes;
+                      CaptionML=ENU=&Calculate Lines;
+                      ToolTipML=ENU=Add physical inventory lines for items that are currently recorded in inventory.;
+                      ApplicationArea=#Warehouse;
+                      Promoted=Yes;
+                      Image=CalculateLines;
+                      PromotedCategory=Process;
+                      OnAction=VAR
+                                 CalcPhysInvtOrderLines@1000 : Report 5880;
+                               BEGIN
+                                 CalcPhysInvtOrderLines.SetPhysInvtOrderHeader(Rec);
+                                 CalcPhysInvtOrderLines.RUNMODAL;
+                                 CLEAR(CalcPhysInvtOrderLines);
+                               END;
+                                }
+      { 34      ;2   ;Action    ;
+                      Name=CalculateCountingPeriod;
+                      Ellipsis=Yes;
+                      CaptionML=ENU=Calculate Counting &Period;
+                      ToolTipML=ENU=Add physical inventory order lines for items and SKUs that are set up with counting periods. See the Phys Invt Counting Period Code field on the item card or SKU card.;
+                      ApplicationArea=#Warehouse;
+                      Image=CalculateCalendar;
+                      OnAction=VAR
+                                 PhysInvtCountMgt@1000 : Codeunit 7380;
+                               BEGIN
+                                 PhysInvtCountMgt.InitFromPhysInvtOrder(Rec);
+                                 PhysInvtCountMgt.RUN;
+                                 CLEAR(PhysInvtCountMgt);
+                               END;
+                                }
+      { 35      ;2   ;Action    ;
+                      Name=CalculateLinesBins;
+                      Ellipsis=Yes;
+                      CaptionML=ENU=Calculate Lines (&Bins);
+                      ToolTipML=ENU=Add physical inventory lines for items that are currently recorded in bins in the warehouse.;
+                      ApplicationArea=#Warehouse;
+                      Image=CalculateBinReplenishment;
+                      OnAction=VAR
+                                 CalcPhysInvtOrderBins@1000 : Report 5885;
+                               BEGIN
+                                 CalcPhysInvtOrderBins.SetPhysInvtOrderHeader(Rec);
+                                 CalcPhysInvtOrderBins.RUNMODAL;
+                                 CLEAR(CalcPhysInvtOrderBins);
+                               END;
+                                }
+      { 36      ;2   ;Action    ;
+                      Name=CopyDocument;
+                      Ellipsis=Yes;
+                      CaptionML=ENU=Copy &Document;
+                      ToolTipML=ENU=Copy Document.;
+                      ApplicationArea=#Warehouse;
+                      Image=CopyDocument;
+                      OnAction=VAR
+                                 CopyPhysInvtOrder@1000 : Report 5882;
+                               BEGIN
+                                 CopyPhysInvtOrder.SetPhysInvtOrderHeader(Rec);
+                                 CopyPhysInvtOrder.RUNMODAL;
+                                 CLEAR(CopyPhysInvtOrder);
+                               END;
+                                }
+      { 39      ;2   ;Action    ;
+                      Ellipsis=Yes;
+                      CaptionML=ENU=Calc. &Qty. Expected;
+                      ToolTipML=ENU=Update the value in the Qty. Expected (Base) field on the lines with any inventory changes made since you created the order. When you have used this function, the Qty. Exp. Calculated check box is selected.;
+                      ApplicationArea=#Warehouse;
+                      RunObject=Codeunit 5887;
+                      Image=AllLines }
+      { 41      ;2   ;Action    ;
+                      Name=MakeNewRecording;
+                      Ellipsis=Yes;
+                      CaptionML=ENU=Make New &Recording;
+                      ToolTipML=ENU=Create a physical inventory recording document for the lines on the order. On the request page that appears, you can select to only create recording lines for items that are not already on other recordings for the order.;
+                      ApplicationArea=#Warehouse;
+                      Promoted=Yes;
+                      Image=NewDocument;
+                      PromotedCategory=Process;
+                      OnAction=BEGIN
+                                 PhysInvtOrderHeader := Rec;
+                                 PhysInvtOrderHeader.SETRECFILTER;
+                                 REPORT.RUNMODAL(REPORT::"Make Phys. Invt. Recording",TRUE,FALSE,PhysInvtOrderHeader);
+                               END;
+                                }
+      { 43      ;2   ;Action    ;
+                      ShortCutKey=Ctrl+F9;
+                      Ellipsis=Yes;
+                      CaptionML=ENU=Fi&nish;
+                      ToolTipML=ENU=Indicate that the counting is completed. This is only possible if all related recordings are set to Finished.;
+                      ApplicationArea=#Warehouse;
+                      RunObject=Codeunit 5879;
+                      Promoted=Yes;
+                      Image=Approve;
+                      PromotedCategory=Process }
+      { 44      ;2   ;Action    ;
+                      Ellipsis=Yes;
+                      CaptionML=ENU=Reo&pen;
+                      ToolTipML=ENU=Change the status of the physical inventory order from Finished to Open.;
+                      ApplicationArea=#Warehouse;
+                      RunObject=Codeunit 5881;
+                      Promoted=Yes;
+                      Image=ReOpen;
+                      PromotedCategory=Process }
+      { 45      ;1   ;ActionGroup;
+                      CaptionML=ENU=P&osting;
+                      Image=Post }
+      { 46      ;2   ;Action    ;
+                      Name=TestReport;
+                      Ellipsis=Yes;
+                      CaptionML=ENU=Test Report;
+                      ToolTipML=ENU=Preview the inventory counting that will be recorded when you choose the Post action.;
+                      ApplicationArea=#Warehouse;
+                      Image=TestReport;
+                      OnAction=BEGIN
+                                 DocPrint.PrintInvtOrderTest(Rec,TRUE);
+                               END;
+                                }
+      { 47      ;2   ;Action    ;
+                      Name=Post;
+                      ShortCutKey=F9;
+                      Ellipsis=Yes;
+                      CaptionML=ENU=P&ost;
+                      ToolTipML=ENU=Update the involved item ledger entries with the counted inventory quantities.;
+                      ApplicationArea=#Warehouse;
+                      Promoted=Yes;
+                      PromotedIsBig=Yes;
+                      Image=Post;
+                      PromotedCategory=Process;
+                      OnAction=BEGIN
+                                 CODEUNIT.RUN(CODEUNIT::"Phys. Invt. Order-Post (Y/N)",Rec);
+                               END;
+                                }
+      { 48      ;2   ;Action    ;
+                      ShortCutKey=Shift+F9;
+                      Ellipsis=Yes;
+                      CaptionML=ENU=Post and &Print;
+                      ToolTipML=ENU=Update the involved item ledger entries with the counted inventory and print the Phys. Inventory Order Difference List report, which shows counted quantities compared to expected as negative or positive differences.;
+                      ApplicationArea=#Warehouse;
+                      Promoted=Yes;
+                      PromotedIsBig=Yes;
+                      Image=PostPrint;
+                      PromotedCategory=Process;
+                      OnAction=BEGIN
+                                 CODEUNIT.RUN(CODEUNIT::"Phys. Invt. Order-Post + Print",Rec);
+                               END;
+                                }
+      { 49      ;1   ;Action    ;
+                      Name=Print;
+                      Ellipsis=Yes;
+                      CaptionML=ENU=&Print;
+                      ToolTipML=ENU=Print the Phys. Inventory Order Difference List report, which shows counted quantities compared to expected as negative or positive differences.;
+                      ApplicationArea=#Warehouse;
+                      Promoted=Yes;
+                      Image=Print;
+                      PromotedCategory=Process;
+                      OnAction=BEGIN
+                                 DocPrint.PrintInvtOrder(Rec,TRUE);
+                               END;
+                                }
+      { 1900000005;0 ;ActionContainer;
+                      ActionContainerType=NewDocumentItems }
+      { 1905313305;1 ;Action    ;
+                      CaptionML=ENU=New Phys. Inventory Recording;
+                      ToolTipML=ENU=Create new physical inventory recording.;
+                      ApplicationArea=#Warehouse;
+                      RunObject=Page 5879;
+                      Promoted=Yes;
+                      Image=PhysicalInventory;
+                      PromotedCategory=New }
+      { 1900000006;0 ;ActionContainer;
+                      ActionContainerType=Reports }
+      { 1902275906;1 ;Action    ;
+                      CaptionML=ENU=Physical Inventory Recording;
+                      ToolTipML=ENU=Print the first physical inventory recording that exists for the order. The printed document has an empty column in which to write the counted quantities.;
+                      ApplicationArea=#Warehouse;
+                      RunObject=Report 5878;
+                      Promoted=No;
+                      Image=Report;
+                      PromotedCategory=Report }
+    }
+  }
+  CONTROLS
+  {
+    { 1900000001;0;Container;
+                ContainerType=ContentArea }
+
+    { 40  ;1   ;Group     ;
+                CaptionML=ENU=General }
+
+    { 2   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the number for the physical inventory order.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="No.";
+                OnAssistEdit=BEGIN
+                               IF AssistEdit(xRec) THEN
+                                 CurrPage.UPDATE;
+                             END;
+                              }
+
+    { 21  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies a short description of the physical inventory order.;
+                ApplicationArea=#Warehouse;
+                SourceExpr=Description }
+
+    { 18  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the code of the location where items on this line should be counted.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Location Code";
+                Importance=Promoted }
+
+    { 6   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the code of the person who is responsible for performing this physical inventory order.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Person Responsible" }
+
+    { 8   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the number of entered physical inventory recording documents that have the status set to Finished.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="No. Finished Recordings" }
+
+    { 10  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the order date for the physical inventory order.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Order Date" }
+
+    { 12  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the posting date of the physical inventory order.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Posting Date" }
+
+    { 4   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies if the physical inventory order is open or finished.;
+                ApplicationArea=#Warehouse;
+                SourceExpr=Status;
+                Importance=Promoted }
+
+    { 14  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the code for Shortcut Dimension 1, which is one of two global dimension codes that you set up in the General Ledger Setup window.;
+                ApplicationArea=#Dimensions;
+                SourceExpr="Shortcut Dimension 1 Code" }
+
+    { 16  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the code for Shortcut Dimension 2, which is one of two global dimension codes that you set up in the General Ledger Setup window.;
+                ApplicationArea=#Dimensions;
+                SourceExpr="Shortcut Dimension 2 Code" }
+
+    { 50  ;1   ;Part      ;
+                Name=OrderLines;
+                ApplicationArea=#Warehouse;
+                SubPageView=SORTING(Document No.,Line No.);
+                SubPageLink=Document No.=FIELD(No.);
+                PagePartID=Page5877 }
+
+    { 1900000007;0;Container;
+                ContainerType=FactBoxArea }
+
+    { 1905767507;1;Part   ;
+                ApplicationArea=#Notes;
+                Visible=TRUE;
+                PartType=System;
+                SystemPartID=Notes }
+
+  }
+  CODE
+  {
+    VAR
+      PhysInvtOrderHeader@1000 : Record 5875;
+      DocPrint@1004 : Codeunit 229;
+
+    BEGIN
+    END.
+  }
+}
+

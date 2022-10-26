@@ -1,0 +1,105 @@
+OBJECT Page 747 VAT Clauses
+{
+  OBJECT-PROPERTIES
+  {
+    Date=06/30/22;
+    Time=12:00:00 PM;
+    Version List=NAVW114.38;
+  }
+  PROPERTIES
+  {
+    CaptionML=ENU=Tax Clauses;
+    ApplicationArea=#Basic,#Suite;
+    SourceTable=Table560;
+    PageType=List;
+    UsageCategory=Administration;
+    ActionList=ACTIONS
+    {
+      { 8       ;    ;ActionContainer;
+                      ActionContainerType=ActionItems }
+      { 9       ;1   ;Action    ;
+                      CaptionML=ENU=&Setup;
+                      ToolTipML=ENU=View or edit combinations of Tax business posting groups and Tax product posting groups.;
+                      ApplicationArea=#Basic,#Suite;
+                      RunObject=Page 472;
+                      RunPageLink=VAT Clause Code=FIELD(Code);
+                      Promoted=Yes;
+                      Image=Setup;
+                      PromotedCategory=Process }
+      { 10      ;1   ;Action    ;
+                      CaptionML=ENU=T&ranslation;
+                      ToolTipML=ENU=View or edit translations for each tax clause description in different languages.;
+                      ApplicationArea=#Basic,#Suite;
+                      RunObject=Page 748;
+                      RunPageLink=VAT Clause Code=FIELD(Code);
+                      Promoted=Yes;
+                      Image=Translation;
+                      PromotedCategory=Process }
+      { 12      ;1   ;Action    ;
+                      Name=DescriptionByDocumentType;
+                      CaptionML=ENU=Description by document type;
+                      ToolTipML=ENU=View or edit tax clause descriptions by document type.;
+                      ApplicationArea=#Basic,#Suite;
+                      RunObject=Page 734;
+                      RunPageLink=VAT Clause Code=FIELD(Code);
+                      Promoted=Yes;
+                      Image=Invoice;
+                      PromotedCategory=Process }
+      { 11      ;1   ;Action    ;
+                      CaptionML=ENU=E&xtended Text;
+                      ToolTipML=ENU=View additional information that has been added to the description for the tax clause.;
+                      ApplicationArea=#Basic,#Suite;
+                      RunObject=Page 391;
+                      RunPageView=SORTING(Table Name,No.,Language Code,All Language Codes,Starting Date,Ending Date);
+                      RunPageLink=Table Name=CONST(VAT Clause),
+                                  No.=FIELD(Code);
+                      Promoted=Yes;
+                      Image=Text;
+                      PromotedCategory=Process }
+    }
+  }
+  CONTROLS
+  {
+    { 1   ;0   ;Container ;
+                ContainerType=ContentArea }
+
+    { 2   ;1   ;Group     ;
+                Name=Group;
+                GroupType=Repeater }
+
+    { 3   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the code for a tax clause, which is used to provide a tax description associated with a sales line on a sales invoice, credit memo, or other sales document.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr=Code }
+
+    { 4   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the descriptive text that is associated with a tax clause.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr=Description }
+
+    { 5   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies an additional description of a tax clause.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Description 2" }
+
+    { 6   ;1   ;Part      ;
+                ApplicationArea=#RecordLinks;
+                Visible=FALSE;
+                PartType=System;
+                SystemPartID=RecordLinks }
+
+    { 7   ;1   ;Part      ;
+                ApplicationArea=#Notes;
+                Visible=FALSE;
+                PartType=System;
+                SystemPartID=Notes }
+
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

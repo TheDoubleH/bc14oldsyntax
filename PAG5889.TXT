@@ -1,0 +1,118 @@
+OBJECT Page 5889 Posted Phys. Invt. Rec. Subf.
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/24/19;
+    Time=12:00:00 PM;
+    Version List=NAVW114.00;
+  }
+  PROPERTIES
+  {
+    Editable=No;
+    CaptionML=ENU=Lines;
+    MultipleNewLines=Yes;
+    SourceTable=Table5882;
+    DelayedInsert=Yes;
+    PageType=ListPart;
+    AutoSplitKey=Yes;
+  }
+  CONTROLS
+  {
+    { 1900000001;0;Container;
+                ContainerType=ContentArea }
+
+    { 40  ;1   ;Group     ;
+                GroupType=Repeater }
+
+    { 1   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the Item No. of the table physical inventory recording line.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Item No." }
+
+    { 3   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the variant of the item on the line.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Variant Code";
+                Visible=FALSE }
+
+    { 5   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the Description of the table physical inventory recording line.;
+                ApplicationArea=#Warehouse;
+                SourceExpr=Description }
+
+    { 7   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the Description 2 of the table physical inventory recording line.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Description 2";
+                Visible=FALSE }
+
+    { 9   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the Location Code of the table physical inventory recording line.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Location Code" }
+
+    { 11  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the Bin Code of the table physical inventory recording line.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Bin Code";
+                Visible=FALSE }
+
+    { 13  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the Serial No. of the table physical inventory recording line.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Serial No." }
+
+    { 15  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the Lot No. of the table physical inventory recording line.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Lot No." }
+
+    { 17  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the unit of measure used for the item, for example bottle or piece.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Unit of Measure";
+                Visible=FALSE }
+
+    { 19  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies how each unit of the item or resource is measured, such as in pieces or hours. By default, the value in the Base Unit of Measure field on the item or resource card is inserted.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Unit of Measure Code" }
+
+    { 21  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the Quantity of the table physical inventory recording line.;
+                ApplicationArea=#Warehouse;
+                SourceExpr=Quantity }
+
+    { 23  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the Quantity (Base) of the table physical inventory recording line.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Quantity (Base)";
+                Visible=FALSE }
+
+    { 25  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the Date Recorded of the table physical inventory recording line.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Date Recorded";
+                Visible=FALSE }
+
+    { 27  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the Time Recorded of the table physical inventory recording line.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Time Recorded";
+                Visible=FALSE }
+
+    { 29  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the Person Recorded of the table physical inventory recording line.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Person Recorded";
+                Visible=FALSE }
+
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

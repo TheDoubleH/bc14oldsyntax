@@ -1,0 +1,237 @@
+OBJECT Page 5897 Phys. Invt. Order Statistics
+{
+  OBJECT-PROPERTIES
+  {
+    Date=08/23/19;
+    Time=12:00:00 PM;
+    Version List=NAVW114.04;
+  }
+  PROPERTIES
+  {
+    Editable=No;
+    CaptionML=ENU=Phys. Invt. Order Statistics;
+    SourceTable=Table5875;
+    PageType=Card;
+    OnAfterGetRecord=BEGIN
+                       TESTFIELD(Status,Status::Finished);
+
+                       CLEARALL;
+
+                       PhysInvtOrderLine.RESET;
+                       PhysInvtOrderLine.SETRANGE("Document No.","No.");
+                       IF PhysInvtOrderLine.FIND('-') THEN
+                         REPEAT
+                           IF NOT PhysInvtOrderLine.EmptyLine THEN BEGIN
+                             NoAllLines := NoAllLines + 1;
+                             OnBeforeCalcAmounts(PhysInvtOrderLine);
+                             ExpAmountAllLines +=
+                               PhysInvtOrderLine."Qty. Expected (Base)" * PhysInvtOrderLine."Unit Amount";
+                             RecAmountAllLines +=
+                               PhysInvtOrderLine."Qty. Recorded (Base)" * PhysInvtOrderLine."Unit Amount";
+                             DiffAmountAllLines +=
+                               (PhysInvtOrderLine."Qty. Recorded (Base)" - PhysInvtOrderLine."Qty. Expected (Base)") *
+                               PhysInvtOrderLine."Unit Amount";
+                             CASE PhysInvtOrderLine."Entry Type" OF
+                               PhysInvtOrderLine."Entry Type"::"Positive Adjmt.":
+                                 IF PhysInvtOrderLine."Quantity (Base)" = 0 THEN BEGIN
+                                   NoCorrectLines := NoCorrectLines + 1;
+                                   ExpAmountCorrectLines +=
+                                     PhysInvtOrderLine."Qty. Expected (Base)" * PhysInvtOrderLine."Unit Amount";
+                                   RecAmountCorrectLines +=
+                                     PhysInvtOrderLine."Qty. Recorded (Base)" * PhysInvtOrderLine."Unit Amount";
+                                 END ELSE BEGIN
+                                   NoPosDiffLines := NoPosDiffLines + 1;
+                                   ExpAmountPosDiffLines +=
+                                     PhysInvtOrderLine."Qty. Expected (Base)" * PhysInvtOrderLine."Unit Amount";
+                                   RecAmountPosDiffLines +=
+                                     PhysInvtOrderLine."Qty. Recorded (Base)" * PhysInvtOrderLine."Unit Amount";
+                                   DiffAmountPosDiffLines +=
+                                     PhysInvtOrderLine."Quantity (Base)" * PhysInvtOrderLine."Unit Amount";
+                                 END;
+                               PhysInvtOrderLine."Entry Type"::"Negative Adjmt.":
+                                 BEGIN
+                                   NoNegDiffLines := NoNegDiffLines + 1;
+                                   ExpAmountNegDiffLines +=
+                                     PhysInvtOrderLine."Qty. Expected (Base)" * PhysInvtOrderLine."Unit Amount";
+                                   RecAmountNegDiffLines +=
+                                     PhysInvtOrderLine."Qty. Recorded (Base)" * PhysInvtOrderLine."Unit Amount";
+                                   DiffAmountNegDiffLines +=
+                                     PhysInvtOrderLine."Quantity (Base)" * PhysInvtOrderLine."Unit Amount";
+                                 END;
+                               ELSE
+                                 ERROR(UnknownEntryTypeErr);
+                             END;
+                           END;
+                         UNTIL PhysInvtOrderLine.NEXT = 0;
+                     END;
+
+  }
+  CONTROLS
+  {
+    { 1900000001;0;Container;
+                ContainerType=ContentArea }
+
+    { 40  ;1   ;Group     ;
+                CaptionML=ENU=General }
+
+    { 1905583001;2;Group  ;
+                GroupType=FixedLayout }
+
+    { 1905483601;3;Group  ;
+                CaptionML=ENU=No. of lines }
+
+    { 2   ;4   ;Field     ;
+                CaptionML=ENU=All Lines;
+                ToolTipML=ENU=Specifies the total number of lines.;
+                ApplicationArea=#Warehouse;
+                SourceExpr=NoAllLines }
+
+    { 4   ;4   ;Field     ;
+                CaptionML=ENU=Lines Without Difference;
+                ToolTipML=ENU=Specifies the number of lines with no difference between actual and calculated inventory.;
+                ApplicationArea=#Warehouse;
+                SourceExpr=NoCorrectLines;
+                OnDrillDown=BEGIN
+                              PhysInvtOrderLine2.RESET;
+                              PhysInvtOrderLine2.SETCURRENTKEY("Document No.","Entry Type","Without Difference");
+                              PhysInvtOrderLine2.SETRANGE("Document No.","No.");
+                              PhysInvtOrderLine2.SETRANGE("Entry Type",PhysInvtOrderLine2."Entry Type"::"Positive Adjmt.");
+                              PhysInvtOrderLine2.SETRANGE("Without Difference",TRUE);
+                              PAGE.RUNMODAL(0,PhysInvtOrderLine2);
+                            END;
+                             }
+
+    { 6   ;4   ;Field     ;
+                CaptionML=ENU=Lines Pos. Difference;
+                ToolTipML=ENU=Specifies the number of lines with a positive difference between actual and calculated inventory.;
+                ApplicationArea=#Warehouse;
+                SourceExpr=NoPosDiffLines;
+                OnDrillDown=BEGIN
+                              PhysInvtOrderLine2.RESET;
+                              PhysInvtOrderLine2.SETCURRENTKEY("Document No.","Entry Type","Without Difference");
+                              PhysInvtOrderLine2.SETRANGE("Document No.","No.");
+                              PhysInvtOrderLine2.SETRANGE("Entry Type",PhysInvtOrderLine2."Entry Type"::"Positive Adjmt.");
+                              PhysInvtOrderLine2.SETRANGE("Without Difference",FALSE);
+                              PAGE.RUNMODAL(0,PhysInvtOrderLine2);
+                            END;
+                             }
+
+    { 8   ;4   ;Field     ;
+                CaptionML=ENU=Lines Neg. Difference;
+                ToolTipML=ENU=Specifies the number of lines with a negative difference between actual and calculated inventory.;
+                ApplicationArea=#Warehouse;
+                SourceExpr=NoNegDiffLines;
+                OnDrillDown=BEGIN
+                              PhysInvtOrderLine2.RESET;
+                              PhysInvtOrderLine2.SETCURRENTKEY("Document No.","Entry Type","Without Difference");
+                              PhysInvtOrderLine2.SETRANGE("Document No.","No.");
+                              PhysInvtOrderLine2.SETRANGE("Entry Type",PhysInvtOrderLine2."Entry Type"::"Negative Adjmt.");
+                              PAGE.RUNMODAL(0,PhysInvtOrderLine2);
+                            END;
+                             }
+
+    { 1901630501;3;Group  ;
+                CaptionML=ENU=Recorded Amount;
+                GroupType=Group }
+
+    { 19  ;4   ;Field     ;
+                ToolTipML=ENU=Specifies the recorded amount of all lines.;
+                ApplicationArea=#Warehouse;
+                SourceExpr=RecAmountAllLines }
+
+    { 20  ;4   ;Field     ;
+                ToolTipML=ENU=Specifies the recorded amount of lines with no difference between actual and calculated inventory.;
+                ApplicationArea=#Warehouse;
+                SourceExpr=RecAmountCorrectLines }
+
+    { 21  ;4   ;Field     ;
+                ToolTipML=ENU=Specifies the recorded amount of lines with a positive difference between actual and calculated inventory.;
+                ApplicationArea=#Warehouse;
+                SourceExpr=RecAmountPosDiffLines }
+
+    { 22  ;4   ;Field     ;
+                ToolTipML=ENU=Specifies the recorded amount of lines with a negative difference between actual and calculated inventory.;
+                ApplicationArea=#Warehouse;
+                SourceExpr=RecAmountNegDiffLines }
+
+    { 1902594501;3;Group  ;
+                CaptionML=ENU=Expected Amount }
+
+    { 11  ;4   ;Field     ;
+                ToolTipML=ENU=Specifies the expected amount of all lines.;
+                ApplicationArea=#Warehouse;
+                SourceExpr=ExpAmountAllLines }
+
+    { 12  ;4   ;Field     ;
+                ToolTipML=ENU=Specifies the expected amount of lines with no difference between actual and calculated inventory.;
+                ApplicationArea=#Warehouse;
+                SourceExpr=ExpAmountCorrectLines }
+
+    { 13  ;4   ;Field     ;
+                ToolTipML=ENU=Specifies the expected amount of lines with a positive difference between actual and calculated inventory.;
+                ApplicationArea=#Warehouse;
+                SourceExpr=ExpAmountPosDiffLines }
+
+    { 14  ;4   ;Field     ;
+                ToolTipML=ENU=Specifies the expected amount of lines with a negative difference between actual and calculated inventory.;
+                ApplicationArea=#Warehouse;
+                SourceExpr=ExpAmountNegDiffLines }
+
+    { 1907835401;3;Group  ;
+                CaptionML=ENU=Difference Amount }
+
+    { 23  ;4   ;Field     ;
+                ToolTipML=ENU=Specifies the difference amount of all lines.;
+                ApplicationArea=#Warehouse;
+                SourceExpr=DiffAmountAllLines }
+
+    { 25  ;4   ;Field     ;
+                ToolTipML=ENU=Specifies the difference amount of lines with no difference between actual and calculated inventory.;
+                ApplicationArea=#Warehouse;
+                SourceExpr=PlaceHolderLbl;
+                Visible=FALSE }
+
+    { 15  ;4   ;Field     ;
+                ToolTipML=ENU=Specifies the difference amount of lines with a positive difference between actual and calculated inventory.;
+                ApplicationArea=#Warehouse;
+                SourceExpr=DiffAmountPosDiffLines }
+
+    { 16  ;4   ;Field     ;
+                ToolTipML=ENU=Specifies the difference amount of lines with a positive difference between actual and calculated inventory.;
+                ApplicationArea=#Warehouse;
+                SourceExpr=DiffAmountNegDiffLines }
+
+  }
+  CODE
+  {
+    VAR
+      UnknownEntryTypeErr@1000 : TextConst 'ENU=Unknown Entry type.';
+      PhysInvtOrderLine@1001 : Record 5876;
+      PhysInvtOrderLine2@1002 : Record 5876;
+      NoAllLines@1003 : Integer;
+      NoCorrectLines@1004 : Integer;
+      NoPosDiffLines@1005 : Integer;
+      NoNegDiffLines@1006 : Integer;
+      ExpAmountAllLines@1007 : Decimal;
+      ExpAmountCorrectLines@1008 : Decimal;
+      ExpAmountPosDiffLines@1009 : Decimal;
+      ExpAmountNegDiffLines@1010 : Decimal;
+      RecAmountAllLines@1011 : Decimal;
+      RecAmountCorrectLines@1012 : Decimal;
+      RecAmountPosDiffLines@1013 : Decimal;
+      RecAmountNegDiffLines@1014 : Decimal;
+      DiffAmountAllLines@1015 : Decimal;
+      DiffAmountPosDiffLines@1016 : Decimal;
+      DiffAmountNegDiffLines@1017 : Decimal;
+      PlaceHolderLbl@1018 : TextConst '@@@={Locked};ENU=Placeholder';
+
+    [Integration]
+    LOCAL PROCEDURE OnBeforeCalcAmounts@1(VAR PhysInvtOrderLine@1000 : Record 5876);
+    BEGIN
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

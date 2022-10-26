@@ -1,0 +1,403 @@
+OBJECT Table 5477 Purch. Inv. Entity Aggregate
+{
+  OBJECT-PROPERTIES
+  {
+    Date=10/26/19;
+    Time=12:00:00 PM;
+    Version List=NAVW114.07;
+  }
+  PROPERTIES
+  {
+    OnInsert=BEGIN
+               "Last Modified Date Time" := CURRENTDATETIME;
+               UpdateReferencedRecordIds;
+             END;
+
+    OnModify=BEGIN
+               "Last Modified Date Time" := CURRENTDATETIME;
+               UpdateReferencedRecordIds;
+             END;
+
+    OnRename=BEGIN
+               IF NOT Posted THEN
+                 ERROR(CannotChangeNumberOnNonPostedErr);
+
+               IF Posted AND (NOT IsRenameAllowed) THEN
+                 ERROR(CannotModifyPostedInvioceErr);
+
+               "Last Modified Date Time" := CURRENTDATETIME;
+               UpdateReferencedRecordIds;
+             END;
+
+    CaptionML=ENU=Purch. Inv. Entity Aggregate;
+  }
+  FIELDS
+  {
+    { 1   ;   ;Document Type       ;Option        ;DataClassification=CustomerContent;
+                                                   CaptionML=ENU=Document Type;
+                                                   OptionCaptionML=ENU=Quote,Order,Invoice,Credit Memo,Blanket Order,Return Order;
+                                                   OptionString=Quote,Order,Invoice,Credit Memo,Blanket Order,Return Order }
+    { 2   ;   ;Buy-from Vendor No. ;Code20        ;TableRelation=Vendor;
+                                                   OnValidate=BEGIN
+                                                                UpdateBuyFromVendorId;
+                                                              END;
+
+                                                   DataClassification=CustomerContent;
+                                                   CaptionML=ENU=Buy-from Vendor No.;
+                                                   NotBlank=Yes }
+    { 3   ;   ;No.                 ;Code20        ;DataClassification=CustomerContent;
+                                                   CaptionML=ENU=No. }
+    { 4   ;   ;Pay-to Vendor No.   ;Code20        ;TableRelation=Vendor;
+                                                   OnValidate=BEGIN
+                                                                UpdatePayToVendorId;
+                                                              END;
+
+                                                   DataClassification=CustomerContent;
+                                                   CaptionML=ENU=Pay-to Vendor No.;
+                                                   NotBlank=Yes }
+    { 5   ;   ;Pay-to Name         ;Text100       ;TableRelation=Vendor.Name;
+                                                   ValidateTableRelation=No;
+                                                   DataClassification=CustomerContent;
+                                                   CaptionML=ENU=Pay-to Name }
+    { 7   ;   ;Pay-to Address      ;Text100       ;DataClassification=CustomerContent;
+                                                   CaptionML=ENU=Pay-to Address }
+    { 8   ;   ;Pay-to Address 2    ;Text50        ;DataClassification=CustomerContent;
+                                                   CaptionML=ENU=Pay-to Address 2 }
+    { 9   ;   ;Pay-to City         ;Text30        ;TableRelation=IF (Pay-to Country/Region Code=CONST()) "Post Code".City
+                                                                 ELSE IF (Pay-to Country/Region Code=FILTER(<>'')) "Post Code".City WHERE (Country/Region Code=FIELD(Pay-to Country/Region Code));
+                                                   ValidateTableRelation=No;
+                                                   TestTableRelation=No;
+                                                   DataClassification=CustomerContent;
+                                                   CaptionML=ENU=Pay-to City }
+    { 10  ;   ;Pay-to Contact      ;Text100       ;DataClassification=CustomerContent;
+                                                   CaptionML=ENU=Pay-to Contact }
+    { 11  ;   ;Your Reference      ;Text35        ;DataClassification=CustomerContent;
+                                                   CaptionML=ENU=Your Reference }
+    { 12  ;   ;Ship-to Code        ;Code10        ;DataClassification=CustomerContent;
+                                                   CaptionML=ENU=Ship-to Code }
+    { 13  ;   ;Ship-to Name        ;Text100       ;DataClassification=CustomerContent;
+                                                   CaptionML=ENU=Ship-to Name }
+    { 15  ;   ;Ship-to Address     ;Text100       ;DataClassification=CustomerContent;
+                                                   CaptionML=ENU=Ship-to Address }
+    { 16  ;   ;Ship-to Address 2   ;Text50        ;DataClassification=CustomerContent;
+                                                   CaptionML=ENU=Ship-to Address 2 }
+    { 17  ;   ;Ship-to City        ;Text30        ;TableRelation=IF (Ship-to Country/Region Code=CONST()) "Post Code".City
+                                                                 ELSE IF (Ship-to Country/Region Code=FILTER(<>'')) "Post Code".City WHERE (Country/Region Code=FIELD(Ship-to Country/Region Code));
+                                                   ValidateTableRelation=No;
+                                                   TestTableRelation=No;
+                                                   DataClassification=CustomerContent;
+                                                   CaptionML=ENU=Ship-to City }
+    { 18  ;   ;Ship-to Contact     ;Text100       ;DataClassification=CustomerContent;
+                                                   CaptionML=ENU=Ship-to Contact }
+    { 23  ;   ;Payment Terms Code  ;Code10        ;TableRelation="Payment Terms";
+                                                   DataClassification=CustomerContent;
+                                                   CaptionML=ENU=Payment Terms Code }
+    { 24  ;   ;Due Date            ;Date          ;DataClassification=CustomerContent;
+                                                   CaptionML=ENU=Due Date }
+    { 27  ;   ;Shipment Method Code;Code10        ;TableRelation="Shipment Method";
+                                                   DataClassification=CustomerContent;
+                                                   CaptionML=ENU=Shipment Method Code }
+    { 31  ;   ;Vendor Posting Group;Code20        ;TableRelation="Vendor Posting Group";
+                                                   DataClassification=CustomerContent;
+                                                   CaptionML=ENU=Vendor Posting Group }
+    { 32  ;   ;Currency Code       ;Code10        ;TableRelation=Currency;
+                                                   OnValidate=BEGIN
+                                                                UpdateCurrencyId;
+                                                              END;
+
+                                                   DataClassification=CustomerContent;
+                                                   CaptionML=ENU=Currency Code }
+    { 35  ;   ;Prices Including VAT;Boolean       ;DataClassification=CustomerContent;
+                                                   CaptionML=ENU=Prices Including Tax }
+    { 43  ;   ;Purchaser Code      ;Code20        ;TableRelation=Salesperson/Purchaser;
+                                                   DataClassification=CustomerContent;
+                                                   CaptionML=ENU=Purchaser Code }
+    { 44  ;   ;Order No.           ;Code20        ;OnValidate=BEGIN
+                                                                UpdateOrderId;
+                                                              END;
+
+                                                   AccessByPermission=TableData 120=R;
+                                                   DataClassification=CustomerContent;
+                                                   CaptionML=ENU=Order No. }
+    { 56  ;   ;Recalculate Invoice Disc.;Boolean  ;FieldClass=FlowField;
+                                                   CalcFormula=Exist("Purchase Line" WHERE (Document Type=FIELD(Document Type),
+                                                                                            Document No.=FIELD(No.),
+                                                                                            Recalculate Invoice Disc.=CONST(Yes)));
+                                                   CaptionML=ENU=Recalculate Invoice Disc.;
+                                                   Editable=No }
+    { 60  ;   ;Amount              ;Decimal       ;DataClassification=CustomerContent;
+                                                   CaptionML=ENU=Amount;
+                                                   AutoFormatType=1;
+                                                   AutoFormatExpr="Currency Code" }
+    { 61  ;   ;Amount Including VAT;Decimal       ;DataClassification=CustomerContent;
+                                                   CaptionML=ENU=Amount Including Tax;
+                                                   AutoFormatType=1;
+                                                   AutoFormatExpr="Currency Code" }
+    { 68  ;   ;Vendor Invoice No.  ;Code35        ;DataClassification=CustomerContent;
+                                                   CaptionML=ENU=Vendor Invoice No. }
+    { 79  ;   ;Buy-from Vendor Name;Text100       ;TableRelation=Vendor.Name;
+                                                   ValidateTableRelation=No;
+                                                   DataClassification=CustomerContent;
+                                                   CaptionML=ENU=Buy-from Vendor Name }
+    { 81  ;   ;Buy-from Address    ;Text100       ;DataClassification=CustomerContent;
+                                                   CaptionML=ENU=Buy-from Address }
+    { 82  ;   ;Buy-from Address 2  ;Text50        ;DataClassification=CustomerContent;
+                                                   CaptionML=ENU=Buy-from Address 2 }
+    { 83  ;   ;Buy-from City       ;Text30        ;TableRelation=IF (Buy-from Country/Region Code=CONST()) "Post Code".City
+                                                                 ELSE IF (Buy-from Country/Region Code=FILTER(<>'')) "Post Code".City WHERE (Country/Region Code=FIELD(Buy-from Country/Region Code));
+                                                   ValidateTableRelation=No;
+                                                   TestTableRelation=No;
+                                                   DataClassification=CustomerContent;
+                                                   CaptionML=ENU=Buy-from City }
+    { 84  ;   ;Buy-from Contact    ;Text100       ;DataClassification=CustomerContent;
+                                                   CaptionML=ENU=Buy-from Contact }
+    { 85  ;   ;Pay-to Post Code    ;Code20        ;TableRelation=IF (Pay-to Country/Region Code=CONST()) "Post Code"
+                                                                 ELSE IF (Pay-to Country/Region Code=FILTER(<>'')) "Post Code" WHERE (Country/Region Code=FIELD(Pay-to Country/Region Code));
+                                                   ValidateTableRelation=No;
+                                                   TestTableRelation=No;
+                                                   DataClassification=CustomerContent;
+                                                   CaptionML=ENU=Pay-to ZIP Code }
+    { 86  ;   ;Pay-to County       ;Text30        ;DataClassification=CustomerContent;
+                                                   CaptionML=ENU=Pay-to State;
+                                                   CaptionClass='5,1,' + "Pay-to Country/Region Code" }
+    { 87  ;   ;Pay-to Country/Region Code;Code10  ;TableRelation=Country/Region;
+                                                   DataClassification=CustomerContent;
+                                                   CaptionML=ENU=Pay-to Country/Region Code }
+    { 88  ;   ;Buy-from Post Code  ;Code20        ;TableRelation=IF (Buy-from Country/Region Code=CONST()) "Post Code"
+                                                                 ELSE IF (Buy-from Country/Region Code=FILTER(<>'')) "Post Code" WHERE (Country/Region Code=FIELD(Buy-from Country/Region Code));
+                                                   ValidateTableRelation=No;
+                                                   TestTableRelation=No;
+                                                   DataClassification=CustomerContent;
+                                                   CaptionML=ENU=Buy-from ZIP Code }
+    { 89  ;   ;Buy-from County     ;Text30        ;DataClassification=CustomerContent;
+                                                   CaptionML=ENU=Buy-from State;
+                                                   CaptionClass='5,1,' + "Buy-from Country/Region Code" }
+    { 90  ;   ;Buy-from Country/Region Code;Code10;TableRelation=Country/Region;
+                                                   DataClassification=CustomerContent;
+                                                   CaptionML=ENU=Buy-from Country/Region Code }
+    { 91  ;   ;Ship-to Post Code   ;Code20        ;TableRelation=IF (Ship-to Country/Region Code=CONST()) "Post Code"
+                                                                 ELSE IF (Ship-to Country/Region Code=FILTER(<>'')) "Post Code" WHERE (Country/Region Code=FIELD(Ship-to Country/Region Code));
+                                                   ValidateTableRelation=No;
+                                                   TestTableRelation=No;
+                                                   DataClassification=CustomerContent;
+                                                   CaptionML=ENU=Ship-to ZIP Code }
+    { 92  ;   ;Ship-to County      ;Text30        ;DataClassification=CustomerContent;
+                                                   CaptionML=ENU=Ship-to State;
+                                                   CaptionClass='5,1,' + "Ship-to Country/Region Code" }
+    { 93  ;   ;Ship-to Country/Region Code;Code10 ;TableRelation=Country/Region;
+                                                   DataClassification=CustomerContent;
+                                                   CaptionML=ENU=Ship-to Country/Region Code }
+    { 99  ;   ;Document Date       ;Date          ;DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Document Date }
+    { 1304;   ;Vendor Ledger Entry No.;Integer    ;TableRelation="Vendor Ledger Entry"."Entry No.";
+                                                   TestTableRelation=No;
+                                                   DataClassification=CustomerContent;
+                                                   CaptionML=ENU=Vendor Ledger Entry No. }
+    { 1305;   ;Invoice Discount Amount;Decimal    ;DataClassification=CustomerContent;
+                                                   CaptionML=ENU=Invoice Discount Amount;
+                                                   AutoFormatType=1;
+                                                   AutoFormatExpr="Currency Code" }
+    { 5052;   ;Buy-from Contact No.;Code20        ;TableRelation=Contact;
+                                                   DataClassification=CustomerContent;
+                                                   CaptionML=ENU=Buy-from Contact No. }
+    { 8000;   ;Id                  ;GUID          ;DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Id }
+    { 9600;   ;Total Tax Amount    ;Decimal       ;DataClassification=CustomerContent;
+                                                   CaptionML=ENU=Total Tax Amount;
+                                                   AutoFormatType=1;
+                                                   AutoFormatExpr="Currency Code" }
+    { 9601;   ;Status              ;Option        ;DataClassification=CustomerContent;
+                                                   CaptionML=ENU=Status;
+                                                   OptionCaptionML=[@@@={Locked};
+                                                                    ENU=" ,Draft,In Review,Open,Paid,Canceled,Corrective"];
+                                                   OptionString=[ ,Draft,In Review,Open,Paid,Canceled,Corrective] }
+    { 9602;   ;Posted              ;Boolean       ;DataClassification=CustomerContent;
+                                                   CaptionML=ENU=Posted }
+    { 9624;   ;Discount Applied Before Tax;Boolean;DataClassification=CustomerContent;
+                                                   CaptionML=ENU=Discount Applied Before Tax }
+    { 9630;   ;Last Modified Date Time;DateTime   ;DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Last Modified Date Time;
+                                                   Editable=No }
+    { 9631;   ;Vendor Id           ;GUID          ;TableRelation=Vendor.Id;
+                                                   OnValidate=BEGIN
+                                                                UpdateBuyFromVendorNo;
+                                                              END;
+
+                                                   DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Vendor Id }
+    { 9632;   ;Order Id            ;GUID          ;OnValidate=BEGIN
+                                                                UpdateOrderNo;
+                                                              END;
+
+                                                   DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Order Id }
+    { 9634;   ;Currency Id         ;GUID          ;TableRelation=Currency.Id;
+                                                   OnValidate=BEGIN
+                                                                UpdateCurrencyCode;
+                                                              END;
+
+                                                   DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Currency Id }
+    { 9638;   ;Pay-to Vendor Id    ;GUID          ;TableRelation=Vendor.Id;
+                                                   OnValidate=BEGIN
+                                                                UpdatePayToVendorNo;
+                                                              END;
+
+                                                   DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Pay-to Vendor Id }
+  }
+  KEYS
+  {
+    {    ;No.,Posted                              ;Clustered=Yes }
+    {    ;Id                                       }
+    {    ;Vendor Ledger Entry No.                  }
+  }
+  FIELDGROUPS
+  {
+  }
+  CODE
+  {
+    VAR
+      CannotChangeNumberOnNonPostedErr@1002 : TextConst 'ENU=The number of the invoice can not be changed.';
+      CannotModifyPostedInvioceErr@1000 : TextConst '@@@={Locked};ENU=The invoice has been posted and can no longer be modified.';
+      IsRenameAllowed@1001 : Boolean;
+
+    LOCAL PROCEDURE UpdateBuyFromVendorNo@1();
+    VAR
+      Vendor@1000 : Record 23;
+    BEGIN
+      IF ISNULLGUID("Vendor Id") THEN
+        EXIT;
+
+      Vendor.SETRANGE(Id,"Vendor Id");
+      IF NOT Vendor.FINDFIRST THEN
+        EXIT;
+
+      "Buy-from Vendor No." := Vendor."No.";
+    END;
+
+    LOCAL PROCEDURE UpdatePayToVendorNo@16();
+    VAR
+      Vendor@1000 : Record 23;
+    BEGIN
+      IF ISNULLGUID("Pay-to Vendor Id") THEN
+        EXIT;
+
+      Vendor.SETRANGE(Id,"Pay-to Vendor Id");
+      IF NOT Vendor.FINDFIRST THEN
+        EXIT;
+
+      "Pay-to Vendor No." := Vendor."No.";
+    END;
+
+    LOCAL PROCEDURE UpdateBuyFromVendorId@2();
+    VAR
+      Vendor@1000 : Record 23;
+    BEGIN
+      IF "Buy-from Vendor No." = '' THEN BEGIN
+        CLEAR("Vendor Id");
+        EXIT;
+      END;
+
+      IF NOT Vendor.GET("Buy-from Vendor No.") THEN
+        EXIT;
+
+      "Vendor Id" := Vendor.Id;
+    END;
+
+    LOCAL PROCEDURE UpdatePayToVendorId@18();
+    VAR
+      Vendor@1000 : Record 23;
+    BEGIN
+      IF "Pay-to Vendor No." = '' THEN BEGIN
+        CLEAR("Pay-to Vendor Id");
+        EXIT;
+      END;
+
+      IF NOT Vendor.GET("Pay-to Vendor No.") THEN
+        EXIT;
+
+      "Pay-to Vendor Id" := Vendor.Id;
+    END;
+
+    LOCAL PROCEDURE UpdateOrderNo@4();
+    VAR
+      PurchaseHeader@1000 : Record 38;
+    BEGIN
+      IF ISNULLGUID("Order Id") THEN
+        EXIT;
+
+      PurchaseHeader.SETRANGE(Id,"Order Id");
+      PurchaseHeader.SETRANGE("Document Type",PurchaseHeader."Document Type"::Order);
+      IF NOT PurchaseHeader.FINDFIRST THEN
+        EXIT;
+
+      "Order No." := PurchaseHeader."No.";
+    END;
+
+    LOCAL PROCEDURE UpdateOrderId@3();
+    VAR
+      PurchaseHeader@1000 : Record 38;
+    BEGIN
+      IF NOT PurchaseHeader.GET(PurchaseHeader."Document Type"::Order,"Order No.") THEN
+        EXIT;
+
+      "Order Id" := PurchaseHeader.Id;
+    END;
+
+    LOCAL PROCEDURE UpdateCurrencyCode@10();
+    VAR
+      Currency@1000 : Record 4;
+    BEGIN
+      IF NOT ISNULLGUID("Currency Id") THEN BEGIN
+        Currency.SETRANGE(Id,"Currency Id");
+        Currency.FINDFIRST;
+      END;
+
+      VALIDATE("Currency Code",Currency.Code);
+    END;
+
+    [External]
+    PROCEDURE UpdateCurrencyId@9();
+    VAR
+      Currency@1000 : Record 4;
+    BEGIN
+      IF "Currency Code" = '' THEN BEGIN
+        CLEAR("Currency Id");
+        EXIT;
+      END;
+
+      IF NOT Currency.GET("Currency Code") THEN
+        EXIT;
+
+      "Currency Id" := Currency.Id;
+    END;
+
+    [External]
+    PROCEDURE UpdateReferencedRecordIds@5();
+    BEGIN
+      UpdateBuyFromVendorId;
+      UpdatePayToVendorId;
+      UpdateCurrencyId;
+
+      IF ("Order No." <> '') AND ISNULLGUID("Order Id") THEN
+        UpdateOrderId;
+    END;
+
+    [External]
+    PROCEDURE GetIsRenameAllowed@7() : Boolean;
+    BEGIN
+      EXIT(IsRenameAllowed);
+    END;
+
+    [External]
+    PROCEDURE SetIsRenameAllowed@6(RenameAllowed@1000 : Boolean);
+    BEGIN
+      IsRenameAllowed := RenameAllowed;
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

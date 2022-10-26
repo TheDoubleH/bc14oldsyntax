@@ -1,0 +1,62 @@
+OBJECT Table 5928 Service Status Priority Setup
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/24/19;
+    Time=12:00:00 PM;
+    Version List=NAVW114.00;
+  }
+  PROPERTIES
+  {
+    CaptionML=ENU=Service Status Priority Setup;
+    LookupPageID=Page5943;
+    DrillDownPageID=Page5943;
+  }
+  FIELDS
+  {
+    { 1   ;   ;Service Order Status;Option        ;CaptionML=ENU=Service Order Status;
+                                                   OptionCaptionML=ENU=Pending,In Process,Finished,On Hold;
+                                                   OptionString=Pending,In Process,Finished,On Hold }
+    { 2   ;   ;Priority            ;Option        ;OnValidate=VAR
+                                                                ConfirmManagement@1000 : Codeunit 27;
+                                                              BEGIN
+                                                                IF Priority <> xRec.Priority THEN BEGIN
+                                                                  ServStatusPrioritySetup.RESET;
+                                                                  ServStatusPrioritySetup.SETRANGE(Priority,Priority);
+                                                                  IF ServStatusPrioritySetup.FINDFIRST THEN
+                                                                    IF NOT ConfirmManagement.ConfirmProcess(
+                                                                         STRSUBSTNO(
+                                                                           Text000,FIELDCAPTION(Priority),FORMAT(Priority),
+                                                                           FIELDCAPTION("Service Order Status"),FORMAT("Service Order Status")),TRUE)
+                                                                    THEN
+                                                                      Priority := xRec.Priority;
+
+                                                                  RepairStatus.RESET;
+                                                                  RepairStatus.SETRANGE("Service Order Status","Service Order Status");
+                                                                  RepairStatus.MODIFYALL(Priority,Priority);
+                                                                END;
+                                                              END;
+
+                                                   CaptionML=ENU=Priority;
+                                                   OptionCaptionML=ENU=High,Medium High,Medium Low,Low;
+                                                   OptionString=High,Medium High,Medium Low,Low }
+  }
+  KEYS
+  {
+    {    ;Service Order Status                    ;Clustered=Yes }
+  }
+  FIELDGROUPS
+  {
+  }
+  CODE
+  {
+    VAR
+      Text000@1000 : TextConst 'ENU=%1 %2 is already used with %3 %4.\\Do you want to continue?';
+      ServStatusPrioritySetup@1001 : Record 5928;
+      RepairStatus@1002 : Record 5927;
+
+    BEGIN
+    END.
+  }
+}
+

@@ -1,0 +1,35 @@
+OBJECT Table 2152 O365 Country/Region
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/24/19;
+    Time=12:00:00 PM;
+    Version List=NAVW114.00;
+  }
+  PROPERTIES
+  {
+    ReplicateData=No;
+    CaptionML=ENU=O365 Country/Region;
+  }
+  FIELDS
+  {
+    { 1   ;   ;Code                ;Code10        ;CaptionML=ENU=Code }
+    { 2   ;   ;Name                ;Text50        ;CaptionML=ENU=Name }
+    { 3   ;   ;VAT Scheme          ;Text30        ;CaptionML=ENU=Tax Scheme }
+  }
+  KEYS
+  {
+    {    ;Code                                    ;Clustered=Yes }
+  }
+  FIELDGROUPS
+  {
+    { 1   ;Brick               ;Code,Name,VAT Scheme                     }
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

@@ -1,0 +1,424 @@
+OBJECT Table 263 Intrastat Jnl. Line
+{
+  OBJECT-PROPERTIES
+  {
+    Date=05/27/22;
+    Time=12:00:00 PM;
+    Version List=NAVW114.37;
+  }
+  PROPERTIES
+  {
+    OnInsert=BEGIN
+               IntraJnlTemplate.GET("Journal Template Name");
+               IntrastatJnlBatch.GET("Journal Template Name","Journal Batch Name");
+             END;
+
+    OnModify=BEGIN
+               AssertBatchIsNotReported(Rec);
+             END;
+
+    OnDelete=VAR
+               ErrorMessage@1000 : Record 700;
+             BEGIN
+               AssertBatchIsNotReported(Rec);
+               ErrorMessage.SetContext(IntrastatJnlBatch);
+               ErrorMessage.ClearLogRec(Rec);
+             END;
+
+    OnRename=BEGIN
+               AssertBatchIsNotReported(xRec);
+             END;
+
+    CaptionML=ENU=Intrastat Jnl. Line;
+  }
+  FIELDS
+  {
+    { 1   ;   ;Journal Template Name;Code10       ;TableRelation="Intrastat Jnl. Template";
+                                                   CaptionML=ENU=Journal Template Name }
+    { 2   ;   ;Journal Batch Name  ;Code10        ;TableRelation="Intrastat Jnl. Batch".Name WHERE (Journal Template Name=FIELD(Journal Template Name));
+                                                   CaptionML=ENU=Journal Batch Name }
+    { 3   ;   ;Line No.            ;Integer       ;CaptionML=ENU=Line No. }
+    { 4   ;   ;Type                ;Option        ;CaptionML=ENU=Type;
+                                                   OptionCaptionML=ENU=Receipt,Shipment;
+                                                   OptionString=Receipt,Shipment }
+    { 5   ;   ;Date                ;Date          ;CaptionML=ENU=Date }
+    { 6   ;   ;Tariff No.          ;Code20        ;TableRelation="Tariff Number";
+                                                   OnValidate=BEGIN
+                                                                GetItemDescription;
+                                                              END;
+
+                                                   CaptionML=ENU=Tariff No.;
+                                                   NotBlank=Yes }
+    { 7   ;   ;Item Description    ;Text100       ;CaptionML=ENU=Item Description }
+    { 8   ;   ;Country/Region Code ;Code10        ;TableRelation=Country/Region;
+                                                   CaptionML=ENU=Country/Region Code }
+    { 9   ;   ;Transaction Type    ;Code10        ;TableRelation="Transaction Type";
+                                                   CaptionML=ENU=Transaction Type }
+    { 10  ;   ;Transport Method    ;Code10        ;TableRelation="Transport Method";
+                                                   CaptionML=ENU=Transport Method }
+    { 11  ;   ;Source Type         ;Option        ;OnValidate=BEGIN
+                                                                IF Type = Type::Shipment THEN BEGIN
+                                                                  "Country/Region of Origin Code" := GetCountryOfOriginCode;
+                                                                  "Partner VAT ID" := GetPartnerID;
+                                                                END;
+                                                              END;
+
+                                                   CaptionML=ENU=Source Type;
+                                                   OptionCaptionML=ENU=,Item Entry,Job Entry;
+                                                   OptionString=,Item Entry,Job Entry;
+                                                   BlankZero=Yes }
+    { 12  ;   ;Source Entry No.    ;Integer       ;TableRelation=IF (Source Type=CONST(Item Entry)) "Item Ledger Entry"
+                                                                 ELSE IF (Source Type=CONST(Job Entry)) "Job Ledger Entry";
+                                                   CaptionML=ENU=Source Entry No.;
+                                                   Editable=No }
+    { 13  ;   ;Net Weight          ;Decimal       ;OnValidate=BEGIN
+                                                                IF Quantity <> 0 THEN
+                                                                  "Total Weight" := ROUND("Net Weight" * Quantity,0.00001)
+                                                                ELSE
+                                                                  "Total Weight" := 0;
+                                                              END;
+
+                                                   CaptionML=ENU=Net Weight;
+                                                   DecimalPlaces=2:5 }
+    { 14  ;   ;Amount              ;Decimal       ;OnValidate=BEGIN
+                                                                IF "Cost Regulation %" <> 0 THEN
+                                                                  VALIDATE("Cost Regulation %")
+                                                                ELSE
+                                                                  "Statistical Value" := Amount + "Indirect Cost";
+                                                              END;
+
+                                                   CaptionML=ENU=Amount;
+                                                   DecimalPlaces=0:0 }
+    { 15  ;   ;Quantity            ;Decimal       ;OnValidate=BEGIN
+                                                                IF (Quantity <> 0) AND Item.GET("Item No.") THEN
+                                                                  VALIDATE("Net Weight",Item."Net Weight")
+                                                                ELSE
+                                                                  VALIDATE("Net Weight",0);
+                                                              END;
+
+                                                   CaptionML=ENU=Quantity;
+                                                   DecimalPlaces=0:0 }
+    { 16  ;   ;Cost Regulation %   ;Decimal       ;OnValidate=BEGIN
+                                                                "Indirect Cost" := ROUND(Amount * "Cost Regulation %" / 100,1);
+                                                                "Statistical Value" := ROUND(Amount + "Indirect Cost",1);
+                                                              END;
+
+                                                   CaptionML=ENU=Cost Regulation %;
+                                                   DecimalPlaces=2:2;
+                                                   MinValue=-100;
+                                                   MaxValue=100 }
+    { 17  ;   ;Indirect Cost       ;Decimal       ;OnValidate=BEGIN
+                                                                "Cost Regulation %" := 0;
+                                                                "Statistical Value" := Amount + "Indirect Cost";
+                                                              END;
+
+                                                   CaptionML=ENU=Indirect Cost;
+                                                   DecimalPlaces=0:0 }
+    { 18  ;   ;Statistical Value   ;Decimal       ;CaptionML=ENU=Statistical Value;
+                                                   DecimalPlaces=0:0 }
+    { 19  ;   ;Document No.        ;Code20        ;CaptionML=ENU=Document No. }
+    { 20  ;   ;Item No.            ;Code20        ;TableRelation=Item;
+                                                   OnValidate=BEGIN
+                                                                TESTFIELD("Source Type",0);
+
+                                                                IF "Item No." = '' THEN
+                                                                  CLEAR(Item)
+                                                                ELSE
+                                                                  Item.GET("Item No.");
+
+                                                                Name := Item.Description;
+                                                                "Tariff No." := Item."Tariff No.";
+                                                                "Country/Region of Origin Code" := Item."Country/Region of Origin Code";
+                                                                GetItemDescription;
+                                                              END;
+
+                                                   CaptionML=ENU=Item No. }
+    { 21  ;   ;Name                ;Text100       ;CaptionML=ENU=Name }
+    { 22  ;   ;Total Weight        ;Decimal       ;CaptionML=ENU=Total Weight;
+                                                   DecimalPlaces=0:0;
+                                                   Editable=No }
+    { 23  ;   ;Supplementary Units ;Boolean       ;CaptionML=ENU=Supplementary Units;
+                                                   Editable=No }
+    { 24  ;   ;Internal Ref. No.   ;Text10        ;CaptionML=ENU=Internal Ref. No.;
+                                                   Editable=No }
+    { 25  ;   ;Country/Region of Origin Code;Code10;
+                                                   TableRelation=Country/Region;
+                                                   CaptionML=ENU=Country/Region of Origin Code }
+    { 26  ;   ;Entry/Exit Point    ;Code10        ;TableRelation="Entry/Exit Point";
+                                                   CaptionML=ENU=Entry/Exit Point }
+    { 27  ;   ;Area                ;Code10        ;TableRelation=Area;
+                                                   CaptionML=ENU=Area }
+    { 28  ;   ;Transaction Specification;Code10   ;TableRelation="Transaction Specification";
+                                                   CaptionML=ENU=Transaction Specification }
+    { 29  ;   ;Shpt. Method Code   ;Code10        ;TableRelation="Shipment Method";
+                                                   CaptionML=ENU=Shpt. Method Code }
+    { 30  ;   ;Partner VAT ID      ;Text50        ;CaptionML=ENU=Partner Tax ID }
+    { 31  ;   ;Location Code       ;Code10        ;TableRelation=Location;
+                                                   CaptionML=ENU=Location Code }
+    { 32  ;   ;Counterparty        ;Boolean       ;CaptionML=ENU=Counterparty }
+  }
+  KEYS
+  {
+    {    ;Journal Template Name,Journal Batch Name,Line No.;
+                                                   Clustered=Yes }
+    {    ;Source Type,Source Entry No.             }
+    {    ;Type,Country/Region Code,Tariff No.,Transaction Type,Transport Method,Country/Region of Origin Code,Partner VAT ID;
+                                                   ObsoleteState=Pending;
+                                                   ObsoleteReason=Replaced by Journal Template Name,Journal Batch Name,Type,Country/Region Code,Tariff No.,Transaction Type,Transport Method,Country/Region of Origin Code,Partner VAT ID }
+    {    ;Internal Ref. No.                       ;ObsoleteState=Pending;
+                                                   ObsoleteReason=UseReplaced by Journal Template Name,Journal Batch Name,Type,Internal Ref. No. }
+    {    ;Document No.                             }
+    {    ;Journal Template Name,Journal Batch Name,Type,Internal Ref. No. }
+    {    ;Journal Template Name,Journal Batch Name,Type,Country/Region Code,Tariff No.,Transaction Type,Transport Method,Country/Region of Origin Code,Partner VAT ID }
+  }
+  FIELDGROUPS
+  {
+  }
+  CODE
+  {
+    VAR
+      IntraJnlTemplate@1000 : Record 261;
+      IntrastatJnlBatch@1001 : Record 262;
+      Item@1002 : Record 27;
+      TariffNumber@1003 : Record 260;
+
+    LOCAL PROCEDURE GetItemDescription@1();
+    BEGIN
+      IF "Tariff No." <> '' THEN BEGIN
+        TariffNumber.GET("Tariff No.");
+        "Item Description" := TariffNumber.Description;
+        "Supplementary Units" := TariffNumber."Supplementary Units";
+      END ELSE
+        "Item Description" := '';
+    END;
+
+    [External]
+    PROCEDURE IsOpenedFromBatch@42() : Boolean;
+    VAR
+      IntrastatJnlBatch@1002 : Record 262;
+      TemplateFilter@1001 : Text;
+      BatchFilter@1000 : Text;
+    BEGIN
+      BatchFilter := GETFILTER("Journal Batch Name");
+      IF BatchFilter <> '' THEN BEGIN
+        TemplateFilter := GETFILTER("Journal Template Name");
+        IF TemplateFilter <> '' THEN
+          IntrastatJnlBatch.SETFILTER("Journal Template Name",TemplateFilter);
+        IntrastatJnlBatch.SETFILTER(Name,BatchFilter);
+        IntrastatJnlBatch.FINDFIRST;
+      END;
+
+      EXIT((("Journal Batch Name" <> '') AND ("Journal Template Name" = '')) OR (BatchFilter <> ''));
+    END;
+
+    [External]
+    PROCEDURE GetCountryOfOriginCode@8() : Code[10];
+    VAR
+      Item@1001 : Record 27;
+    BEGIN
+      IF NOT Item.GET("Item No.") THEN
+        EXIT('');
+      EXIT(Item."Country/Region of Origin Code");
+    END;
+
+    [External]
+    PROCEDURE GetPartnerID@11() : Text[50];
+    BEGIN
+      CASE "Source Type" OF
+        "Source Type"::"Job Entry":
+          EXIT(GetPartnerIDFromJobEntry);
+        "Source Type"::"Item Entry":
+          EXIT(GetPartnerIDFromItemEntry);
+      END;
+    END;
+
+    LOCAL PROCEDURE GetPartnerIDFromItemEntry@12() : Text[50];
+    VAR
+      ItemLedgerEntry@1001 : Record 32;
+      SalesShipmentHeader@1002 : Record 110;
+      SalesInvoiceHeader@1003 : Record 112;
+      SalesCrMemoHeader@1012 : Record 114;
+      ReturnReceiptHeader@1009 : Record 6660;
+      PurchCrMemoHdr@1004 : Record 124;
+      PurchRcptHeader@1000 : Record 120;
+      ReturnShipmentHeader@1005 : Record 6650;
+      ServiceShipmentHeader@1006 : Record 5990;
+      ServiceInvoiceHeader@1007 : Record 5992;
+      ServiceCrMemoHeader@1011 : Record 5994;
+      Customer@1008 : Record 18;
+      Vendor@1010 : Record 23;
+      TransferReceiptHeader@1013 : Record 5746;
+      TransferShipmentHeader@1014 : Record 5744;
+      IntrastatSetup@1016 : Record 247;
+      IntraJnlManagement@1015 : Codeunit 350;
+      EU3rdPartyTrade@1018 : Boolean;
+    BEGIN
+      ItemLedgerEntry.GET("Source Entry No.");
+      CASE ItemLedgerEntry."Document Type" OF
+        ItemLedgerEntry."Document Type"::"Sales Invoice":
+          IF SalesInvoiceHeader.GET(ItemLedgerEntry."Document No.") THEN
+            EU3rdPartyTrade := SalesInvoiceHeader."EU 3-Party Trade";
+        ItemLedgerEntry."Document Type"::"Sales Credit Memo":
+          IF SalesCrMemoHeader.GET(ItemLedgerEntry."Document No.") THEN
+            EU3rdPartyTrade := SalesCrMemoHeader."EU 3-Party Trade";
+        ItemLedgerEntry."Document Type"::"Sales Shipment":
+          IF SalesShipmentHeader.GET(ItemLedgerEntry."Document No.") THEN
+            EU3rdPartyTrade := SalesShipmentHeader."EU 3-Party Trade";
+        ItemLedgerEntry."Document Type"::"Sales Return Receipt":
+          IF ReturnReceiptHeader.GET(ItemLedgerEntry."Document No.") THEN
+            EU3rdPartyTrade := ReturnReceiptHeader."EU 3-Party Trade";
+        ItemLedgerEntry."Document Type"::"Purchase Credit Memo":
+          IF PurchCrMemoHdr.GET(ItemLedgerEntry."Document No.") THEN
+            EXIT(
+              GetPartnerIDForCountry(
+                PurchCrMemoHdr."Pay-to Country/Region Code",PurchCrMemoHdr."VAT Registration No.",
+                IsVendorPrivatePerson(PurchCrMemoHdr."Pay-to Vendor No."),FALSE));
+        ItemLedgerEntry."Document Type"::"Purchase Return Shipment":
+          IF ReturnShipmentHeader.GET(ItemLedgerEntry."Document No.") THEN
+            EXIT(
+              GetPartnerIDForCountry(
+                ReturnShipmentHeader."Pay-to Country/Region Code",ReturnShipmentHeader."VAT Registration No.",
+                IsVendorPrivatePerson(ReturnShipmentHeader."Pay-to Vendor No."),FALSE));
+        ItemLedgerEntry."Document Type"::"Purchase Receipt":
+          IF PurchRcptHeader.GET(ItemLedgerEntry."Document No.") THEN
+            EXIT(
+              GetPartnerIDForCountry(
+                PurchRcptHeader."Pay-to Country/Region Code",PurchRcptHeader."VAT Registration No.",
+                IsVendorPrivatePerson(PurchRcptHeader."Pay-to Vendor No."),FALSE));
+        ItemLedgerEntry."Document Type"::"Service Shipment":
+          IF ServiceShipmentHeader.GET(ItemLedgerEntry."Document No.") THEN BEGIN
+            Customer.GET(ServiceShipmentHeader."Bill-to Customer No.");
+            EXIT(
+              GetPartnerIDForCountry(
+                ServiceShipmentHeader."Bill-to Country/Region Code",ServiceShipmentHeader."VAT Registration No.",
+                IsCustomerPrivatePerson(ServiceShipmentHeader."Bill-to Customer No."),ServiceShipmentHeader."EU 3-Party Trade"));
+          END;
+        ItemLedgerEntry."Document Type"::"Service Invoice":
+          IF ServiceInvoiceHeader.GET(ItemLedgerEntry."Document No.") THEN BEGIN
+            Customer.GET(ServiceInvoiceHeader."Bill-to Customer No.");
+            EXIT(
+              GetPartnerIDForCountry(
+                ServiceInvoiceHeader."Bill-to Country/Region Code",ServiceInvoiceHeader."VAT Registration No.",
+                IsCustomerPrivatePerson(ServiceInvoiceHeader."Bill-to Customer No."),ServiceInvoiceHeader."EU 3-Party Trade"));
+          END;
+        ItemLedgerEntry."Document Type"::"Service Credit Memo":
+          IF ServiceCrMemoHeader.GET(ItemLedgerEntry."Document No.") THEN BEGIN
+            Customer.GET(ServiceCrMemoHeader."Bill-to Customer No.");
+            EXIT(
+              GetPartnerIDForCountry(
+                ServiceCrMemoHeader."Bill-to Country/Region Code",ServiceCrMemoHeader."VAT Registration No.",
+                IsCustomerPrivatePerson(ServiceCrMemoHeader."Bill-to Customer No."),ServiceCrMemoHeader."EU 3-Party Trade"));
+          END;
+        ItemLedgerEntry."Document Type"::"Transfer Receipt":
+          IF TransferReceiptHeader.GET(ItemLedgerEntry."Document No.") THEN
+            EXIT(
+              GetPartnerIDForCountry(
+                ItemLedgerEntry."Country/Region Code",TransferReceiptHeader."Partner VAT ID",FALSE,FALSE));
+        ItemLedgerEntry."Document Type"::"Transfer Shipment":
+          IF TransferShipmentHeader.GET(ItemLedgerEntry."Document No.") THEN
+            EXIT(
+              GetPartnerIDForCountry(
+                ItemLedgerEntry."Country/Region Code",TransferShipmentHeader."Partner VAT ID",FALSE,FALSE));
+      END;
+
+      IF NOT IntrastatSetup.GET THEN
+        IntrastatSetup.INIT;
+      CASE ItemLedgerEntry."Source Type" OF
+        ItemLedgerEntry."Source Type"::Customer:
+          BEGIN
+            Customer.GET(ItemLedgerEntry."Source No.");
+            EXIT(
+              GetPartnerIDForCountry(
+                ItemLedgerEntry."Country/Region Code",
+                IntraJnlManagement.GetVATRegNo(
+                  Customer."Country/Region Code",Customer."VAT Registration No.",IntrastatSetup."Cust. VAT No. on File"),
+                IsCustomerPrivatePerson(Customer."No."),EU3rdPartyTrade));
+          END;
+        ItemLedgerEntry."Source Type"::Vendor:
+          BEGIN
+            Vendor.GET(ItemLedgerEntry."Source No.");
+            EXIT(
+              GetPartnerIDForCountry(
+                ItemLedgerEntry."Country/Region Code",
+                IntraJnlManagement.GetVATRegNo(
+                  Vendor."Country/Region Code",Vendor."VAT Registration No.",IntrastatSetup."Vend. VAT No. on File"),
+                IsVendorPrivatePerson(Vendor."No."),FALSE));
+          END;
+      END;
+    END;
+
+    LOCAL PROCEDURE GetPartnerIDFromJobEntry@13() : Text[50];
+    VAR
+      Job@1001 : Record 167;
+      JobLedgerEntry@1002 : Record 169;
+      Customer@1003 : Record 18;
+      IntrastatSetup@1004 : Record 247;
+      IntraJnlManagement@1000 : Codeunit 350;
+    BEGIN
+      JobLedgerEntry.GET("Source Entry No.");
+      Job.GET(JobLedgerEntry."Job No.");
+      Customer.GET(Job."Bill-to Customer No.");
+      IF NOT IntrastatSetup.GET THEN
+        IntrastatSetup.INIT;
+
+      EXIT(
+        GetPartnerIDForCountry(
+          Customer."Country/Region Code",
+          IntraJnlManagement.GetVATRegNo(
+            Customer."Country/Region Code",Customer."VAT Registration No.",IntrastatSetup."Cust. VAT No. on File"),
+          IsCustomerPrivatePerson(Customer."No."),FALSE));
+    END;
+
+    LOCAL PROCEDURE GetPartnerIDForCountry@14(CountryRegionCode@1000 : Code[10];VATRegistrationNo@1001 : Text[50];IsPrivatePerson@1004 : Boolean;IsThirdPartyTrade@1003 : Boolean) : Text;
+    VAR
+      CountryRegion@1002 : Record 9;
+    BEGIN
+      IF IsPrivatePerson THEN
+        EXIT('QV999999999999');
+
+      IF IsThirdPartyTrade THEN
+        EXIT('QV999999999999');
+
+      IF CountryRegion.GET(CountryRegionCode) THEN
+        IF CountryRegion.IsEUCountry(CountryRegionCode) THEN
+          IF VATRegistrationNo <> '' THEN
+            EXIT(VATRegistrationNo);
+
+      EXIT('QV999999999999');
+    END;
+
+    LOCAL PROCEDURE IsCustomerPrivatePerson@4(CustomerNo@1000 : Code[20]) : Boolean;
+    VAR
+      Customer@1001 : Record 18;
+    BEGIN
+      IF NOT Customer.GET(CustomerNo) THEN
+        EXIT(FALSE);
+      IF Customer."Intrastat Partner Type" <> Customer."Intrastat Partner Type"::" " THEN
+        EXIT(Customer."Intrastat Partner Type" = Customer."Intrastat Partner Type"::Person);
+
+      EXIT(Customer."Partner Type" = Customer."Partner Type"::Person);
+    END;
+
+    LOCAL PROCEDURE IsVendorPrivatePerson@5(VendorNo@1000 : Code[20]) : Boolean;
+    VAR
+      Vendor@1001 : Record 23;
+    BEGIN
+      IF NOT Vendor.GET(VendorNo) THEN
+        EXIT(FALSE);
+      IF Vendor."Intrastat Partner Type" <> Vendor."Intrastat Partner Type"::" " THEN
+        EXIT(Vendor."Intrastat Partner Type" = Vendor."Intrastat Partner Type"::Person);
+
+      EXIT(Vendor."Partner Type" = Vendor."Partner Type"::Person);
+    END;
+
+    LOCAL PROCEDURE AssertBatchIsNotReported@2(IntrastatJnlLine@1000 : Record 263);
+    BEGIN
+      IntrastatJnlBatch.GET(IntrastatJnlLine."Journal Template Name",IntrastatJnlLine."Journal Batch Name");
+      IntrastatJnlBatch.TESTFIELD(Reported,FALSE);
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

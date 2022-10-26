@@ -1,0 +1,89 @@
+OBJECT Page 704 Merge Duplicate Conflicts
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/24/19;
+    Time=12:00:00 PM;
+    Version List=NAVW114.00;
+  }
+  PROPERTIES
+  {
+    Editable=No;
+    CaptionML=ENU=Merge Duplicate Conflicts;
+    SourceTable=Table66;
+    PageType=List;
+    SourceTableTemporary=Yes;
+    ShowFilter=No;
+    ActionList=ACTIONS
+    {
+      { 6       ;    ;ActionContainer;
+                      ActionContainerType=ActionItems }
+      { 8       ;1   ;Action    ;
+                      Name=ViewConflictRecords;
+                      CaptionML=ENU=View Details;
+                      ToolTipML=ENU=View the details of conflicting records, rename or remove the duplicate record.;
+                      ApplicationArea=#Basic,#Suite;
+                      Promoted=Yes;
+                      PromotedIsBig=Yes;
+                      Image=ViewDetails;
+                      PromotedCategory=Process;
+                      PromotedOnly=Yes;
+                      OnAction=BEGIN
+                                 IF Merge THEN
+                                   DELETE;
+                               END;
+                                }
+    }
+  }
+  CONTROLS
+  {
+    { 1   ;0   ;Container ;
+                ContainerType=ContentArea }
+
+    { 2   ;1   ;Group     ;
+                Name=Group;
+                GroupType=Repeater }
+
+    { 3   ;2   ;Field     ;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Table ID" }
+
+    { 7   ;2   ;Field     ;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Table Name" }
+
+    { 5   ;2   ;Field     ;
+                Name=Current;
+                CaptionML=ENU=Current;
+                ToolTipML=ENU=Specifies values of the fields in the primary key of the current record.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr=GetPK(Current) }
+
+    { 4   ;2   ;Field     ;
+                Name=Duplicate;
+                CaptionML=ENU=Duplicate;
+                ToolTipML=ENU=Specifies values of the fields in the primary key of the current record.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr=GetPK(Duplicate) }
+
+  }
+  CODE
+  {
+
+    [External]
+    PROCEDURE Set@1(VAR TempMergeDuplicatesConflict@1000 : TEMPORARY Record 66);
+    BEGIN
+      COPY(TempMergeDuplicatesConflict,TRUE);
+    END;
+
+    LOCAL PROCEDURE GetPK@2(RecordID@1000 : RecordID) PrimaryKey : Text;
+    BEGIN
+      PrimaryKey := FORMAT(RecordID);
+      PrimaryKey := COPYSTR(PrimaryKey,STRPOS(PrimaryKey,': ') + 2);
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

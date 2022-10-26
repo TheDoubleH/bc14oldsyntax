@@ -1,0 +1,48 @@
+OBJECT Page 10018 IRS 1099 Adjustments
+{
+  OBJECT-PROPERTIES
+  {
+    Date=12/02/19;
+    Time=12:00:00 PM;
+    Version List=NAVNA14.08;
+  }
+  PROPERTIES
+  {
+    CaptionML=ENU=IRS 1099 Adjustments;
+    SourceTable=Table10016;
+    DelayedInsert=Yes;
+    PageType=List;
+  }
+  CONTROLS
+  {
+    { 1020000;0;Container ;
+                ContainerType=ContentArea }
+
+    { 1020001;1;Group     ;
+                Name=Group;
+                GroupType=Repeater }
+
+    { 1020002;2;Field     ;
+                ToolTipML=ENU=Specifies the number of the vendor account.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Vendor No." }
+
+    { 1020003;2;Field     ;
+                ToolTipML=ENU=Specifies the tax year for the 1099 forms.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr=Year }
+
+    { 1020004;2;Field     ;
+                ToolTipML=ENU=Specifies the adjustment amount.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr=Amount }
+
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

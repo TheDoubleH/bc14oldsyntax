@@ -1,0 +1,35 @@
+OBJECT Table 27011 SAT Relationship Type
+{
+  OBJECT-PROPERTIES
+  {
+    Date=01/28/22;
+    Time=12:00:00 PM;
+    Version List=NAVNA14.33;
+  }
+  PROPERTIES
+  {
+    DataPerCompany=No;
+    CaptionML=ENU=SAT Relationship Type;
+    LookupPageID=Page27041;
+    DrillDownPageID=Page27041;
+  }
+  FIELDS
+  {
+    { 1   ;   ;SAT Relationship Type;Code10       ;CaptionML=ENU=SAT Relationship Type }
+    { 2   ;   ;Description         ;Text100       ;CaptionML=ENU=Description }
+  }
+  KEYS
+  {
+    {    ;SAT Relationship Type                   ;Clustered=Yes }
+  }
+  FIELDGROUPS
+  {
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

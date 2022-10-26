@@ -1,0 +1,48 @@
+OBJECT Report 153 Customer Statement
+{
+  OBJECT-PROPERTIES
+  {
+    Date=08/23/19;
+    Time=12:00:00 PM;
+    Version List=NAVW114.04;
+  }
+  PROPERTIES
+  {
+    CaptionML=ENU=Customer Statement;
+    ApplicationArea=#Basic,#Suite;
+    ProcessingOnly=Yes;
+    OnInitReport=VAR
+                   CustomerLayoutStatement@1000 : Codeunit 8810;
+                 BEGIN
+                   CustomerLayoutStatement.RunReport;
+                 END;
+
+    UseRequestPage=No;
+    UsageCategory=Documents;
+  }
+  DATASET
+  {
+  }
+  REQUESTPAGE
+  {
+    PROPERTIES
+    {
+    }
+    CONTROLS
+    {
+    }
+  }
+  LABELS
+  {
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+  RDLDATA
+  {
+  }
+}
+

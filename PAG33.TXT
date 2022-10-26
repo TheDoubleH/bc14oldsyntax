@@ -1,0 +1,249 @@
+OBJECT Page 33 Customer Lookup
+{
+  OBJECT-PROPERTIES
+  {
+    Date=05/22/19;
+    Time=12:00:00 PM;
+    Version List=NAVW114.01;
+  }
+  PROPERTIES
+  {
+    Editable=No;
+    CaptionML=ENU=Customers;
+    SourceTable=Table18;
+    PageType=List;
+    CardPageID=Customer Card;
+    ActionList=ACTIONS
+    {
+      { 10      ;    ;ActionContainer;
+                      ActionContainerType=RelatedInformation }
+      { 11      ;1   ;Action    ;
+                      Name=CustomerList;
+                      CaptionML=ENU=Advanced View;
+                      ToolTipML=ENU="Open the Customers page showing all possible columns. ";
+                      ApplicationArea=#All;
+                      Promoted=Yes;
+                      Image=CustomerList;
+                      PromotedCategory=Process;
+                      PromotedOnly=Yes;
+                      OnAction=VAR
+                                 CustomerList@1000 : Page 22;
+                               BEGIN
+                                 CustomerList.SETTABLEVIEW(Rec);
+                                 CustomerList.SETRECORD(Rec);
+                                 CustomerList.LOOKUPMODE := TRUE;
+                                 IF CustomerList.RUNMODAL = ACTION::LookupOK THEN BEGIN
+                                   CustomerList.GETRECORD(Rec);
+                                   CurrPage.CLOSE;
+                                 END;
+                               END;
+                                }
+    }
+  }
+  CONTROLS
+  {
+    { 1   ;0   ;Container ;
+                ContainerType=ContentArea }
+
+    { 2   ;1   ;Group     ;
+                Name=Group;
+                GroupType=Repeater }
+
+    { 3   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the number.;
+                ApplicationArea=#All;
+                SourceExpr="No." }
+
+    { 4   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the name.;
+                ApplicationArea=#All;
+                SourceExpr=Name }
+
+    { 41  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the code of the responsibility center, such as a distribution hub, that is associated with the involved user, company, customer, or vendor.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Responsibility Center" }
+
+    { 39  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies from which location sales to this customer will be processed by default.;
+                ApplicationArea=#Location;
+                SourceExpr="Location Code" }
+
+    { 9   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the ZIP Code.;
+                ApplicationArea=#All;
+                SourceExpr="Post Code" }
+
+    { 5   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the street and number.;
+                ApplicationArea=#All;
+                SourceExpr=Address }
+
+    { 6   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the city.;
+                ApplicationArea=#All;
+                SourceExpr=City;
+                Visible=FALSE }
+
+    { 37  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the country/region of the address.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Country/Region Code";
+                Visible=FALSE }
+
+    { 8   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the phone number.;
+                ApplicationArea=#All;
+                SourceExpr="Phone No." }
+
+    { 7   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the assigned contact person.;
+                ApplicationArea=#All;
+                SourceExpr=Contact }
+
+    { 34  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the customer's intercompany partner code.;
+                ApplicationArea=#Intercompany;
+                SourceExpr="IC Partner Code";
+                Visible=FALSE }
+
+    { 33  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies a code for the salesperson who normally handles this customer's account.;
+                ApplicationArea=#Suite;
+                SourceExpr="Salesperson Code" }
+
+    { 32  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the customer's market type to link business transactions to.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Customer Posting Group";
+                Visible=FALSE }
+
+    { 31  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the customer's trade type to link transactions made for this customer with the appropriate general ledger account according to the general posting setup.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Gen. Bus. Posting Group";
+                Visible=FALSE }
+
+    { 30  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the tax specification of the involved customer or vendor to link transactions made for this record with the appropriate general ledger account according to the tax posting setup.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="VAT Bus. Posting Group";
+                Visible=FALSE }
+
+    { 29  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the customer price group code, which you can use to set up special sales prices in the Sales Prices window.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Customer Price Group";
+                Visible=FALSE }
+
+    { 28  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the customer discount group code, which you can use as a criterion to set up special discounts in the Sales Line Discounts window.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Customer Disc. Group";
+                Visible=FALSE }
+
+    { 27  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies a formula that calculates the payment due date, payment discount date, and payment discount amount.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Payment Terms Code";
+                Visible=FALSE }
+
+    { 26  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies how reminders about late payments are handled for this customer.;
+                ApplicationArea=#Suite;
+                SourceExpr="Reminder Terms Code";
+                Visible=FALSE }
+
+    { 25  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the code for the involved finance charges in case of late payment.;
+                ApplicationArea=#Suite;
+                SourceExpr="Fin. Charge Terms Code";
+                Visible=FALSE }
+
+    { 24  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the default currency for the customer.;
+                ApplicationArea=#Suite;
+                SourceExpr="Currency Code";
+                Visible=FALSE }
+
+    { 23  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the language that is used when translating specified text on documents to foreign business partner, such as an item description on an order confirmation.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Language Code";
+                Visible=FALSE }
+
+    { 22  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies an alternate name that you can use to search for the record in question when you cannot remember the value in the Name field.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Search Name";
+                Visible=FALSE }
+
+    { 21  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the maximum amount you allow the customer to exceed the payment balance before warnings are issued.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Credit Limit (LCY)";
+                Visible=FALSE }
+
+    { 20  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies that the related record is blocked from being posted in transactions, for example a customer that is declared insolvent or an item that is placed in quarantine.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr=Blocked;
+                Visible=FALSE }
+
+    { 19  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies whether to limit access to data for the data subject during daily operations. This is useful, for example, when protecting data from changes while it is under privacy review.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Privacy Blocked";
+                Visible=FALSE }
+
+    { 18  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies when the customer card was last modified.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Last Date Modified";
+                Visible=FALSE }
+
+    { 17  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies how to apply payments to entries for this customer.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Application Method";
+                Visible=FALSE }
+
+    { 16  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies if several orders delivered to the customer can appear on the same sales invoice.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Combine Shipments";
+                Visible=FALSE }
+
+    { 15  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies whether items will never, automatically (Always), or optionally be reserved for this customer. Optional means that you must manually reserve items for this customer.;
+                ApplicationArea=#Reservation;
+                SourceExpr=Reserve;
+                Visible=FALSE }
+
+    { 14  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the code for another shipment address than the customer's own address, which is entered by default.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Ship-to Code";
+                Visible=FALSE }
+
+    { 13  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies if the customer accepts partial shipment of orders.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Shipping Advice";
+                Visible=FALSE }
+
+    { 12  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the code for the shipping agent who is transporting the items.;
+                ApplicationArea=#Suite;
+                SourceExpr="Shipping Agent Code";
+                Visible=FALSE }
+
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

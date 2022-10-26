@@ -1,0 +1,142 @@
+OBJECT Table 5388 CRM Post Configuration
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/24/19;
+    Time=12:00:00 PM;
+    Version List=NAVW114.00;
+  }
+  PROPERTIES
+  {
+    TableType=CRM;
+    ExternalName=msdyn_postconfig;
+    CaptionML=ENU=Post Configuration;
+    Description=Enable or disable entities for Activity Feeds and Yammer collaboration.;
+  }
+  FIELDS
+  {
+    { 1   ;   ;msdyn_PostConfigId  ;GUID          ;ExternalName=msdyn_postconfigid;
+                                                   ExternalType=Uniqueidentifier;
+                                                   ExternalAccess=Insert;
+                                                   DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Post Configuration;
+                                                   Description=Unique identifier of the post configuration for this rule. }
+    { 2   ;   ;CreatedOn           ;DateTime      ;ExternalName=createdon;
+                                                   ExternalType=DateTime;
+                                                   ExternalAccess=Read;
+                                                   DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Created On;
+                                                   Description=Date and time when the record was created. }
+    { 3   ;   ;ModifiedOn          ;DateTime      ;ExternalName=modifiedon;
+                                                   ExternalType=DateTime;
+                                                   ExternalAccess=Read;
+                                                   DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Modified On;
+                                                   Description=Date and time when the record was modified. }
+    { 4   ;   ;statecode           ;Option        ;InitValue=[ ];
+                                                   ExternalName=statecode;
+                                                   ExternalType=State;
+                                                   ExternalAccess=Modify;
+                                                   OptionOrdinalValues=[-1;0;1];
+                                                   DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Status;
+                                                   OptionCaptionML=ENU=" ,Active,Inactive";
+                                                   OptionString=[ ,Active,Inactive];
+                                                   Description=Status of the Post Configuration }
+    { 5   ;   ;statuscode          ;Option        ;InitValue=[ ];
+                                                   ExternalName=statuscode;
+                                                   ExternalType=Status;
+                                                   OptionOrdinalValues=[-1;1;2];
+                                                   DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Status Reason;
+                                                   OptionCaptionML=ENU=" ,Active,Inactive";
+                                                   OptionString=[ ,Active,Inactive];
+                                                   Description=Reason for the status of the Post Configuration }
+    { 6   ;   ;VersionNumber       ;BigInteger    ;ExternalName=versionnumber;
+                                                   ExternalType=BigInt;
+                                                   ExternalAccess=Read;
+                                                   DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Version Number;
+                                                   Description=Version Number }
+    { 7   ;   ;ImportSequenceNumber;Integer       ;ExternalName=importsequencenumber;
+                                                   ExternalType=Integer;
+                                                   ExternalAccess=Insert;
+                                                   DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Import Sequence Number;
+                                                   Description=Sequence number of the import that created this record. }
+    { 8   ;   ;OverriddenCreatedOn ;DateTime      ;ExternalName=overriddencreatedon;
+                                                   ExternalType=DateTime;
+                                                   ExternalAccess=Insert;
+                                                   DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Record Created On;
+                                                   Description=Date and time that the record was migrated. }
+    { 9   ;   ;TimeZoneRuleVersionNumber;Integer  ;ExternalName=timezoneruleversionnumber;
+                                                   ExternalType=Integer;
+                                                   DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Time Zone Rule Version Number;
+                                                   MinValue=-1;
+                                                   Description=For internal use only. }
+    { 10  ;   ;UTCConversionTimeZoneCode;Integer  ;ExternalName=utcconversiontimezonecode;
+                                                   ExternalType=Integer;
+                                                   DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=UTC Conversion Time Zone Code;
+                                                   MinValue=-1;
+                                                   Description=Time zone code that was in use when the record was created. }
+    { 11  ;   ;msdyn_EntityDisplayName;Text100    ;ExternalName=msdyn_entitydisplayname;
+                                                   ExternalType=String;
+                                                   DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Entity Display Name;
+                                                   Description=Display name of the entity configured by this object. }
+    { 12  ;   ;msdyn_ConfigureWall ;Boolean       ;ExternalName=msdyn_configurewall;
+                                                   ExternalType=Boolean;
+                                                   DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Wall Enabled;
+                                                   Description=Enables or disables the wall on the entity form. }
+    { 13  ;   ;msdyn_EntityName    ;Text100       ;ExternalName=msdyn_entityname;
+                                                   ExternalType=String;
+                                                   DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Entity Name;
+                                                   Description=Logical name of the entity configured by this object. }
+    { 14  ;   ;msdyn_FollowingViewId;Text100      ;ExternalName=msdyn_followingviewid;
+                                                   ExternalType=String;
+                                                   DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Following View Id;
+                                                   Description=Identifier for the view of records that a user follows. }
+    { 15  ;   ;msdyn_FollowingViewId2;Text100     ;ExternalName=msdyn_followingviewid2;
+                                                   ExternalType=String;
+                                                   DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Following View Id 2;
+                                                   Description=Identifier for the view of records that a user follows. }
+    { 16  ;   ;msdyn_Otc           ;Integer       ;ExternalName=msdyn_otc;
+                                                   ExternalType=Integer;
+                                                   DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Object Type Code;
+                                                   MinValue=0;
+                                                   Description=Object Type Code of the entity }
+    { 17  ;   ;msdyn_Status        ;BLOB          ;ExternalName=msdyn_status;
+                                                   ExternalType=Memo;
+                                                   DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Configuration Status;
+                                                   Description=Information about the success or failure of the configuration.;
+                                                   SubType=Memo }
+  }
+  KEYS
+  {
+    {    ;msdyn_PostConfigId                      ;Clustered=Yes }
+    {    ;msdyn_EntityDisplayName                  }
+  }
+  FIELDGROUPS
+  {
+    { 1   ;DropDown            ;msdyn_EntityDisplayName                  }
+  }
+  CODE
+  {
+
+    BEGIN
+    {
+      Dynamics CRM Version: 9.1.0.1096
+    }
+    END.
+  }
+}
+

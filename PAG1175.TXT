@@ -1,0 +1,46 @@
+OBJECT Page 1175 User Task Group
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/24/19;
+    Time=12:00:00 PM;
+    Version List=NAVW114.00;
+  }
+  PROPERTIES
+  {
+    CaptionML=ENU=User Task Group;
+    SourceTable=Table1175;
+    PageType=Document;
+  }
+  CONTROLS
+  {
+    { 1   ;    ;Container ;
+                ContainerType=ContentArea }
+
+    { 2   ;1   ;Field     ;
+                CaptionML=ENU=Group Code;
+                ToolTipML=ENU=Specifies a unique ID for the group.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr=Code }
+
+    { 3   ;1   ;Field     ;
+                CaptionML=ENU=Description;
+                ToolTipML=ENU=Specifies a description of the group.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr=Description }
+
+    { 4   ;1   ;Part      ;
+                ApplicationArea=#Basic,#Suite;
+                SubPageLink=User Task Group Code=FIELD(Code);
+                PagePartID=Page1176;
+                PartType=Page }
+
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

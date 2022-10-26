@@ -1,0 +1,51 @@
+OBJECT Table 280 Extended Text Line
+{
+  OBJECT-PROPERTIES
+  {
+    Date=06/30/22;
+    Time=12:00:00 PM;
+    Version List=NAVW114.38;
+  }
+  PROPERTIES
+  {
+    OnInsert=BEGIN
+               ExtendedTextHeader.GET("Table Name","No.","Language Code","Text No.");
+             END;
+
+    CaptionML=ENU=Extended Text Line;
+  }
+  FIELDS
+  {
+    { 1   ;   ;Table Name          ;Option        ;CaptionML=ENU=Table Name;
+                                                   OptionCaptionML=ENU=Standard Text,G/L Account,Item,Resource,Tax Clause;
+                                                   OptionString=Standard Text,G/L Account,Item,Resource,VAT Clause }
+    { 2   ;   ;No.                 ;Code20        ;TableRelation=IF (Table Name=CONST(Standard Text)) "Standard Text"
+                                                                 ELSE IF (Table Name=CONST(G/L Account)) "G/L Account"
+                                                                 ELSE IF (Table Name=CONST(Item)) Item
+                                                                 ELSE IF (Table Name=CONST(Resource)) Resource
+                                                                 ELSE IF (Table Name=CONST(VAT Clause)) "VAT Clause";
+                                                   CaptionML=ENU=No. }
+    { 3   ;   ;Language Code       ;Code10        ;TableRelation=Language;
+                                                   CaptionML=ENU=Language Code }
+    { 4   ;   ;Text No.            ;Integer       ;CaptionML=ENU=Text No. }
+    { 5   ;   ;Line No.            ;Integer       ;CaptionML=ENU=Line No. }
+    { 6   ;   ;Text                ;Text100       ;CaptionML=ENU=Text }
+  }
+  KEYS
+  {
+    {    ;Table Name,No.,Language Code,Text No.,Line No.;
+                                                   Clustered=Yes }
+  }
+  FIELDGROUPS
+  {
+  }
+  CODE
+  {
+    VAR
+      ExtendedTextHeader@1002 : Record 279;
+
+    BEGIN
+    END.
+  }
+}
+

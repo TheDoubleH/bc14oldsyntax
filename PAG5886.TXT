@@ -1,0 +1,149 @@
+OBJECT Page 5886 Posted Phys. Invt. Order Lines
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/24/19;
+    Time=12:00:00 PM;
+    Version List=NAVW114.00;
+  }
+  PROPERTIES
+  {
+    Editable=No;
+    CaptionML=ENU=Posted Phys. Invt. Order Lines;
+    SourceTable=Table5880;
+    PageType=List;
+    ActionList=ACTIONS
+    {
+      { 1900000003;0 ;ActionContainer;
+                      ActionContainerType=RelatedInformation }
+      { 42      ;1   ;ActionGroup;
+                      CaptionML=ENU=&Line;
+                      Image=Line }
+      { 41      ;2   ;Action    ;
+                      ShortCutKey=Shift+F7;
+                      CaptionML=ENU=Show Document;
+                      ToolTipML=ENU=Open the document that the selected line exists on.;
+                      ApplicationArea=#Warehouse;
+                      RunObject=Page 5883;
+                      RunPageView=SORTING(No.);
+                      RunPageLink=No.=FIELD(Document No.);
+                      Promoted=Yes;
+                      PromotedIsBig=Yes;
+                      Image=View;
+                      PromotedCategory=Process }
+    }
+  }
+  CONTROLS
+  {
+    { 1900000001;0;Container;
+                ContainerType=ContentArea }
+
+    { 40  ;1   ;Group     ;
+                GroupType=Repeater }
+
+    { 1   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the physical inventory order that the line exists on.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Document No." }
+
+    { 3   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the line on the physical inventory order line.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Line No.";
+                Visible=FALSE }
+
+    { 5   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the item on the physical inventory order line.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Item No." }
+
+    { 7   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the variant of the item on the physical inventory order line.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Variant Code";
+                Visible=FALSE }
+
+    { 9   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the description of the item on the physical inventory order line.;
+                ApplicationArea=#Warehouse;
+                SourceExpr=Description }
+
+    { 11  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies an additional part of the description of the item on the physical inventory order line.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Description 2";
+                Visible=FALSE }
+
+    { 13  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the location of the item on the physical inventory order line.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Location Code" }
+
+    { 15  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the unit of measure, such as bottle or piece, that is used for the item on the physical inventory order line.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Unit of Measure";
+                Visible=FALSE }
+
+    { 17  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the base unit of measure that is set up for the item on the physical inventory order line.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Base Unit of Measure Code" }
+
+    { 19  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the expected inventory quantity in the base unit of measure on the physical inventory order line.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Qty. Expected (Base)" }
+
+    { 21  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the Qty. Recorded (Base) of the physical inventory order line.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Qty. Recorded (Base)" }
+
+    { 23  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the Entry Type of the physical inventory order line.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Entry Type" }
+
+    { 25  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the quantity in the base unit of measure on the physical inventory order line.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Quantity (Base)" }
+
+    { 27  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies how many finished physical inventory recording lines exist for the physical inventory order line.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="No. Finished Rec.-Lines" }
+
+    { 29  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies that no physical inventory order lines existed for the recorded item, and that the line was generated based on the related recording.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Recorded Without Order";
+                Visible=FALSE }
+
+    { 31  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the sum of unit costs of the item quantity on the line.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Unit Amount" }
+
+    { 33  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the cost of one unit of the item on the line.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Unit Cost";
+                Visible=FALSE }
+
+    { 35  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the shelf number of the item on the physical inventory order line.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Shelf No.";
+                Visible=FALSE }
+
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

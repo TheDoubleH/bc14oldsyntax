@@ -1,0 +1,44 @@
+OBJECT Page 27027 SAT Municipalities
+{
+  OBJECT-PROPERTIES
+  {
+    Date=01/13/22;
+    Time=12:00:00 PM;
+    Version List=NAVNA14.32;
+  }
+  PROPERTIES
+  {
+    CaptionML=ENU=SAT Municipalities;
+    SourceTable=Table27027;
+    PageType=List;
+  }
+  CONTROLS
+  {
+    { 1310000;0;Container ;
+                ContainerType=ContentArea }
+
+    { 1310001;1;Group     ;
+                Name=Group;
+                GroupType=Repeater }
+
+    { 1310002;2;Field     ;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr=Code }
+
+    { 1310003;2;Field     ;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr=State }
+
+    { 1310004;2;Field     ;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr=Description }
+
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

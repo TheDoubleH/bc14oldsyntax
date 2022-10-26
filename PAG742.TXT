@@ -1,0 +1,89 @@
+OBJECT Page 742 VAT Report Statement Subform
+{
+  OBJECT-PROPERTIES
+  {
+    Date=04/29/22;
+    Time=12:00:00 PM;
+    Version List=NAVW114.36;
+  }
+  PROPERTIES
+  {
+    CaptionML=ENU=Tax Report Statement Subform;
+    InsertAllowed=No;
+    SourceTable=Table742;
+    PageType=ListPart;
+    ShowFilter=No;
+    OnOpenPage=VAR
+                 VATReportSetup@1000 : Record 743;
+               BEGIN
+                 VATReportSetup.GET;
+                 ShowBase := VATReportSetup."Report VAT Base";
+                 ShowVATNote := VATReportSetup."Report VAT Note";
+               END;
+
+  }
+  CONTROLS
+  {
+    { 1   ;0   ;Container ;
+                ContainerType=ContentArea }
+
+    { 2   ;1   ;Group     ;
+                Name=Group;
+                GroupType=Repeater }
+
+    { 3   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies a number that identifies the line.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Row No.";
+                Editable=FALSE }
+
+    { 4   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies a description of the Tax report statement.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr=Description;
+                Editable=FALSE }
+
+    { 5   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the number on the box that the tax statement applies to.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Box No.";
+                Editable=FALSE }
+
+    { 8   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies any text that you want to add to the specific line.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr=Note;
+                Visible=ShowVATNote }
+
+    { 6   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the amount that the tax amount in the amount is calculated from.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr=Base;
+                Visible=ShowBase;
+                Editable=FALSE }
+
+    { 7   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the amount of the entry in the report statement.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr=Amount;
+                Editable=FALSE }
+
+  }
+  CODE
+  {
+    VAR
+      ShowBase@1000 : Boolean;
+      ShowVATNote@1001 : Boolean;
+
+    [External]
+    PROCEDURE SelectFirst@1();
+    BEGIN
+      IF COUNT > 0 THEN
+        FINDFIRST;
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

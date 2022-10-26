@@ -1,0 +1,117 @@
+OBJECT Page 5800 Item Charges
+{
+  OBJECT-PROPERTIES
+  {
+    Date=06/30/22;
+    Time=12:00:00 PM;
+    Version List=NAVW114.38,NAVNA14.38;
+  }
+  PROPERTIES
+  {
+    CaptionML=ENU=Item Charges;
+    ApplicationArea=#ItemCharges;
+    SourceTable=Table5800;
+    PageType=List;
+    UsageCategory=Administration;
+    AdditionalSearchTermsML=ENU=fee transportation freight handling landed cost;
+    PromotedActionCategoriesML=ENU=New,Process,Report,Item Charge;
+    ActionList=ACTIONS
+    {
+      { 1900000003;0 ;ActionContainer;
+                      ActionContainerType=RelatedInformation }
+      { 15      ;1   ;ActionGroup;
+                      CaptionML=ENU=&Item Charge;
+                      Image=Add }
+      { 17      ;2   ;Action    ;
+                      ShortCutKey=Ctrl+F7;
+                      CaptionML=ENU=Value E&ntries;
+                      ToolTipML=ENU=View the amounts related to item or capacity ledger entries for the record on the document or journal line.;
+                      ApplicationArea=#ItemCharges;
+                      RunObject=Page 5802;
+                      RunPageView=SORTING(Item Charge No.);
+                      RunPageLink=Entry Type=CONST(Direct Cost),
+                                  Item Charge No.=FIELD(No.);
+                      Promoted=Yes;
+                      Image=ValueLedger;
+                      PromotedCategory=Category4;
+                      PromotedOnly=Yes }
+      { 19      ;2   ;Action    ;
+                      ShortCutKey=Shift+Ctrl+D;
+                      CaptionML=ENU=Dimensions;
+                      ToolTipML=ENU=View or edit dimensions, such as area, project, or department, that you can assign to sales and purchase documents to distribute costs and analyze transaction history.;
+                      ApplicationArea=#Dimensions;
+                      RunObject=Page 540;
+                      RunPageLink=Table ID=CONST(5800),
+                                  No.=FIELD(No.);
+                      Promoted=Yes;
+                      PromotedIsBig=Yes;
+                      Image=Dimensions;
+                      PromotedCategory=Category4 }
+    }
+  }
+  CONTROLS
+  {
+    { 1900000001;0;Container;
+                ContainerType=ContentArea }
+
+    { 1   ;1   ;Group     ;
+                GroupType=Repeater }
+
+    { 2   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the number of the involved entry or record, according to the specified number series.;
+                ApplicationArea=#ItemCharges;
+                SourceExpr="No." }
+
+    { 4   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies a description of the item charge number that you are setting up.;
+                ApplicationArea=#ItemCharges;
+                SourceExpr=Description }
+
+    { 6   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the item charge's product type to link transactions made for this item charge with the appropriate general ledger account according to the general posting setup.;
+                ApplicationArea=#ItemCharges;
+                SourceExpr="Gen. Prod. Posting Group" }
+
+    { 8   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the sales tax group code that this item charge belongs to.;
+                ApplicationArea=#ItemCharges;
+                SourceExpr="Tax Group Code" }
+
+    { 10  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the tax specification of the involved item or resource to link transactions made for this record with the appropriate general ledger account according to the tax posting setup.;
+                SourceExpr="VAT Prod. Posting Group" }
+
+    { 16  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies text to search for when you do not know the number of the item charge.;
+                ApplicationArea=#ItemCharges;
+                SourceExpr="Search Description" }
+
+    { 1310000;2;Field     ;
+                ToolTipML=ENU=Specifies the classification code required for reporting to the Mexican tax authorities (SAT);
+                ApplicationArea=#ItemCharges;
+                SourceExpr="SAT Classification Code" }
+
+    { 1900000007;0;Container;
+                ContainerType=FactBoxArea }
+
+    { 1900383207;1;Part   ;
+                ApplicationArea=#RecordLinks;
+                Visible=FALSE;
+                PartType=System;
+                SystemPartID=RecordLinks }
+
+    { 1905767507;1;Part   ;
+                ApplicationArea=#Notes;
+                Visible=FALSE;
+                PartType=System;
+                SystemPartID=Notes }
+
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

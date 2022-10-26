@@ -1,0 +1,36 @@
+OBJECT Table 373 Dimension Entry Buffer
+{
+  OBJECT-PROPERTIES
+  {
+    Date=09/19/18;
+    Time=12:00:00 PM;
+    Version List=NAVW113.00;
+  }
+  PROPERTIES
+  {
+    ReplicateData=No;
+    CaptionML=ENU=Dimension Entry Buffer;
+  }
+  FIELDS
+  {
+    { 1   ;   ;No.                 ;Integer       ;DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=No. }
+    { 2   ;   ;Dimension Entry No. ;Integer       ;DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Dimension Entry No. }
+  }
+  KEYS
+  {
+    {    ;No.                                     ;Clustered=Yes }
+    {    ;Dimension Entry No.                      }
+  }
+  FIELDGROUPS
+  {
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

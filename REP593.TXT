@@ -1,0 +1,436 @@
+OBJECT Report 593 Intrastat - Make Disk Tax Auth
+{
+  OBJECT-PROPERTIES
+  {
+    Date=06/30/22;
+    Time=12:00:00 PM;
+    Version List=NAVW114.38;
+  }
+  PROPERTIES
+  {
+    CaptionML=ENU=Intrastat - Make Disk Tax Auth;
+    ProcessingOnly=Yes;
+    OnPreReport=BEGIN
+                  IntrastatFileWriter.Initialize(FALSE,FALSE,0);
+
+                  IF ExportFormatIsSpecified THEN
+                    ExportFormat := SpecifiedExportFormat;
+                END;
+
+    OnPostReport=BEGIN
+                   IntrastatFileWriter.CloseAndDownloadResultFile;
+                 END;
+
+  }
+  DATASET
+  {
+    { 2880;    ;DataItem;                    ;
+               DataItemTable=Table262;
+               DataItemTableView=SORTING(Journal Template Name,Name);
+               OnPreDataItem=BEGIN
+                               SETFILTER("Journal Template Name",IntrastatJnlLine.GETFILTER("Journal Template Name"));
+                               SETFILTER(Name,IntrastatJnlLine.GETFILTER("Journal Batch Name"));
+                             END;
+
+               OnAfterGetRecord=BEGIN
+                                  TESTFIELD(Reported,FALSE);
+                                  TESTFIELD("Statistics Period");
+                                  IntraReferenceNo := "Statistics Period" + '000000';
+                                  IntraJnlManagement.ChecklistClearBatchErrors("Intrastat Jnl. Batch");
+                                  SetBatchIsExported("Intrastat Jnl. Batch");
+                                  IntrastatFileWriter.SetStatisticsPeriod("Statistics Period");
+                                END;
+
+               ReqFilterFields=Journal Template Name,Name }
+
+    { 9905;1   ;DataItem;IntrastatJnlLine    ;
+               DataItemTable=Table263;
+               DataItemTableView=SORTING(Journal Template Name,Journal Batch Name,Type,Country/Region Code,Tariff No.,Transaction Type,Transport Method,Country/Region of Origin Code,Partner VAT ID);
+               OnAfterGetRecord=BEGIN
+                                  IF IsBlankedLine(IntrastatJnlLine) THEN
+                                    CurrReport.SKIP;
+
+                                  CheckLine(IntrastatJnlLine);
+
+                                  CompoundField := GetCompound(IntrastatJnlLine);
+                                  IF (PrevType <> Type) OR (STRLEN(PrevCompoundField) = 0) THEN BEGIN
+                                    PrevType := Type;
+                                    IntraReferenceNo := COPYSTR(IntraReferenceNo,1,4) + FORMAT(Type,1,2) + '01001';
+                                  END ELSE
+                                    IF PrevCompoundField <> CompoundField THEN
+                                      IF COPYSTR(IntraReferenceNo,8,3) = '999' THEN
+                                        IntraReferenceNo := INCSTR(COPYSTR(IntraReferenceNo,1,7)) + '001'
+                                      ELSE
+                                        IntraReferenceNo := INCSTR(IntraReferenceNo);
+
+                                  "Internal Ref. No." := IntraReferenceNo;
+                                  MODIFY;
+                                  PrevCompoundField := CompoundField;
+
+                                  CASE Type OF
+                                    Type::Receipt:
+                                      ReceiptExists := TRUE;
+                                    Type::Shipment:
+                                      ShipmentExists := TRUE;
+                                  END;
+                                END;
+
+               OnPostDataItem=BEGIN
+                                IF IntrastatSetup."Use Advanced Checklist" THEN
+                                  IntraJnlManagement.CheckForJournalBatchError(IntrastatJnlLine,TRUE);
+                              END;
+
+               ReqFilterFields=Type;
+               DataItemLink=Journal Template Name=FIELD(Journal Template Name),
+                            Journal Batch Name=FIELD(Name) }
+
+    { 2177;1   ;DataItem;ReceiptIntrastatJnlLine;
+               DataItemTable=Table263;
+               DataItemTableView=SORTING(Journal Template Name,Journal Batch Name,Type,Internal Ref. No.)
+                                 WHERE(Type=CONST(Receipt));
+               OnPreDataItem=BEGIN
+                               CompanyInfo.GET;
+                               VATRegNo := CONVERTSTR(IntraJnlManagement.GetCompanyVATRegNo,Text001,'    ');
+                               SETRANGE("Internal Ref. No.",COPYSTR(IntraReferenceNo,1,4),COPYSTR(IntraReferenceNo,1,4) + '9');
+                               PrevCompoundField := '';
+                               IntrastatFileWriter.InitializeNextFile(IntrastatFileWriter.GetDefaultOrReceiptFileName);
+                               WriteHeader;
+                             END;
+
+               OnAfterGetRecord=BEGIN
+                                  ProcessNextLine(ReceiptIntrastatJnlLine);
+                                END;
+
+               OnPostDataItem=BEGIN
+                                IF ReceiptExists THEN BEGIN
+                                  WriteGroupTotalsToFile(TempIntrastatJnlLineGroupTotals);
+                                  IF IntrastatFileWriter.IsSplitShipmentAndReceiptFiles THEN
+                                    IntrastatFileWriter.AddCurrFileToResultFile;
+                                END;
+                              END;
+
+               DataItemLink=Journal Template Name=FIELD(Journal Template Name),
+                            Journal Batch Name=FIELD(Name) }
+
+    { 1   ;1   ;DataItem;ShipmentIntrastatJnlLine;
+               DataItemTable=Table263;
+               DataItemTableView=SORTING(Journal Template Name,Journal Batch Name,Type,Internal Ref. No.)
+                                 WHERE(Type=CONST(Shipment));
+               OnPreDataItem=BEGIN
+                               SETRANGE("Internal Ref. No.",COPYSTR(IntraReferenceNo,1,4),COPYSTR(IntraReferenceNo,1,4) + '9');
+                               PrevCompoundField := '';
+                               IF IntrastatFileWriter.IsSplitShipmentAndReceiptFiles THEN
+                                 IntrastatFileWriter.InitializeNextFile(IntrastatFileWriter.GetDefaultShipmentFileName);
+                             END;
+
+               OnAfterGetRecord=BEGIN
+                                  ProcessNextLine(ShipmentIntrastatJnlLine);
+                                END;
+
+               OnPostDataItem=BEGIN
+                                IF ShipmentExists THEN
+                                  WriteGroupTotalsToFile(TempIntrastatJnlLineGroupTotals);
+                                WriteFooter;
+                                IF NOT IntrastatFileWriter.IsSplitShipmentAndReceiptFiles OR ShipmentExists THEN
+                                  IntrastatFileWriter.AddCurrFileToResultFile;
+                              END;
+
+               DataItemLink=Journal Template Name=FIELD(Journal Template Name),
+                            Journal Batch Name=FIELD(Name) }
+
+  }
+  REQUESTPAGE
+  {
+    PROPERTIES
+    {
+      SaveValues=Yes;
+      OnOpenPage=BEGIN
+                   ExportFormat := ExportFormat::"2022";
+                   FilterSourceLinesByIntrastatSetupExportTypes;
+                 END;
+
+    }
+    CONTROLS
+    {
+      { 1   ;    ;Container ;
+                  ContainerType=ContentArea }
+
+      { 2   ;1   ;Group     ;
+                  Name=Options;
+                  CaptionML=ENU=Options;
+                  GroupType=Group }
+
+      { 3   ;2   ;Field     ;
+                  Name=Export Format;
+                  CaptionML=ENU=Export Format;
+                  ToolTipML=ENU=Specifies the year for which to report Intrastat. This ensures that the report has the correct format for that year.;
+                  ApplicationArea=#Basic,#Suite;
+                  SourceExpr=ExportFormat }
+
+    }
+  }
+  LABELS
+  {
+  }
+  CODE
+  {
+    VAR
+      Text001@1001 : TextConst 'ENU=WwWw';
+      Text002@1002 : TextConst 'ENU=INTRASTAT';
+      Text003@1003 : TextConst 'ENU=It is not possible to display %1 in a field with a length of %2.';
+      TempIntrastatJnlLineGroupTotals@1004 : TEMPORARY Record 263;
+      CompanyInfo@1006 : Record 79;
+      IntrastatSetup@1029 : Record 247;
+      IntraJnlManagement@1021 : Codeunit 350;
+      IntrastatFileWriter@1005 : Codeunit 352;
+      StatisticalValueTotalAmt@1028 : Decimal;
+      IntraReferenceNo@1010 : Text[10];
+      CompoundField@1011 : Text;
+      PrevCompoundField@1012 : Text;
+      PrevType@1007 : Option;
+      ReceiptExists@1015 : Boolean;
+      ShipmentExists@1016 : Boolean;
+      VATRegNo@1017 : Code[20];
+      ExportFormat@1031 : '2021,2022';
+      SpecifiedExportFormat@1032 : '2021,2022';
+      ExportFormatIsSpecified@1033 : Boolean;
+
+    LOCAL PROCEDURE FilterSourceLinesByIntrastatSetupExportTypes@7();
+    BEGIN
+      IF NOT IntrastatSetup.GET THEN
+        EXIT;
+
+      IF IntrastatJnlLine.GETFILTER(Type) <> '' THEN
+        EXIT;
+
+      IF IntrastatSetup."Report Receipts" AND IntrastatSetup."Report Shipments" THEN
+        EXIT;
+
+      IF IntrastatSetup."Report Receipts" THEN
+        IntrastatJnlLine.SETRANGE(Type,IntrastatJnlLine.Type::Receipt)
+      ELSE
+        IF IntrastatSetup."Report Shipments" THEN
+          IntrastatJnlLine.SETRANGE(Type,IntrastatJnlLine.Type::Shipment)
+    END;
+
+    LOCAL PROCEDURE CheckLine@10(VAR IntrastatJnlLine@1000 : Record 263);
+    BEGIN
+      IF IntrastatSetup."Use Advanced Checklist" THEN
+        IntraJnlManagement.ValidateReportWithAdvancedChecklist(IntrastatJnlLine,REPORT::"Intrastat - Make Disk Tax Auth",FALSE)
+      ELSE BEGIN
+        IntrastatJnlLine.TESTFIELD("Tariff No.");
+        IntrastatJnlLine.TESTFIELD("Country/Region Code");
+        IntrastatJnlLine.TESTFIELD("Transaction Type");
+        IF NOT IntrastatJnlLine."Supplementary Units" THEN
+          IntrastatJnlLine.TESTFIELD("Total Weight");
+        IF IntrastatJnlLine."Supplementary Units" THEN
+          IntrastatJnlLine.TESTFIELD(Quantity);
+      END;
+    END;
+
+    LOCAL PROCEDURE ProcessNextLine@13(VAR IntrastatJnlLine@1000 : Record 263);
+    BEGIN
+      IF IsBlankedLine(IntrastatJnlLine) THEN
+        CurrReport.SKIP;
+
+      CompoundField := GetCompound(IntrastatJnlLine);
+      IF (STRLEN(PrevCompoundField) <> 0) AND (CompoundField <> PrevCompoundField) THEN
+        WriteGroupTotalsToFile(TempIntrastatJnlLineGroupTotals);
+
+      UpdateGroupTotals(TempIntrastatJnlLineGroupTotals,IntrastatJnlLine,CompoundField <> PrevCompoundField);
+      PrevCompoundField := CompoundField;
+    END;
+
+    LOCAL PROCEDURE UpdateGroupTotals@14(VAR GroupIntrastatJnlLine@1000 : Record 263;VAR IntrastatJnlLine@1001 : Record 263;newGroup@1002 : Boolean);
+    BEGIN
+      IF NOT newGroup THEN BEGIN
+        GroupIntrastatJnlLine."Total Weight" += IntrastatJnlLine."Total Weight";
+        GroupIntrastatJnlLine.Quantity += IntrastatJnlLine.Quantity;
+        GroupIntrastatJnlLine."Statistical Value" += IntrastatJnlLine."Statistical Value";
+      END ELSE
+        GroupIntrastatJnlLine := IntrastatJnlLine;
+
+      StatisticalValueTotalAmt += IntrastatJnlLine."Statistical Value";
+    END;
+
+    LOCAL PROCEDURE IsBlankedLine@15(VAR IntrastatJnlLine@1000 : Record 263) : Boolean;
+    BEGIN
+      EXIT(
+        (IntrastatJnlLine."Tariff No." = '') AND
+        (IntrastatJnlLine."Country/Region Code" = '') AND
+        (IntrastatJnlLine."Transaction Type" = '') AND
+        (IntrastatJnlLine."Transport Method" = '') AND
+        (IntrastatJnlLine."Total Weight" = 0));
+    END;
+
+    LOCAL PROCEDURE GetCompound@11(VAR IntrastatJnlLine@1000 : Record 263) : Text;
+    BEGIN
+      EXIT(
+        FORMAT(IntrastatJnlLine."Country/Region Code",10) + FORMAT(DELCHR(IntrastatJnlLine."Tariff No."),10) +
+        FORMAT(IntrastatJnlLine."Transaction Type",10) + FORMAT(IntrastatJnlLine."Transport Method",10) +
+        FORMAT(IntrastatJnlLine."Country/Region of Origin Code",10) + FORMAT(IntrastatJnlLine."Partner VAT ID",50));
+    END;
+
+    LOCAL PROCEDURE SetBatchIsExported@20(VAR IntrastatJnlBatch@1000 : Record 262);
+    BEGIN
+      IntrastatJnlBatch.VALIDATE(Reported,TRUE);
+      IntrastatJnlBatch.MODIFY(TRUE);
+    END;
+
+    LOCAL PROCEDURE DecimalNumeralZeroFormat@1(DecimalNumeral@1000 : Decimal;Length@1001 : Integer) : Text[250];
+    BEGIN
+      EXIT(TextZeroFormat(DELCHR(FORMAT(ROUND(ABS(DecimalNumeral),1,'<'),0,1)),Length));
+    END;
+
+    LOCAL PROCEDURE TextZeroFormat@2(Text@1000 : Text;Length@1001 : Integer) : Text;
+    BEGIN
+      IF STRLEN(Text) > Length THEN
+        ERROR(
+          Text003,
+          Text,Length);
+      EXIT(PADSTR('',Length - STRLEN(Text),'0') + Text);
+    END;
+
+    [External]
+    PROCEDURE InitializeRequest@4(newServerFileName@1000 : Text);
+    BEGIN
+      IntrastatFileWriter.SetServerFileName(newServerFileName);
+    END;
+
+    [External]
+    PROCEDURE InitializeRequestWithExportFormat@5(newServerFileName@1000 : Text;NewExportFormat@1001 : '2021,2022');
+    BEGIN
+      IntrastatFileWriter.SetServerFileName(newServerFileName);
+      SpecifiedExportFormat := NewExportFormat;
+      ExportFormatIsSpecified := TRUE;
+    END;
+
+    [External]
+    PROCEDURE InitializeRequestWithStream@17(VAR newResultFileOutStream@1000 : OutStream;NewExportFormat@1001 : '2021,2022');
+    BEGIN
+      IntrastatFileWriter.SetResultFileOutStream(newResultFileOutStream);
+      SpecifiedExportFormat := NewExportFormat;
+      ExportFormatIsSpecified := TRUE;
+    END;
+
+    LOCAL PROCEDURE WriteHeader@9();
+    BEGIN
+      IF ExportFormat = ExportFormat::"2022" THEN
+        EXIT;
+
+      IntrastatFileWriter.WriteLine(FORMAT('00' + FORMAT(VATRegNo,8) + Text002,80));
+      IntrastatFileWriter.WriteLine(FORMAT('0100004',80));
+    END;
+
+    LOCAL PROCEDURE WriteFooter@12();
+    BEGIN
+      IF ExportFormat = ExportFormat::"2022" THEN
+        EXIT;
+
+      IF NOT ReceiptExists THEN
+        IntrastatFileWriter.WriteLine(
+          FORMAT(
+            '02000' + FORMAT(IntraReferenceNo,4) + '100000' +
+            FORMAT(VATRegNo,8) + '1' + FORMAT(IntraReferenceNo,4),
+            80));
+      IF NOT ShipmentExists THEN
+        IntrastatFileWriter.WriteLine(
+          FORMAT(
+            '02000' + FORMAT(IntraReferenceNo,4) + '200000' +
+            FORMAT(VATRegNo,8) + '2' + FORMAT(IntraReferenceNo,4),
+            80));
+      IntrastatFileWriter.WriteLine(FORMAT('10' + DecimalNumeralZeroFormat(StatisticalValueTotalAmt,16),80));
+    END;
+
+    [Internal]
+    PROCEDURE WriteGroupTotalsToFile@8(VAR IntrastatJnlLine@1000 : Record 263);
+    BEGIN
+      IntrastatJnlLine."Total Weight" := IntraJnlManagement.RoundTotalWeight(IntrastatJnlLine."Total Weight");
+
+      IF ExportFormat = ExportFormat::"2021" THEN
+        WriteGroupTotalsToFile2021(IntrastatJnlLine)
+      ELSE
+        WriteGroupTotalsToFile2022(IntrastatJnlLine);
+    END;
+
+    [Internal]
+    PROCEDURE WriteGroupTotalsToFile2021@3(VAR IntrastatJnlLine@1000 : Record 263);
+    VAR
+      IntrastatJnlLine3@1006 : Record 263;
+      CountryRegion@1003 : Record 9;
+      ImportExport@1005 : Code[1];
+      OK@1004 : Boolean;
+      NoOfEntries@1001 : Text[3];
+    BEGIN
+      OK := COPYSTR(IntrastatJnlLine."Internal Ref. No.",8,3) = '001';
+      IF OK THEN BEGIN
+        IntrastatJnlLine3.SETRANGE(
+          "Internal Ref. No.",
+          COPYSTR(IntrastatJnlLine."Internal Ref. No.",1,7) + '000',
+          COPYSTR(IntrastatJnlLine."Internal Ref. No.",1,7) + '999');
+        IntrastatJnlLine3.FINDLAST;
+        NoOfEntries := COPYSTR(IntrastatJnlLine3."Internal Ref. No.",8,3);
+      END;
+      ImportExport := INCSTR(FORMAT(IntrastatJnlLine.Type,1,2));
+
+      CountryRegion.GET(IntrastatJnlLine."Country/Region Code");
+      CountryRegion.TESTFIELD("Intrastat Code");
+
+      IF OK THEN
+        IntrastatFileWriter.WriteLine(
+          FORMAT(
+            '02' +
+            TextZeroFormat(DELCHR(NoOfEntries),3) +
+            FORMAT(COPYSTR(IntrastatJnlLine3."Internal Ref. No.",1,7) + '000',10) +
+            FORMAT(VATRegNo,8) + FORMAT(ImportExport,1) + FORMAT(IntraReferenceNo,4),
+            80));
+
+      IntrastatFileWriter.WriteLine(
+        FORMAT(
+          '03' +
+          TextZeroFormat(COPYSTR(IntrastatJnlLine."Internal Ref. No.",8,3),3) +
+          FORMAT(IntrastatJnlLine."Internal Ref. No.",10) +
+          FORMAT(CountryRegion."Intrastat Code",3) + FORMAT(IntrastatJnlLine."Transaction Type",2) +
+          '0' + FORMAT(IntrastatJnlLine."Transport Method",1) + PADSTR(DELCHR(IntrastatJnlLine."Tariff No."),9,'0') +
+          DecimalNumeralZeroFormat(IntrastatJnlLine."Total Weight",15) +
+          DecimalNumeralZeroFormat(IntrastatJnlLine.Quantity,10) +
+          DecimalNumeralZeroFormat(IntrastatJnlLine."Statistical Value",15),
+          80));
+    END;
+
+    LOCAL PROCEDURE WriteGroupTotalsToFile2022@6(VAR IntrastatJnlLine@1000 : Record 263);
+    VAR
+      CountryRegion@1003 : Record 9;
+      OriginCountryRegion@1004 : Record 9;
+      sep@1005 : Text[1];
+    BEGIN
+      CountryRegion.GET(IntrastatJnlLine."Country/Region Code");
+      CountryRegion.TESTFIELD("Intrastat Code");
+
+      IF IntrastatJnlLine."Country/Region of Origin Code" <> '' THEN
+        IF OriginCountryRegion.GET(IntrastatJnlLine."Country/Region of Origin Code") THEN
+          IF OriginCountryRegion."Intrastat Code" <> '' THEN
+            OriginCountryRegion.Code := OriginCountryRegion."Intrastat Code";
+
+      sep[1] := 9; // TAB
+
+      IntrastatFileWriter.WriteLine(
+        PADSTR(DELCHR(IntrastatJnlLine."Tariff No."),8,'0') + sep +
+        FORMAT(CountryRegion."Intrastat Code",3) + sep +
+        FORMAT(IntrastatJnlLine."Transaction Type",2) + sep +
+        DecimalNumeralZeroFormat(IntrastatJnlLine.Quantity,11) + sep +
+        DecimalNumeralZeroFormat(IntrastatJnlLine."Total Weight",10) + sep +
+        DecimalNumeralZeroFormat(IntrastatJnlLine."Statistical Value",11) + sep +
+        FORMAT(IntrastatJnlLine."Internal Ref. No.",30) + sep +
+        FORMAT(IntrastatJnlLine."Partner VAT ID",20) + sep +
+        FORMAT(OriginCountryRegion.Code,3));
+    END;
+
+    BEGIN
+    END.
+  }
+  RDLDATA
+  {
+  }
+}
+

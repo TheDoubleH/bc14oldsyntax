@@ -1,0 +1,610 @@
+OBJECT Codeunit 2381 O365 Export Data
+{
+  OBJECT-PROPERTIES
+  {
+    Date=12/02/19;
+    Time=12:00:00 PM;
+    Version List=NAVW114.08;
+  }
+  PROPERTIES
+  {
+    OnRun=BEGIN
+          END;
+
+  }
+  CODE
+  {
+    VAR
+      TempExcelBuffer@1001 : TEMPORARY Record 370;
+      CustomersTxt@1002 : TextConst 'ENU=Customers';
+      PricesTxt@1022 : TextConst 'ENU=Prices';
+      InvoicingDataTxt@1020 : TextConst 'ENU=Invoicing Data';
+      ContactsTxt@1014 : TextConst 'ENU=Contacts';
+      SentInvoicesTxt@1004 : TextConst 'ENU=Sent Invoices';
+      SentInvoiceLinesTxt@1008 : TextConst 'ENU=Sent Invoices Details';
+      TransactionsTxt@1003 : TextConst 'ENU=Transactions';
+      DraftInvoicesTxt@1010 : TextConst 'ENU=Draft Invoices';
+      DraftInvoiceLinesTxt@1012 : TextConst 'ENU=Draft Invoices Details';
+      QuotesTxt@1011 : TextConst 'ENU=Estimates';
+      QuoteLinesTxt@1013 : TextConst 'ENU=Estimate Details';
+      EmailSubjectTxt@1007 : TextConst 'ENU=Please find your Invoicing data in the attached Excel book.';
+      ExportedMsg@1000 : TextConst 'ENU=The data was successfully sent.';
+      VATTxt@1005 : TextConst 'ENU=Tax Amount';
+      SendingEmailMsg@1009 : TextConst 'ENU=Sending email...';
+      TempLineNumberBuffer@1006 : TEMPORARY Record 283;
+      TempNameValueBuffer@1018 : TEMPORARY Record 823;
+      NotImplementedErr@1019 : TextConst '@@@="%1 = a number. The text will never be shown to a user. Serves as an internal test.";ENU=No handler implemented for table no. %1.';
+      OutstandingTxt@1021 : TextConst 'ENU=Outstanding';
+
+    [Internal]
+    PROCEDURE ExportDataToExcelAndEmail@2(SendToEmail@1012 : Text);
+    VAR
+      TempEmailItem@1011 : TEMPORARY Record 9500;
+      Window@1003 : Dialog;
+      EmailSuccess@1001 : Boolean;
+      ServerFileName@1005 : Text;
+    BEGIN
+      ServerFileName := CreateExcelBook;
+
+      CODEUNIT.RUN(CODEUNIT::"O365 Setup Email");
+
+      Window.OPEN(SendingEmailMsg);
+      WITH TempEmailItem DO BEGIN
+        VALIDATE("Send to",COPYSTR(SendToEmail,1,MAXSTRLEN("Send to")));
+        VALIDATE(Subject,EmailSubjectTxt);
+        SetBodyText(EmailSubjectTxt);
+        "Attachment File Path" := COPYSTR(ServerFileName,1,250);
+        VALIDATE("Attachment Name",STRSUBSTNO('%1.xlsx',COPYSTR(GetDocumentName,1,MAXSTRLEN("Attachment Name") - 5)));
+        EmailSuccess := Send(TRUE);
+      END;
+      Window.CLOSE;
+      IF EmailSuccess THEN
+        MESSAGE(ExportedMsg);
+    END;
+
+    [Internal]
+    PROCEDURE CreateExcelBook@22() : Text;
+    VAR
+      FileManagement@1001 : Codeunit 419;
+      ServerFileName@1002 : Text;
+    BEGIN
+      TempExcelBuffer.RESET;
+      TempExcelBuffer.DELETEALL;
+      CLEAR(TempExcelBuffer);
+
+      ServerFileName := FileManagement.ServerTempFileName('xlsx');
+      TempExcelBuffer.CreateBook(ServerFileName,CustomersTxt);
+
+      InsertCustomers;
+      InsertPrices;
+      InsertContacts;
+      InsertSalesInvoices;
+      InsertSalesInvoiceLines;
+      InsertLedgerEntries;
+      InsertDraftInvoices;
+      InsertDraftInvoiceLines;
+      InsertEstimates;
+      InsertEstimateLines;
+
+      TempExcelBuffer.CloseBook;
+
+      EXIT(ServerFileName);
+    END;
+
+    LOCAL PROCEDURE AddColumnToList@1(VAR ColNo@1000 : Integer;FieldNo@1002 : Integer;CustomCaption@1001 : Text[80]);
+    BEGIN
+      ColNo += 1;
+      TempLineNumberBuffer."Old Line Number" := ColNo;
+      TempLineNumberBuffer."New Line Number" := FieldNo;
+      TempLineNumberBuffer.INSERT;
+      IF FieldNo < 0 THEN BEGIN
+        TempNameValueBuffer.ID := FieldNo;
+        TempNameValueBuffer.Name := CustomCaption;
+        TempNameValueBuffer.INSERT;
+      END;
+    END;
+
+    LOCAL PROCEDURE WriteHeaderFields@19(RowNo@1000 : Integer;TableNo@1001 : Integer);
+    VAR
+      Field@1002 : Record 2000000041;
+    BEGIN
+      IF TempLineNumberBuffer.FINDSET THEN
+        REPEAT
+          IF TempLineNumberBuffer."New Line Number" > 0 THEN BEGIN
+            Field.GET(TableNo,TempLineNumberBuffer."New Line Number");
+            EnterCell(RowNo,TempLineNumberBuffer."Old Line Number",Field."Field Caption",TRUE);
+          END ELSE BEGIN
+            TempNameValueBuffer.GET(TempLineNumberBuffer."New Line Number");
+            EnterCell(RowNo,TempLineNumberBuffer."Old Line Number",TempNameValueBuffer.Name,TRUE);
+          END;
+        UNTIL TempLineNumberBuffer.NEXT = 0;
+    END;
+
+    LOCAL PROCEDURE WriteDataFields@24(RowNo@1000 : Integer;RecRef@1004 : RecordRef);
+    VAR
+      FieldRef@1002 : FieldRef;
+    BEGIN
+      IF TempLineNumberBuffer.FINDSET THEN
+        REPEAT
+          IF TempLineNumberBuffer."New Line Number" > 0 THEN BEGIN
+            FieldRef := RecRef.FIELD(TempLineNumberBuffer."New Line Number");
+            IF (FORMAT(FieldRef.CLASS) = 'FlowField') OR (FORMAT(FieldRef.TYPE) = 'BLOB') THEN
+              FieldRef.CALCFIELD;
+            EnterCell(RowNo,TempLineNumberBuffer."Old Line Number",FieldRef.VALUE,FALSE);
+          END ELSE
+            EnterCell(
+              RowNo,TempLineNumberBuffer."Old Line Number",
+              GetCustomValue(RecRef,TempLineNumberBuffer."New Line Number"),FALSE);
+        UNTIL TempLineNumberBuffer.NEXT = 0;
+    END;
+
+    LOCAL PROCEDURE WriteToSheet@39(VAR RecRef@1000 : RecordRef;SheetName@1001 : Text);
+    VAR
+      RowNo@1002 : Integer;
+    BEGIN
+      EnterCell(1,1,SheetName,TRUE);
+      RowNo := 3;
+      WriteHeaderFields(RowNo,RecRef.NUMBER);
+      // Fields
+      REPEAT
+        RowNo += 1;
+        WriteDataFields(RowNo,RecRef);
+      UNTIL RecRef.NEXT = 0;
+
+      TempExcelBuffer.SelectOrAddSheet(SheetName);
+      TempExcelBuffer.WriteAllToCurrentSheet(TempExcelBuffer);
+      SetColumnWidths(1,TempLineNumberBuffer.COUNT,25);
+    END;
+
+    LOCAL PROCEDURE ClearBuffers@28();
+    BEGIN
+      TempExcelBuffer.DELETEALL;
+      TempLineNumberBuffer.DELETEALL;
+      TempNameValueBuffer.DELETEALL;
+    END;
+
+    LOCAL PROCEDURE GetCustomValue@48(VAR RecRef@1000 : RecordRef;CustomFieldNo@1001 : Integer) : Text;
+    BEGIN
+      CASE RecRef.NUMBER OF
+        DATABASE::"Sales Invoice Header":
+          EXIT(GetCustomValueForSalesInvoiceHeader(RecRef,CustomFieldNo));
+        DATABASE::"Sales Invoice Line":
+          EXIT(GetCustomValueForSalesInvoiceLine(RecRef,CustomFieldNo));
+        DATABASE::"Sales Header":
+          EXIT(GetCustomValueForUnpostedSalesHeader(RecRef,CustomFieldNo));
+        DATABASE::"Sales Line":
+          EXIT(GetCustomValueForUnpostedSalesLine(RecRef,CustomFieldNo));
+        ELSE
+          ERROR(NotImplementedErr,RecRef.NUMBER)
+      END;
+    END;
+
+    LOCAL PROCEDURE GetCustomValueForSalesInvoiceHeader@49(VAR RecRef@1000 : RecordRef;CustomFieldNo@1001 : Integer) : Text;
+    VAR
+      SalesInvoiceHeader@1002 : Record 112;
+    BEGIN
+      RecRef.SETTABLE(SalesInvoiceHeader);
+      CASE CustomFieldNo OF
+        -1: // VAT
+          BEGIN
+            SalesInvoiceHeader.CALCFIELDS(Amount,"Amount Including VAT");
+            EXIT(FORMAT(SalesInvoiceHeader."Amount Including VAT" - SalesInvoiceHeader.Amount));
+          END;
+        -2: // WorkDescription
+          EXIT(SalesInvoiceHeader.GetWorkDescription);
+      END;
+    END;
+
+    LOCAL PROCEDURE GetCustomValueForSalesInvoiceLine@63(VAR RecRef@1000 : RecordRef;CustomFieldNo@1001 : Integer) : Text;
+    VAR
+      SalesInvoiceLine@1002 : Record 113;
+    BEGIN
+      RecRef.SETTABLE(SalesInvoiceLine);
+      CASE CustomFieldNo OF
+        -1: // VAT
+          EXIT(FORMAT(SalesInvoiceLine."Amount Including VAT" - SalesInvoiceLine.Amount));
+      END;
+    END;
+
+    LOCAL PROCEDURE GetCustomValueForUnpostedSalesHeader@35(VAR RecRef@1000 : RecordRef;CustomFieldNo@1001 : Integer) : Text;
+    VAR
+      SalesHeader@1002 : Record 36;
+    BEGIN
+      RecRef.SETTABLE(SalesHeader);
+      CASE CustomFieldNo OF
+        -1: // VAT
+          BEGIN
+            SalesHeader.CALCFIELDS(Amount,"Amount Including VAT");
+            EXIT(FORMAT(SalesHeader."Amount Including VAT" - SalesHeader.Amount));
+          END;
+        -2: // WorkDescription
+          EXIT(SalesHeader.GetWorkDescription);
+      END;
+    END;
+
+    LOCAL PROCEDURE GetCustomValueForUnpostedSalesLine@34(VAR RecRef@1000 : RecordRef;CustomFieldNo@1001 : Integer) : Text;
+    VAR
+      SalesLine@1002 : Record 37;
+    BEGIN
+      RecRef.SETTABLE(SalesLine);
+      CASE CustomFieldNo OF
+        -1: // VAT
+          EXIT(FORMAT(SalesLine."Amount Including VAT" - SalesLine.Amount));
+      END;
+    END;
+
+    LOCAL PROCEDURE InsertContacts@15();
+    VAR
+      Contact@1001 : Record 5050;
+      ContactBusinessRelation@1003 : Record 5054;
+      RecRef@1004 : RecordRef;
+      ColNo@1002 : Integer;
+    BEGIN
+      ClearBuffers;
+
+      ContactBusinessRelation.SETRANGE("Link to Table",ContactBusinessRelation."Link to Table"::Customer);
+      IF NOT ContactBusinessRelation.FINDFIRST THEN
+        EXIT;
+
+      WITH Contact DO BEGIN
+        // Fields
+        AddColumnToList(ColNo,FIELDNO("No."),'');
+        AddColumnToList(ColNo,FIELDNO(Name),'');
+        AddColumnToList(ColNo,FIELDNO("First Name"),'');
+        AddColumnToList(ColNo,FIELDNO("Middle Name"),'');
+        AddColumnToList(ColNo,FIELDNO(Surname),'');
+        AddColumnToList(ColNo,FIELDNO(Type),'');
+        AddColumnToList(ColNo,FIELDNO("Job Title"),'');
+        AddColumnToList(ColNo,FIELDNO("E-Mail"),'');
+        AddColumnToList(ColNo,FIELDNO("Phone No."),'');
+        AddColumnToList(ColNo,FIELDNO("Mobile Phone No."),'');
+        AddColumnToList(ColNo,FIELDNO(Address),'');
+        AddColumnToList(ColNo,FIELDNO("Address 2"),'');
+        AddColumnToList(ColNo,FIELDNO(City),'');
+        AddColumnToList(ColNo,FIELDNO("Post Code"),'');
+        AddColumnToList(ColNo,FIELDNO(County),'');
+        AddColumnToList(ColNo,FIELDNO("Country/Region Code"),'');
+        AddColumnToList(ColNo,FIELDNO("Fax No."),'');
+        AddColumnToList(ColNo,FIELDNO("VAT Registration No."),'');
+        AddColumnToList(ColNo,FIELDNO("Last Date Modified"),'');
+        AddColumnToList(ColNo,FIELDNO("Last Time Modified"),'');
+      END;
+
+      RecRef.GETTABLE(Contact);
+      WriteToSheet(RecRef,ContactsTxt);
+    END;
+
+    LOCAL PROCEDURE InsertCustomers@30();
+    VAR
+      Customer@1001 : Record 18;
+      RecRef@1004 : RecordRef;
+      ColNo@1003 : Integer;
+    BEGIN
+      ClearBuffers;
+
+      WITH Customer DO BEGIN
+        IF NOT FINDFIRST THEN
+          EXIT;
+
+        // Fields
+        AddColumnToList(ColNo,FIELDNO("No."),'');
+        AddColumnToList(ColNo,FIELDNO(Name),'');
+        AddColumnToList(ColNo,FIELDNO("Contact Type"),'');
+        AddColumnToList(ColNo,FIELDNO("E-Mail"),'');
+        AddColumnToList(ColNo,FIELDNO("Phone No."),'');
+        AddColumnToList(ColNo,FIELDNO(Address),'');
+        AddColumnToList(ColNo,FIELDNO("Address 2"),'');
+        AddColumnToList(ColNo,FIELDNO(City),'');
+        AddColumnToList(ColNo,FIELDNO("Post Code"),'');
+        AddColumnToList(ColNo,FIELDNO(County),'');
+        AddColumnToList(ColNo,FIELDNO("Country/Region Code"),'');
+        AddColumnToList(ColNo,FIELDNO("Payment Terms Code"),'');
+        AddColumnToList(ColNo,FIELDNO("Payment Method Code"),'');
+        AddColumnToList(ColNo,FIELDNO("VAT Registration No."),'');
+        AddColumnToList(ColNo,FIELDNO("Tax Area Code"),'');
+        AddColumnToList(ColNo,FIELDNO("Tax Liable"),'');
+        AddColumnToList(ColNo,FIELDNO("Last Modified Date Time"),'');
+        AddColumnToList(ColNo,FIELDNO("Bill-to Customer No."),'');
+        AddColumnToList(ColNo,FIELDNO("Primary Contact No."),'');
+        AddColumnToList(ColNo,FIELDNO(Contact),'');
+        AddColumnToList(ColNo,FIELDNO("Home Page"),'');
+        AddColumnToList(ColNo,FIELDNO("Currency Code"),'');
+        AddColumnToList(ColNo,FIELDNO("Language Code"),'');
+        AddColumnToList(ColNo,FIELDNO("Balance (LCY)"),OutstandingTxt);
+        AddColumnToList(ColNo,FIELDNO("Sales (LCY)"),'');
+        AddColumnToList(ColNo,FIELDNO(Blocked),'');
+      END;
+
+      RecRef.GETTABLE(Customer);
+      WriteToSheet(RecRef,CustomersTxt);
+    END;
+
+    LOCAL PROCEDURE InsertPrices@25();
+    VAR
+      Item@1001 : Record 27;
+      RecRef@1004 : RecordRef;
+      ColNo@1003 : Integer;
+    BEGIN
+      ClearBuffers;
+
+      WITH Item DO BEGIN
+        IF NOT FINDFIRST THEN
+          EXIT;
+
+        // Fields
+        AddColumnToList(ColNo,FIELDNO("No."),'');
+        AddColumnToList(ColNo,FIELDNO(Description),'');
+        AddColumnToList(ColNo,FIELDNO("Unit Price"),'');
+        AddColumnToList(ColNo,FIELDNO("Base Unit of Measure"),'');
+        AddColumnToList(ColNo,FIELDNO("Tax Group Code"),'');
+        AddColumnToList(ColNo,FIELDNO("VAT Prod. Posting Group"),'');
+      END;
+
+      RecRef.GETTABLE(Item);
+      WriteToSheet(RecRef,PricesTxt);
+    END;
+
+    LOCAL PROCEDURE InsertSalesInvoices@16();
+    VAR
+      SalesInvoiceHeader@1001 : Record 112;
+      RecRef@1004 : RecordRef;
+      ColNo@1003 : Integer;
+    BEGIN
+      ClearBuffers;
+
+      WITH SalesInvoiceHeader DO BEGIN
+        IF NOT FINDFIRST THEN
+          EXIT;
+
+        AddColumnToList(ColNo,FIELDNO("No."),'');
+        AddColumnToList(ColNo,FIELDNO("Sell-to Customer No."),'');
+        AddColumnToList(ColNo,FIELDNO("Sell-to Customer Name"),'');
+        AddColumnToList(ColNo,FIELDNO("Sell-to E-Mail"),'');
+        AddColumnToList(ColNo,FIELDNO("Sell-to Address"),'');
+        AddColumnToList(ColNo,FIELDNO("Sell-to Address 2"),'');
+        AddColumnToList(ColNo,FIELDNO("Sell-to City"),'');
+        AddColumnToList(ColNo,FIELDNO("Sell-to County"),'');
+        AddColumnToList(ColNo,FIELDNO("Sell-to Country/Region Code"),'');
+        AddColumnToList(ColNo,FIELDNO("Sell-to Contact"),'');
+        AddColumnToList(ColNo,FIELDNO("Payment Terms Code"),'');
+        AddColumnToList(ColNo,FIELDNO("Payment Instructions"),'');
+        AddColumnToList(ColNo,FIELDNO("VAT Registration No."),'');
+        AddColumnToList(ColNo,FIELDNO("Tax Area Code"),'');
+        AddColumnToList(ColNo,FIELDNO("Tax Liable"),'');
+        AddColumnToList(ColNo,FIELDNO("Document Date"),'');
+        AddColumnToList(ColNo,FIELDNO("Posting Date"),'');
+        AddColumnToList(ColNo,FIELDNO("Due Date"),'');
+        AddColumnToList(ColNo,-2,FIELDCAPTION("Work Description"));
+        AddColumnToList(ColNo,FIELDNO("Currency Code"),'');
+        AddColumnToList(ColNo,FIELDNO(Amount),'');
+        AddColumnToList(ColNo,-1,VATTxt);
+        AddColumnToList(ColNo,FIELDNO("Amount Including VAT"),'');
+        AddColumnToList(ColNo,FIELDNO("Invoice Discount Amount"),'');
+        AddColumnToList(ColNo,FIELDNO("Posting Description"),'');
+        AddColumnToList(ColNo,FIELDNO(Cancelled),'');
+      END;
+
+      RecRef.GETTABLE(SalesInvoiceHeader);
+      WriteToSheet(RecRef,SentInvoicesTxt);
+    END;
+
+    LOCAL PROCEDURE InsertSalesInvoiceLines@13();
+    VAR
+      SalesInvoiceLine@1001 : Record 113;
+      RecRef@1004 : RecordRef;
+      ColNo@1003 : Integer;
+    BEGIN
+      ClearBuffers;
+
+      WITH SalesInvoiceLine DO BEGIN
+        IF NOT FINDFIRST THEN
+          EXIT;
+
+        AddColumnToList(ColNo,FIELDNO("Posting Date"),'');
+        AddColumnToList(ColNo,FIELDNO("Document No."),'');
+        AddColumnToList(ColNo,FIELDNO("No."),'');
+        AddColumnToList(ColNo,FIELDNO(Description),'');
+        AddColumnToList(ColNo,FIELDNO(Quantity),'');
+        AddColumnToList(ColNo,FIELDNO("Unit of Measure"),'');
+        AddColumnToList(ColNo,FIELDNO("Unit Price"),'');
+        AddColumnToList(ColNo,FIELDNO("Line Discount Amount"),'');
+        AddColumnToList(ColNo,FIELDNO("Line Amount"),'');
+        AddColumnToList(ColNo,FIELDNO(Amount),'');
+        AddColumnToList(ColNo,-1,VATTxt);
+        AddColumnToList(ColNo,FIELDNO("Amount Including VAT"),'');
+        AddColumnToList(ColNo,FIELDNO("Description 2"),'');
+        AddColumnToList(ColNo,FIELDNO("Tax Group Code"),'');
+        AddColumnToList(ColNo,FIELDNO("VAT %"),'');
+        AddColumnToList(ColNo,FIELDNO("VAT Clause Code"),'');
+        AddColumnToList(ColNo,FIELDNO("VAT Base Amount"),'');
+        AddColumnToList(ColNo,FIELDNO("Tax Category"),'');
+        AddColumnToList(ColNo,FIELDNO("Tax Area Code"),'');
+        AddColumnToList(ColNo,FIELDNO("Tax Liable"),'');
+        AddColumnToList(ColNo,FIELDNO("Sell-to Customer No."),'');
+        AddColumnToList(ColNo,FIELDNO("Price description"),'');
+      END;
+
+      RecRef.GETTABLE(SalesInvoiceLine);
+      WriteToSheet(RecRef,SentInvoiceLinesTxt);
+    END;
+
+    LOCAL PROCEDURE InsertLedgerEntries@12();
+    VAR
+      CustLedgerEntry@1001 : Record 21;
+      RecRef@1004 : RecordRef;
+      ColNo@1003 : Integer;
+    BEGIN
+      ClearBuffers;
+
+      WITH CustLedgerEntry DO BEGIN
+        IF NOT FINDFIRST THEN
+          EXIT;
+
+        AddColumnToList(ColNo,FIELDNO("Document Date"),'');
+        AddColumnToList(ColNo,FIELDNO("Document No."),'');
+        AddColumnToList(ColNo,FIELDNO("Document Type"),'');
+        AddColumnToList(ColNo,FIELDNO(Description),'');
+        AddColumnToList(ColNo,FIELDNO("Currency Code"),'');
+        AddColumnToList(ColNo,FIELDNO(Amount),'');
+        AddColumnToList(ColNo,FIELDNO("Due Date"),'');
+        AddColumnToList(ColNo,FIELDNO("Remaining Amount"),'');
+        AddColumnToList(ColNo,FIELDNO(Open),'');
+        AddColumnToList(ColNo,FIELDNO("Posting Date"),'');
+        AddColumnToList(ColNo,FIELDNO("Closed at Date"),'');
+        AddColumnToList(ColNo,FIELDNO("Closed by Amount"),'');
+        AddColumnToList(ColNo,FIELDNO("Payment Method Code"),'');
+        AddColumnToList(ColNo,FIELDNO("Sell-to Customer No."),'');
+      END;
+
+      RecRef.GETTABLE(CustLedgerEntry);
+      WriteToSheet(RecRef,TransactionsTxt);
+    END;
+
+    LOCAL PROCEDURE InsertDraftInvoices@20();
+    VAR
+      DummySalesHeader@1001 : Record 36;
+    BEGIN
+      InsertUnpostedSalesHeaders(DummySalesHeader."Document Type"::Invoice,DraftInvoicesTxt);
+    END;
+
+    LOCAL PROCEDURE InsertDraftInvoiceLines@5();
+    VAR
+      DummySalesHeader@1001 : Record 36;
+    BEGIN
+      InsertUnpostedSalesLines(DummySalesHeader."Document Type"::Invoice,DraftInvoiceLinesTxt);
+    END;
+
+    LOCAL PROCEDURE InsertEstimates@21();
+    VAR
+      DummySalesHeader@1001 : Record 36;
+    BEGIN
+      InsertUnpostedSalesHeaders(DummySalesHeader."Document Type"::Quote,QuotesTxt);
+    END;
+
+    LOCAL PROCEDURE InsertEstimateLines@9();
+    VAR
+      DummySalesHeader@1001 : Record 36;
+    BEGIN
+      InsertUnpostedSalesLines(DummySalesHeader."Document Type"::Quote,QuoteLinesTxt);
+    END;
+
+    LOCAL PROCEDURE InsertUnpostedSalesHeaders@14(DocumentType@1003 : Option;SheetName@1004 : Text);
+    VAR
+      SalesHeader@1001 : Record 36;
+      RecRef@1006 : RecordRef;
+      ColNo@1002 : Integer;
+    BEGIN
+      ClearBuffers;
+
+      WITH SalesHeader DO BEGIN
+        SETRANGE("Document Type",DocumentType);
+        IF NOT FINDFIRST THEN
+          EXIT;
+
+        AddColumnToList(ColNo,FIELDNO("No."),'');
+        AddColumnToList(ColNo,FIELDNO("Sell-to Customer No."),'');
+        AddColumnToList(ColNo,FIELDNO("Sell-to Customer Name"),'');
+        AddColumnToList(ColNo,FIELDNO("Sell-to E-Mail"),'');
+        AddColumnToList(ColNo,FIELDNO("Sell-to Address"),'');
+        AddColumnToList(ColNo,FIELDNO("Sell-to Address 2"),'');
+        AddColumnToList(ColNo,FIELDNO("Sell-to City"),'');
+        AddColumnToList(ColNo,FIELDNO("Sell-to County"),'');
+        AddColumnToList(ColNo,FIELDNO("Sell-to Country/Region Code"),'');
+        AddColumnToList(ColNo,FIELDNO("Sell-to Contact"),'');
+        AddColumnToList(ColNo,FIELDNO("Payment Terms Code"),'');
+        AddColumnToList(ColNo,FIELDNO("Payment Instructions Id"),'');
+        AddColumnToList(ColNo,FIELDNO("VAT Registration No."),'');
+        AddColumnToList(ColNo,FIELDNO("Tax Area Code"),'');
+        AddColumnToList(ColNo,FIELDNO("Tax Liable"),'');
+        AddColumnToList(ColNo,FIELDNO("Document Date"),'');
+        AddColumnToList(ColNo,FIELDNO("Posting Date"),'');
+        AddColumnToList(ColNo,FIELDNO("Due Date"),'');
+        AddColumnToList(ColNo,-2,FIELDCAPTION("Work Description"));
+        AddColumnToList(ColNo,FIELDNO("Currency Code"),'');
+        AddColumnToList(ColNo,FIELDNO(Amount),'');
+        AddColumnToList(ColNo,-1,VATTxt);
+        AddColumnToList(ColNo,FIELDNO("Amount Including VAT"),'');
+        AddColumnToList(ColNo,FIELDNO("Invoice Discount Amount"),'');
+        AddColumnToList(ColNo,FIELDNO("Posting Description"),'');
+        AddColumnToList(ColNo,FIELDNO(Status),'');
+        AddColumnToList(ColNo,FIELDNO("Last Email Sent Time"),'');
+        AddColumnToList(ColNo,FIELDNO("Last Email Sent Status"),'');
+      END;
+
+      RecRef.GETTABLE(SalesHeader);
+      WriteToSheet(RecRef,SheetName);
+    END;
+
+    LOCAL PROCEDURE InsertUnpostedSalesLines@8(DocumentType@1004 : Option;SheetName@1003 : Text);
+    VAR
+      SalesLine@1001 : Record 37;
+      RecRef@1006 : RecordRef;
+      Colno@1005 : Integer;
+    BEGIN
+      ClearBuffers;
+
+      WITH SalesLine DO BEGIN
+        SETRANGE("Document Type",DocumentType);
+        IF NOT FINDFIRST THEN
+          EXIT;
+
+        AddColumnToList(Colno,FIELDNO("Posting Date"),'');
+        AddColumnToList(Colno,FIELDNO("Document No."),'');
+        AddColumnToList(Colno,FIELDNO("No."),'');
+        AddColumnToList(Colno,FIELDNO(Description),'');
+        AddColumnToList(Colno,FIELDNO(Quantity),'');
+        AddColumnToList(Colno,FIELDNO("Unit of Measure"),'');
+        AddColumnToList(Colno,FIELDNO("Unit Price"),'');
+        AddColumnToList(Colno,FIELDNO("Line Discount Amount"),'');
+        AddColumnToList(Colno,FIELDNO("Line Amount"),'');
+        AddColumnToList(Colno,FIELDNO("Tax Group Code"),'');
+        AddColumnToList(Colno,FIELDNO("VAT %"),'');
+        AddColumnToList(Colno,FIELDNO("Currency Code"),'');
+        AddColumnToList(Colno,FIELDNO(Amount),'');
+        AddColumnToList(Colno,-1,VATTxt);
+        AddColumnToList(Colno,FIELDNO("Amount Including VAT"),'');
+        AddColumnToList(Colno,FIELDNO("Tax Category"),'');
+        AddColumnToList(Colno,FIELDNO("Tax Liable"),'');
+        AddColumnToList(Colno,FIELDNO("VAT Calculation Type"),'');
+        AddColumnToList(Colno,FIELDNO("VAT Identifier"),'');
+        AddColumnToList(Colno,FIELDNO("VAT Base Amount"),'');
+        AddColumnToList(Colno,FIELDNO("Sell-to Customer No."),'');
+        AddColumnToList(Colno,FIELDNO("Bill-to Customer No."),'');
+        AddColumnToList(Colno,FIELDNO("Line No."),'');
+        AddColumnToList(Colno,FIELDNO("Unit of Measure Code"),'');
+        AddColumnToList(Colno,FIELDNO("Description 2"),'');
+        AddColumnToList(Colno,FIELDNO("Price description"),'');
+      END;
+
+      RecRef.GETTABLE(SalesLine);
+      WriteToSheet(RecRef,SheetName);
+    END;
+
+    LOCAL PROCEDURE EnterCell@3(RowNo@1000 : Integer;ColumnNo@1001 : Integer;CellValue@1002 : Variant;IsBold@1003 : Boolean);
+    BEGIN
+      TempExcelBuffer.EnterCell(TempExcelBuffer,RowNo,ColumnNo,CellValue,IsBold,FALSE,FALSE);
+    END;
+
+    LOCAL PROCEDURE SetColumnWidths@7(StartColNo@1000 : Integer;NoOfCols@1001 : Integer;NewWidth@1002 : Decimal);
+    VAR
+      DummyExcelBuffer@1003 : Record 370;
+      i@1004 : Integer;
+    BEGIN
+      IF (StartColNo < 1) OR (NoOfCols < 1) OR (NewWidth < 1) THEN
+        EXIT;
+      FOR i := StartColNo TO StartColNo + NoOfCols - 1 DO BEGIN
+        DummyExcelBuffer.VALIDATE("Column No.",i);
+        TempExcelBuffer.SetColumnWidth(DummyExcelBuffer.xlColID,NewWidth);
+      END;
+    END;
+
+    LOCAL PROCEDURE GetDocumentName@23() : Text;
+    BEGIN
+      EXIT(InvoicingDataTxt);
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

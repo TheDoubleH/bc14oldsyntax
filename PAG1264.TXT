@@ -1,0 +1,42 @@
+OBJECT Page 1264 Change User
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/24/19;
+    Time=12:00:00 PM;
+    Version List=NAVW114.00;
+  }
+  PROPERTIES
+  {
+    CaptionML=ENU=Change User;
+    SourceTable=Table1262;
+  }
+  CONTROLS
+  {
+    { 1   ;    ;Container ;
+                ContainerType=ContentArea }
+
+    { 2   ;1   ;Field     ;
+                CaptionML=ENU=User assigned to the certificate;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="User ID";
+                OnValidate=BEGIN
+                             TESTFIELD("User ID");
+                           END;
+
+                OnLookup=VAR
+                           UserManagement@1000 : Codeunit 418;
+                         BEGIN
+                           UserManagement.LookupUserID("User ID");
+                         END;
+                          }
+
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

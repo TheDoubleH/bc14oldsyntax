@@ -1,0 +1,74 @@
+OBJECT Table 10000 PAC Web Service
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/24/19;
+    Time=12:00:00 PM;
+    Version List=NAVNA14.00;
+  }
+  PROPERTIES
+  {
+    OnDelete=BEGIN
+               ValidateUsage;
+               DeleteSubTables;
+             END;
+
+    CaptionML=ENU=PAC Web Service;
+    LookupPageID=Page10455;
+  }
+  FIELDS
+  {
+    { 1   ;   ;Code                ;Code10        ;CaptionML=ENU=Code }
+    { 21  ;   ;Name                ;Text50        ;CaptionML=ENU=Name }
+    { 22  ;   ;Certificate Thumbprint;Text250     ;ObsoleteState=Pending;
+                                                   ObsoleteReason=Using Local Certificate store is deprecated. Use Certificate field instead that are linked to certificate table.;
+                                                   CaptionML=ENU=Certificate Thumbprint }
+    { 23  ;   ;Certificate         ;Code20        ;TableRelation="Isolated Certificate";
+                                                   CaptionML=ENU=Certificate }
+  }
+  KEYS
+  {
+    {    ;Code                                    ;Clustered=Yes }
+  }
+  FIELDGROUPS
+  {
+  }
+  CODE
+  {
+    VAR
+      Text000@1020000 : TextConst 'ENU=You cannot delete the code %1 because it is used in the %2 window.';
+      PACWebServiceDetail@1020001 : Record 10001;
+
+    [External]
+    PROCEDURE ValidateUsage@1020000();
+    VAR
+      GeneralLedgerSetup@1020000 : Record 98;
+    BEGIN
+      GeneralLedgerSetup.GET;
+      IF (GeneralLedgerSetup."PAC Code" <> '') AND (GeneralLedgerSetup."PAC Code" = Code) THEN
+        ERROR(Text000,Code,GeneralLedgerSetup.TABLECAPTION);
+    END;
+
+    [External]
+    PROCEDURE DeleteSubTables@1020002();
+    BEGIN
+      PACWebServiceDetail.SETRANGE("PAC Code",Code);
+      IF NOT PACWebServiceDetail.ISEMPTY THEN
+        PACWebServiceDetail.DELETEALL;
+    END;
+
+    PROCEDURE CheckIfMissingMXEInvRequiredFields@1310002() : Boolean;
+    VAR
+      PACWebService@1310000 : Record 10000;
+      GeneralLedgerSetup@1310001 : Record 98;
+    BEGIN
+      GeneralLedgerSetup.GET;
+      IF PACWebService.GET(GeneralLedgerSetup."PAC Code") THEN
+        EXIT(PACWebService.Certificate = '');
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

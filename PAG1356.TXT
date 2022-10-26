@@ -1,0 +1,96 @@
+OBJECT Page 1356 Posted Service Inv. - Update
+{
+  OBJECT-PROPERTIES
+  {
+    Date=06/25/21;
+    Time=12:00:00 PM;
+    Version List=NAVW114.26;
+  }
+  PROPERTIES
+  {
+    Editable=Yes;
+    CaptionML=ENU=Posted Service Inv. - Update;
+    InsertAllowed=No;
+    DeleteAllowed=No;
+    ModifyAllowed=Yes;
+    SourceTable=Table5992;
+    PageType=Card;
+    SourceTableTemporary=Yes;
+    ShowFilter=No;
+    OnOpenPage=BEGIN
+                 xServiceInvoiceHeader := Rec;
+               END;
+
+    OnQueryClosePage=BEGIN
+                       IF CloseAction = ACTION::LookupOK THEN
+                         IF RecordChanged THEN
+                           CODEUNIT.RUN(CODEUNIT::"Service Inv. Header - Edit",Rec);
+                     END;
+
+  }
+  CONTROLS
+  {
+    { 1   ;0   ;Container ;
+                ContainerType=ContentArea }
+
+    { 2   ;1   ;Group     ;
+                Name=General;
+                GroupType=Group }
+
+    { 3   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the number of the record.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="No.";
+                Editable=FALSE }
+
+    { 4   ;2   ;Field     ;
+                CaptionML=ENU=Customer;
+                ToolTipML=ENU=Specifies the name of customer.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Bill-to Name";
+                Editable=FALSE }
+
+    { 5   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the posting date for the document.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Posting Date";
+                Editable=FALSE }
+
+    { 9   ;1   ;Group     ;
+                CaptionML=ENU=Payment;
+                GroupType=Group }
+
+    { 6   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies how the customer must pay for products on the service document, such as with bank transfer, cash, or check.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Payment Method Code" }
+
+    { 7   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the payment of the service invoice.;
+                ApplicationArea=#Basic,#Suite;
+                SourceExpr="Payment Reference" }
+
+  }
+  CODE
+  {
+    VAR
+      xServiceInvoiceHeader@1000 : Record 5992;
+
+    LOCAL PROCEDURE RecordChanged@4() : Boolean;
+    BEGIN
+      EXIT(
+        ("Payment Method Code" <> xServiceInvoiceHeader."Payment Method Code") OR
+        ("Payment Reference" <> xServiceInvoiceHeader."Payment Reference"));
+    END;
+
+    PROCEDURE SetRec@5(ServiceInvoiceHeader@1000 : Record 5992);
+    BEGIN
+      Rec := ServiceInvoiceHeader;
+      INSERT;
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

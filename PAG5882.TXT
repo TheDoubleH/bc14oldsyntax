@@ -1,0 +1,162 @@
+OBJECT Page 5882 Phys. Invt. Recording Lines
+{
+  OBJECT-PROPERTIES
+  {
+    Date=04/29/22;
+    Time=12:00:00 PM;
+    Version List=NAVW114.36;
+  }
+  PROPERTIES
+  {
+    Editable=No;
+    CaptionML=ENU=Phys. Invt. Recording Lines;
+    SourceTable=Table5878;
+    PageType=List;
+    ActionList=ACTIONS
+    {
+      { 1900000004;0 ;ActionContainer;
+                      ActionContainerType=ActionItems }
+      { 44      ;1   ;ActionGroup;
+                      CaptionML=ENU=&Line;
+                      Image=Line }
+      { 45      ;2   ;Action    ;
+                      ShortCutKey=Shift+F7;
+                      CaptionML=ENU=Show Document;
+                      ToolTipML=ENU=Show inventory count recording.;
+                      ApplicationArea=#Warehouse;
+                      RunObject=Page 5879;
+                      RunPageView=SORTING(Order No.,Recording No.);
+                      RunPageLink=Order No.=FIELD(Order No.),
+                                  Recording No.=FIELD(Recording No.);
+                      Promoted=Yes;
+                      PromotedIsBig=Yes;
+                      Image=View;
+                      PromotedCategory=Process }
+    }
+  }
+  CONTROLS
+  {
+    { 1900000001;0;Container;
+                ContainerType=ContentArea }
+
+    { 40  ;1   ;Group     ;
+                GroupType=Repeater }
+
+    { 1   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the order number.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Order No." }
+
+    { 3   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies a number that is assigned to the physical inventory recording.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Recording No." }
+
+    { 5   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the number of the line.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Line No.";
+                Visible=FALSE }
+
+    { 7   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the Line No. of the linked physical inventory order line.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Order Line No.";
+                Visible=FALSE }
+
+    { 9   ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the number of the item that was counted when taking the physical inventory.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Item No." }
+
+    { 11  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the variant of the item on the line.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Variant Code";
+                Visible=FALSE }
+
+    { 13  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the description of the item.;
+                ApplicationArea=#Warehouse;
+                SourceExpr=Description }
+
+    { 15  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the additional description of the item.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Description 2";
+                Visible=FALSE }
+
+    { 17  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the unit of measure used for the item, for example bottle or piece.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Unit of Measure";
+                Visible=FALSE }
+
+    { 19  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies how each unit of the item or resource is measured, such as in pieces or hours. By default, the value in the Base Unit of Measure field on the item or resource card is inserted.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Unit of Measure Code" }
+
+    { 21  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the code of the location where the item was counted during taking the physical inventory.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Location Code" }
+
+    { 23  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies if it is necessary to record the item using serial numbers or lot numbers.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Use Item Tracking" }
+
+    { 25  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the serial number of the entered item.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Serial No." }
+
+    { 27  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the lot number of the entered item.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Lot No." }
+
+    { 29  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the quantity of the item of the physical inventory recording line.;
+                ApplicationArea=#Warehouse;
+                SourceExpr=Quantity }
+
+    { 31  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the Quantity on the line, expressed in base units of measure.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Quantity (Base)";
+                Visible=FALSE }
+
+    { 33  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies if a value was entered in Quantity of the physical inventory recording line.;
+                ApplicationArea=#Warehouse;
+                SourceExpr=Recorded }
+
+    { 35  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the date when the physical inventory was taken.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Date Recorded";
+                Visible=FALSE }
+
+    { 37  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the time when the physical inventory was taken.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Time Recorded";
+                Visible=FALSE }
+
+    { 39  ;2   ;Field     ;
+                ToolTipML=ENU=Specifies the code of the person who performed the physical inventory.;
+                ApplicationArea=#Warehouse;
+                SourceExpr="Person Recorded";
+                Visible=FALSE }
+
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

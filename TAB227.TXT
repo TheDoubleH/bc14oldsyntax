@@ -1,0 +1,46 @@
+OBJECT Table 227 VAT Registration Log Details
+{
+  OBJECT-PROPERTIES
+  {
+    Date=10/29/20;
+    Time=12:00:00 PM;
+    Version List=NAVW114.19;
+  }
+  PROPERTIES
+  {
+    CaptionML=ENU=Tax Registration Log Details;
+    LookupPageID=Page247;
+  }
+  FIELDS
+  {
+    { 1   ;   ;Log Entry No.       ;Integer       ;TableRelation="VAT Registration Log";
+                                                   CaptionML=ENU=Log Entry No. }
+    { 2   ;   ;Field Name          ;Option        ;CaptionML=ENU=Field Name;
+                                                   OptionCaptionML=ENU=Name,Address,Street,ZIP Code,City;
+                                                   OptionString=Name,Address,Street,Post Code,City }
+    { 10  ;   ;Account Type        ;Option        ;CaptionML=ENU=Account Type;
+                                                   OptionCaptionML=ENU=Customer,Vendor,Contact,Company Information;
+                                                   OptionString=Customer,Vendor,Contact,Company Information }
+    { 11  ;   ;Account No.         ;Code20        ;CaptionML=ENU=Account No. }
+    { 20  ;   ;Requested           ;Text150       ;CaptionML=ENU=Requested }
+    { 21  ;   ;Response            ;Text150       ;CaptionML=ENU=Response }
+    { 22  ;   ;Current Value       ;Text150       ;CaptionML=ENU=Current Value }
+    { 23  ;   ;Status              ;Option        ;CaptionML=ENU=Status;
+                                                   OptionCaptionML=ENU=Not Valid,Accepted,Applied,Valid;
+                                                   OptionString=Not Valid,Accepted,Applied,Valid }
+  }
+  KEYS
+  {
+    {    ;Log Entry No.,Field Name                ;Clustered=Yes }
+  }
+  FIELDGROUPS
+  {
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

@@ -1,0 +1,38 @@
+OBJECT Table 1542 Workflow Webhook Sub Buffer
+{
+  OBJECT-PROPERTIES
+  {
+    Date=09/19/18;
+    Time=12:00:00 PM;
+    Version List=NAVW113.00;
+  }
+  PROPERTIES
+  {
+    ReplicateData=No;
+    CaptionML=ENU=Workflow Webhook Sub Buffer;
+  }
+  FIELDS
+  {
+    { 1   ;   ;Id                  ;Integer       ;AutoIncrement=Yes;
+                                                   DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Id }
+    { 2   ;   ;WF Definition Id    ;Code20        ;DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=WF Definition Id }
+    { 3   ;   ;Client Id           ;GUID          ;DataClassification=SystemMetadata;
+                                                   CaptionML=ENU=Client Id }
+  }
+  KEYS
+  {
+    {    ;Id                                      ;Clustered=Yes }
+  }
+  FIELDGROUPS
+  {
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

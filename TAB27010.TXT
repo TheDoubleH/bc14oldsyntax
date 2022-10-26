@@ -1,0 +1,38 @@
+OBJECT Table 27010 SAT Classification
+{
+  OBJECT-PROPERTIES
+  {
+    Date=09/23/22;
+    Time=12:00:00 PM;
+    Version List=NAVNA14.41;
+  }
+  PROPERTIES
+  {
+    DataPerCompany=No;
+    CaptionML=ENU=SAT Classification;
+    LookupPageID=Page27040;
+    DrillDownPageID=Page27040;
+  }
+  FIELDS
+  {
+    { 1   ;   ;SAT Classification  ;Code10        ;CaptionML=ENU=SAT Classification;
+                                                   Description=[  Identifies the classification of product or service] }
+    { 2   ;   ;Description         ;Text150       ;CaptionML=ENU=Description }
+    { 3   ;   ;Hazardous Material Mandatory;Boolean;
+                                                   CaptionML=ENU=Hazardous Material Mandatory }
+  }
+  KEYS
+  {
+    {    ;SAT Classification                      ;Clustered=Yes }
+  }
+  FIELDGROUPS
+  {
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+
